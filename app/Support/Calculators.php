@@ -12,7 +12,8 @@ class Calculators
         'ipo' => 'IPO Tools',
         'invest' => 'Investing & Returns',
         'savings' => 'Savings & Loans',
-        'trading' => 'Trading & Tax',
+        'fno' => 'F&O & Derivatives',
+        'trading' => 'Trading, Tax & Business',
     ];
 
     public static function all(): array
@@ -110,6 +111,40 @@ class Calculators
                 'formula' => 'Average = (Q₁ × P₁ + Q₂ × P₂) ÷ (Q₁ + Q₂)',
                 'faqs' => [],
             ],
+            'return' => [
+                'name' => 'Investment Return Calculator',
+                'short' => 'Compare what a monthly SIP or a one-time investment could grow to.',
+                'icon' => 'percent',
+                'group' => 'invest',
+                'about' => 'Pick monthly (SIP) or one-time (lumpsum) investing, enter the amount, expected annual return and period to see the total invested, the estimated gains and the final value. Handy for comparing the two ways of investing the same money.',
+                'formula' => 'SIP: FV = P × [((1 + i)ⁿ − 1) ÷ i] × (1 + i), i = rate ÷ 12 · Lumpsum: FV = P × (1 + r)ᵗ',
+                'faqs' => [
+                    ['Is SIP better than lumpsum?', 'A lumpsum invested early earns more if markets rise steadily, while a SIP spreads your entry price over time and suits regular income. The right choice depends on when you have the money and your risk appetite.'],
+                ],
+            ],
+            'compound-interest' => [
+                'name' => 'Compound Interest Calculator',
+                'short' => 'Growth of a deposit with monthly, quarterly or yearly compounding.',
+                'icon' => 'sparkles',
+                'group' => 'invest',
+                'about' => 'Compound interest earns interest on previously earned interest, so money grows faster than with simple interest. Choose how often interest is compounded to see the maturity value and how much extra compounding earns over simple interest.',
+                'formula' => 'A = P × (1 + r/n)^(n × t) · Simple interest = P × r × t',
+                'faqs' => [
+                    ['Does compounding frequency matter?', 'Yes. The more often interest is compounded, the higher the maturity value at the same annual rate, although the difference between monthly and quarterly is small.'],
+                ],
+            ],
+            'retirement' => [
+                'name' => 'Retirement Calculator',
+                'short' => 'Corpus you need to retire and the monthly SIP to build it.',
+                'icon' => 'hourglass',
+                'group' => 'invest',
+                'about' => 'Your current monthly expenses are grown by inflation until retirement. The corpus must then fund those rising expenses for every year of retirement while the remaining money keeps earning a (usually lower, safer) return. Finally, the calculator works out the monthly SIP needed to reach that corpus.',
+                'formula' => 'Corpus = E × (1 + r) × [1 − ((1 + i) ÷ (1 + r))ⁿ] ÷ (r − i), where E = first-year expense at retirement · SIP = Corpus × j ÷ [((1 + j)ᵐ − 1) × (1 + j)]',
+                'faqs' => [
+                    ['What return should I assume after retirement?', 'Most retirees move to safer debt-heavy investments, so a post-retirement return of 6–8% is a common assumption, lower than the 10–12% often assumed for equity before retirement.'],
+                    ['Does this include EPF, NPS or other savings?', 'No. Subtract what your existing savings are expected to be worth at retirement from the corpus shown.'],
+                ],
+            ],
             'inflation' => [
                 'name' => 'Inflation Calculator',
                 'short' => 'What today’s expenses will cost in the future.',
@@ -155,6 +190,106 @@ class Calculators
                 'group' => 'savings',
                 'about' => 'Equated Monthly Instalments (EMIs) repay both principal and interest over the loan tenure. Use it for home, car, personal or education loans.',
                 'formula' => 'EMI = P × r × (1 + r)ⁿ ÷ ((1 + r)ⁿ − 1), where r = monthly rate',
+                'faqs' => [],
+            ],
+            'home-loan' => [
+                'name' => 'Home Loan Calculator',
+                'short' => 'Loan amount, EMI and the total cost of buying a home.',
+                'icon' => 'building',
+                'group' => 'savings',
+                'about' => 'Start from the property price and your down payment. The rest is the home loan: see the monthly EMI, the total interest over the tenure and the full cost of the home including your down payment. Banks usually fund up to 75–90% of the property value.',
+                'formula' => 'Loan = Price × (1 − Down payment %) · EMI = L × r × (1 + r)ⁿ ÷ ((1 + r)ⁿ − 1)',
+                'faqs' => [
+                    ['How much down payment do banks need?', 'RBI rules cap the loan at 90% of the property value for loans up to ₹30 lakh, 80% for ₹30–75 lakh and 75% above ₹75 lakh, so plan for a 10–25% down payment plus stamp duty and registration.'],
+                ],
+            ],
+            'loan-eligibility' => [
+                'name' => 'Loan Eligibility Calculator',
+                'short' => 'Maximum loan you can get based on income and existing EMIs.',
+                'icon' => 'check-circle',
+                'group' => 'savings',
+                'about' => 'Lenders cap your total EMIs at a share of your monthly income, called FOIR (Fixed Obligation to Income Ratio), typically 50–60%. Existing EMIs are subtracted from that limit, and the remaining EMI capacity is converted into a loan amount for the chosen rate and tenure.',
+                'formula' => 'Max EMI = Income × FOIR − Existing EMIs · Max loan = EMI × ((1 + r)ⁿ − 1) ÷ (r × (1 + r)ⁿ)',
+                'faqs' => [
+                    ['How can I increase my loan eligibility?', 'Close small existing loans, choose a longer tenure, add a co-applicant with income, or improve your credit score to qualify for a lower rate.'],
+                ],
+            ],
+            'fno-margin' => [
+                'name' => 'F&O Margin Calculator',
+                'short' => 'Margin needed for futures positions and the leverage you get.',
+                'icon' => 'coins',
+                'group' => 'fno',
+                'about' => 'Futures let you control a large contract value by blocking only a margin (SPAN + exposure), usually 12–25% of the contract value depending on the stock or index volatility. This calculator shows the contract value, margin required, leverage and how much a 1% move changes your P&L.',
+                'formula' => 'Contract value = Price × Lot size × Lots · Margin = Contract value × Margin % · Leverage = Contract value ÷ Margin',
+                'faqs' => [
+                    ['Is this the exact margin my broker will block?', 'No. Exchanges publish SPAN and exposure margins daily and they change with volatility. Use your broker’s margin calculator for the exact figure; this tool helps you understand the size of the position.'],
+                ],
+            ],
+            'options-pnl' => [
+                'name' => 'F&O P&L Calculator',
+                'short' => 'Profit or loss, breakeven and max risk for a call or put at expiry.',
+                'icon' => 'target',
+                'group' => 'fno',
+                'about' => 'Choose call or put, and whether you bought or sold the option. Enter the strike, premium per unit, lot size and the underlying price at expiry to see your P&L. Option buyers risk only the premium; option sellers keep the premium but can face large losses.',
+                'formula' => 'Call payoff = max(S − K, 0) · Put payoff = max(K − S, 0) · Buyer P&L = (Payoff − Premium) × Qty · Seller P&L = (Premium − Payoff) × Qty',
+                'faqs' => [
+                    ['What is the breakeven of an option?', 'For a call it is strike + premium; for a put it is strike − premium. At expiry the underlying must cross this level for the buyer to make a profit.'],
+                    ['Are charges included?', 'No. Brokerage, STT, exchange charges and GST reduce the P&L slightly.'],
+                ],
+            ],
+            'option-premium' => [
+                'name' => 'Option Premium & Greeks Calculator',
+                'short' => 'Black-Scholes fair value of a call or put, with Delta, Gamma, Theta, Vega and Rho.',
+                'icon' => 'activity',
+                'group' => 'fno',
+                'about' => 'The Black-Scholes model prices a European option from the spot price, strike, days to expiry, risk-free rate and implied volatility (IV). The Greeks show how the premium reacts: Delta to a ₹1 move in the underlying, Gamma to changes in Delta, Theta to one day passing, Vega to a 1% change in IV and Rho to a 1% change in interest rates.',
+                'formula' => 'Call = S·N(d₁) − K·e^(−rT)·N(d₂) · Put = K·e^(−rT)·N(−d₂) − S·N(−d₁) · d₁ = [ln(S/K) + (r + σ²/2)T] ÷ (σ√T), d₂ = d₁ − σ√T',
+                'faqs' => [
+                    ['Why does the market premium differ from this value?', 'Market prices reflect the IV traders are paying, dividends and demand. Enter the IV quoted on the option chain to get a value close to the traded price.'],
+                    ['Are Indian index options European?', 'Yes. NSE index options (Nifty, Bank Nifty) and stock options are European-style and can only be exercised at expiry, which suits the Black-Scholes model.'],
+                ],
+            ],
+            'hedging' => [
+                'name' => 'Portfolio Hedging Calculator',
+                'short' => 'How many index futures lots to sell to hedge your stock portfolio.',
+                'icon' => 'shield-check',
+                'group' => 'fno',
+                'about' => 'A portfolio with a beta of 1.2 tends to move 1.2% for every 1% move in the index. To protect it from a fall, sell index futures worth portfolio value × beta. This calculator converts that into lots of the index future and shows the margin you would need.',
+                'formula' => 'Lots to sell = (Portfolio value × Beta) ÷ (Futures price × Lot size) · Margin = Lots × Contract value × Margin %',
+                'faqs' => [
+                    ['Why round the lots?', 'Futures trade only in whole lots, so the hedge is rarely exact. Rounding down leaves part of the portfolio unhedged; rounding up slightly over-hedges it.'],
+                ],
+            ],
+            'beta' => [
+                'name' => 'Stock Beta Calculator',
+                'short' => 'Measure how volatile a stock is compared with the market.',
+                'icon' => 'bar-chart',
+                'group' => 'fno',
+                'about' => 'Beta compares a stock’s returns with the market’s returns over the same periods. Paste matching lists of periodic returns (for example, monthly % returns of the stock and of Nifty 50). A beta above 1 means the stock tends to swing more than the market, below 1 means it is more defensive.',
+                'formula' => 'Beta = Covariance(stock, market) ÷ Variance(market) · Correlation = Covariance ÷ (σ stock × σ market)',
+                'faqs' => [
+                    ['How many data points should I use?', 'Use at least 12 monthly or 52 weekly returns for a meaningful estimate. Both lists must cover exactly the same periods.'],
+                ],
+            ],
+            'income-tax' => [
+                'name' => 'Income Tax Calculator (FY 2025-26)',
+                'short' => 'Compare tax under the new and old regime and see which saves more.',
+                'icon' => 'receipt',
+                'group' => 'trading',
+                'about' => 'Enter your annual income and, for the old regime, your deductions such as 80C, 80D, HRA and home-loan interest. The calculator applies FY 2025-26 (AY 2026-27) slabs, the standard deduction for salaried people, the Section 87A rebate (no tax up to ₹12 lakh taxable income in the new regime, ₹5 lakh in the old) and 4% health & education cess.',
+                'formula' => 'New regime: 0–4L nil, 4–8L 5%, 8–12L 10%, 12–16L 15%, 16–20L 20%, 20–24L 25%, above 24L 30% · Old regime: 0–2.5L nil, 2.5–5L 5%, 5–10L 20%, above 10L 30% · + 4% cess',
+                'faqs' => [
+                    ['Which regime should I choose?', 'The new regime is usually better unless your deductions (80C, 80D, HRA, home-loan interest and so on) are large. The calculator shows both so you can compare.'],
+                    ['Is surcharge included?', 'No. Surcharge applies only above ₹50 lakh income. Capital gains on shares are taxed separately; use the Capital Gains calculator for those.'],
+                ],
+            ],
+            'break-even' => [
+                'name' => 'Break-even Calculator',
+                'short' => 'Units and sales you need to cover your costs.',
+                'icon' => 'scale',
+                'group' => 'trading',
+                'about' => 'A business breaks even when revenue covers both fixed costs (rent, salaries) and variable costs (materials per unit). Each unit sold contributes selling price minus variable cost towards the fixed costs; the break-even point is where those contributions add up to the fixed costs.',
+                'formula' => 'Break-even units = Fixed costs ÷ (Selling price − Variable cost per unit) · Break-even sales = Units × Selling price',
                 'faqs' => [],
             ],
             'brokerage' => [

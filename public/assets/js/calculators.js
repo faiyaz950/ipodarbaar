@@ -27,6 +27,39 @@
   };
   function tone(v) { return v > 0 ? 'up' : (v < 0 ? 'down' : ''); }
 
+  /* ---------- Shared maths ---------- */
+  function emiOf(p, annualRate, months) {
+    var r = annualRate / 1200;
+    return r ? p * r * Math.pow(1 + r, months) / (Math.pow(1 + r, months) - 1) : p / months;
+  }
+  function amortise(p, annualRate, months, emi) {
+    var r = annualRate / 1200, bal = p, rows = [], yP = 0, yI = 0;
+    for (var m = 1; m <= months; m++) {
+      var int = bal * r, prin = emi - int;
+      bal -= prin; yP += prin; yI += int;
+      if (m % 12 === 0 || m === months) { rows.push([Math.ceil(m / 12), F.inr(yP), F.inr(yI), F.inr(Math.max(0, bal))]); yP = 0; yI = 0; }
+    }
+    return rows;
+  }
+  function npdf(x) { return Math.exp(-x * x / 2) / Math.sqrt(2 * Math.PI); }
+  function ncdf(x) {
+    var t = 1 / (1 + 0.2316419 * Math.abs(x));
+    var p = npdf(x) * t * (0.319381530 + t * (-0.356563782 + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429))));
+    return x > 0 ? 1 - p : p;
+  }
+  function slabTax(income, slabs) {
+    var tax = 0, lower = 0;
+    for (var i = 0; i < slabs.length; i++) {
+      var upper = slabs[i][0], rate = slabs[i][1];
+      if (income > lower) tax += (Math.min(income, upper) - lower) * rate;
+      lower = upper;
+    }
+    return tax;
+  }
+  function parseList(text) {
+    return String(text || '').split(/[\s,;]+/).map(function (s) { return parseFloat(s.replace('%', '')); }).filter(isFinite);
+  }
+
   /* ---------- Calculator definitions ---------- */
   var RETAIL_MAX = 200000, SHNI_MAX = 1000000;
 
@@ -397,6 +430,351 @@
           donut: gain > 0 ? [{ label: 'Profit after tax', value: gain - tax }, { label: 'Tax', value: tax }] : null
         };
       }
+    },
+
+    'return': {
+      inputs: [
+        { id: 'mode', label: 'How you invest', type: 'options', options: [['sip', 'Monthly (SIP)'], ['lumpsum', 'One-time (Lumpsum)']], value: 'sip' },
+        { id: 'amount', label: 'Investment amount', prefix: '₹', min: 500, max: 10000000, step: 500, value: 10000 },
+        { id: 'rate', label: 'Expected return (p.a.)', suffix: '%', min: 1, max: 30, step: 0.5, value: 12 },
+        { id: 'years', label: 'Time period', suffix: 'years', min: 1, max: 40, step: 1, value: 10 }
+      ],
+      compute: function (v) {
+        var sip = v.mode === 'sip', i = v.rate / 1200, bal = 0, inv = 0, table = [];
+        for (var y = 1; y <= v.years; y++) {
+          if (sip) {
+            for (var m = 0; m < 12; m++) { bal = (bal + v.amount) * (1 + i); inv += v.amount; }
+          } else {
+            if (y === 1) { bal = v.amount; inv = v.amount; }
+            bal *= 1 + v.rate / 100;
+          }
+          table.push([y, F.inr(inv), F.inr(bal - inv), F.inr(bal)]);
+        }
+        var gain = bal - inv;
+        return {
+          hero: { label: 'Estimated value', value: F.inr(bal), sub: '≈ ' + F.compact(bal) + ' · ' + F.pct(inv ? gain / inv * 100 : 0, 1) + ' absolute return' },
+          rows: [['Total invested', F.inr(inv)], ['Estimated returns', F.inr(gain)], ['Money multiplied', n(inv ? bal / inv : 0, 2) + 'x']],
+          donut: [{ label: 'Invested', value: inv }, { label: 'Returns', value: gain }],
+          table: { head: ['Year', 'Invested', 'Returns', 'Value'], rows: table }
+        };
+      }
+    },
+
+    'compound-interest': {
+      inputs: [
+        { id: 'p', label: 'Principal amount', prefix: '₹', min: 1000, max: 100000000, step: 1000, value: 100000 },
+        { id: 'rate', label: 'Interest rate (p.a.)', suffix: '%', min: 0.5, max: 30, step: 0.1, value: 10 },
+        { id: 'years', label: 'Time period', suffix: 'years', min: 1, max: 50, step: 1, value: 10 },
+        { id: 'freq', label: 'Compounding', type: 'options', options: [['12', 'Monthly'], ['4', 'Quarterly'], ['2', 'Half-yearly'], ['1', 'Yearly']], value: '4' }
+      ],
+      compute: function (v) {
+        var nF = parseInt(v.freq, 10), r = v.rate / 100, table = [];
+        for (var y = 1; y <= v.years; y++) {
+          var b = v.p * Math.pow(1 + r / nF, nF * y);
+          table.push([y, F.inr(b - v.p), F.inr(b)]);
+        }
+        var A = v.p * Math.pow(1 + r / nF, nF * v.years), ci = A - v.p, si = v.p * r * v.years;
+        return {
+          hero: { label: 'Maturity value', value: F.inr(A), sub: 'Compound interest ' + F.inr(ci) + ' on ' + F.inr(v.p) },
+          rows: [
+            ['Compound interest', F.inr(ci)],
+            ['Simple interest (for comparison)', F.inr(si)],
+            ['Extra earned by compounding', F.inr(ci - si)],
+            ['Effective annual rate', F.pct((Math.pow(1 + r / nF, nF) - 1) * 100)]
+          ],
+          donut: [{ label: 'Principal', value: v.p }, { label: 'Interest', value: ci }],
+          table: { head: ['Year', 'Interest earned', 'Balance'], rows: table }
+        };
+      }
+    },
+
+    'retirement': {
+      inputs: [
+        { id: 'expense', label: 'Current monthly expenses', prefix: '₹', min: 5000, max: 1000000, step: 1000, value: 50000 },
+        { id: 'infl', label: 'Expected inflation', suffix: '%', min: 0, max: 15, step: 0.5, value: 6 },
+        { id: 'toRet', label: 'Years to retirement', suffix: 'years', min: 1, max: 50, step: 1, value: 25 },
+        { id: 'inRet', label: 'Years in retirement', suffix: 'years', min: 1, max: 50, step: 1, value: 25 },
+        { id: 'pre', label: 'Return before retirement', suffix: '%', min: 1, max: 20, step: 0.5, value: 12 },
+        { id: 'post', label: 'Return after retirement', suffix: '%', min: 1, max: 15, step: 0.5, value: 7 }
+      ],
+      compute: function (v) {
+        var i = v.infl / 100, r = v.post / 100;
+        var monthlyAtRet = v.expense * Math.pow(1 + i, v.toRet), yearly = monthlyAtRet * 12;
+        var corpus = Math.abs(r - i) < 1e-9 ? yearly * v.inRet : yearly * (1 + r) * (1 - Math.pow((1 + i) / (1 + r), v.inRet)) / (r - i);
+        var j = v.pre / 1200, m = v.toRet * 12;
+        var sip = corpus * j / ((Math.pow(1 + j, m) - 1) * (1 + j));
+        return {
+          hero: { label: 'Retirement corpus needed', value: F.inr(corpus), sub: '≈ ' + F.compact(corpus) + ' in ' + v.toRet + ' years' },
+          rows: [
+            ['Monthly expenses at retirement', F.inr(monthlyAtRet)],
+            ['Yearly expenses in first year', F.inr(yearly)],
+            ['Monthly SIP needed', F.inr(sip)],
+            ['Total you will invest', F.inr(sip * m)]
+          ],
+          donut: [{ label: 'You invest', value: sip * m }, { label: 'Growth', value: Math.max(0, corpus - sip * m) }]
+        };
+      }
+    },
+
+    'home-loan': {
+      inputs: [
+        { id: 'price', label: 'Property price', prefix: '₹', min: 500000, max: 200000000, step: 50000, value: 8000000 },
+        { id: 'down', label: 'Down payment', suffix: '%', min: 0, max: 90, step: 1, value: 20 },
+        { id: 'rate', label: 'Interest rate (p.a.)', suffix: '%', min: 5, max: 16, step: 0.05, value: 8.5 },
+        { id: 'years', label: 'Loan tenure', suffix: 'years', min: 1, max: 30, step: 1, value: 20 }
+      ],
+      compute: function (v) {
+        var down = v.price * v.down / 100, loan = v.price - down, nM = v.years * 12;
+        var emi = loan > 0 ? emiOf(loan, v.rate, nM) : 0, total = emi * nM, interest = total - loan;
+        return {
+          hero: { label: 'Monthly EMI', value: F.inr(emi), sub: 'on a loan of ' + F.compact(loan) + ' for ' + v.years + ' years' },
+          rows: [
+            ['Loan amount', F.inr(loan)],
+            ['Down payment', F.inr(down)],
+            ['Total interest', F.inr(interest)],
+            ['Total loan repayment', F.inr(total)],
+            ['Total cost of the home', F.inr(down + total)]
+          ],
+          donut: loan > 0 ? [{ label: 'Principal', value: loan }, { label: 'Interest', value: interest }] : null,
+          table: loan > 0 ? { head: ['Year', 'Principal paid', 'Interest paid', 'Balance'], rows: amortise(loan, v.rate, nM, emi) } : null
+        };
+      }
+    },
+
+    'loan-eligibility': {
+      inputs: [
+        { id: 'income', label: 'Net monthly income', prefix: '₹', min: 10000, max: 5000000, step: 1000, value: 100000 },
+        { id: 'emis', label: 'Existing monthly EMIs', prefix: '₹', min: 0, max: 2000000, step: 500, value: 10000 },
+        { id: 'rate', label: 'Interest rate (p.a.)', suffix: '%', min: 5, max: 24, step: 0.05, value: 9 },
+        { id: 'years', label: 'Loan tenure', suffix: 'years', min: 1, max: 30, step: 1, value: 20 },
+        { id: 'foir', label: 'FOIR allowed by lender', suffix: '%', min: 30, max: 75, step: 1, value: 50 }
+      ],
+      compute: function (v) {
+        var limit = v.income * v.foir / 100, maxEmi = Math.max(0, limit - v.emis), r = v.rate / 1200, nM = v.years * 12;
+        var loan = maxEmi <= 0 ? 0 : (r ? maxEmi * (Math.pow(1 + r, nM) - 1) / (r * Math.pow(1 + r, nM)) : maxEmi * nM);
+        return {
+          hero: {
+            label: 'Maximum loan you can get', value: F.inr(loan), tone: loan > 0 ? '' : 'down',
+            sub: maxEmi > 0 ? '≈ ' + F.compact(loan) + ' at ' + v.rate + '% for ' + v.years + ' years' : 'Existing EMIs already use up your EMI limit'
+          },
+          rows: [
+            ['Maximum new EMI', F.inr(maxEmi)],
+            ['Total EMI limit (' + v.foir + '% of income)', F.inr(limit)],
+            ['Existing EMIs', F.inr(v.emis)],
+            ['Income left after all EMIs', F.inr(v.income - v.emis - maxEmi)]
+          ],
+          donut: [{ label: 'Existing EMIs', value: v.emis }, { label: 'New EMI capacity', value: maxEmi }, { label: 'Rest of income', value: Math.max(0, v.income - v.emis - maxEmi) }]
+        };
+      }
+    },
+
+    'fno-margin': {
+      inputs: [
+        { id: 'price', label: 'Futures price', prefix: '₹', min: 1, max: 100000, step: 0.5, value: 1500 },
+        { id: 'lot', label: 'Lot size', suffix: 'units', min: 1, max: 20000, step: 1, value: 500 },
+        { id: 'lots', label: 'Number of lots', min: 1, max: 100, step: 1, value: 1 },
+        { id: 'margin', label: 'Margin required (SPAN + exposure)', suffix: '%', min: 5, max: 100, step: 0.5, value: 18 }
+      ],
+      compute: function (v) {
+        var qty = v.lot * v.lots, value = v.price * qty, margin = value * v.margin / 100, move = value * 0.01;
+        return {
+          hero: { label: 'Margin required', value: F.inr(margin), sub: 'to control a position worth ' + F.compact(value) },
+          rows: [
+            ['Contract value', F.inr(value)],
+            ['Margin per lot', F.inr(margin / v.lots)],
+            ['Leverage', n(margin ? value / margin : 0, 1) + 'x'],
+            ['P&L for a 1% move', '± ' + F.inr(move)],
+            ['Return on margin for a 1% move', '± ' + F.pct(margin ? move / margin * 100 : 0, 1)]
+          ]
+        };
+      }
+    },
+
+    'options-pnl': {
+      inputs: [
+        { id: 'kind', label: 'Option type', type: 'options', options: [['call', 'Call (CE)'], ['put', 'Put (PE)']], value: 'call' },
+        { id: 'side', label: 'Your position', type: 'options', options: [['buy', 'Bought'], ['sell', 'Sold']], value: 'buy' },
+        { id: 'strike', label: 'Strike price', prefix: '₹', min: 1, max: 100000, step: 50, value: 25000 },
+        { id: 'prem', label: 'Premium per unit', prefix: '₹', min: 0.05, max: 5000, step: 0.05, value: 120 },
+        { id: 'lot', label: 'Lot size', suffix: 'units', min: 1, max: 20000, step: 1, value: 75 },
+        { id: 'lots', label: 'Number of lots', min: 1, max: 100, step: 1, value: 1 },
+        { id: 'spot', label: 'Underlying price at expiry', prefix: '₹', min: 1, max: 100000, step: 10, value: 25300 }
+      ],
+      compute: function (v) {
+        var call = v.kind === 'call', buy = v.side === 'buy', qty = v.lot * v.lots;
+        function pnlAt(s) {
+          var payoff = call ? Math.max(s - v.strike, 0) : Math.max(v.strike - s, 0);
+          return (buy ? payoff - v.prem : v.prem - payoff) * qty;
+        }
+        var pnl = pnlAt(v.spot), be = call ? v.strike + v.prem : v.strike - v.prem, premTotal = v.prem * qty;
+        var putFloor = Math.max(0, v.strike - v.prem) * qty;
+        var maxProfit = buy ? (call ? 'Unlimited' : F.inr(putFloor)) : F.inr(premTotal);
+        var maxLoss = buy ? F.inr(premTotal) : (call ? 'Unlimited' : F.inr(putFloor));
+        var table = [];
+        for (var k = -5; k <= 5; k++) {
+          var s = Math.max(0, v.strike * (1 + k * 0.01));
+          table.push([F.inr2(s), F.inr(pnlAt(s))]);
+        }
+        return {
+          hero: { label: 'P&L at expiry', value: F.inr(pnl), tone: tone(pnl), sub: (buy ? 'Bought ' : 'Sold ') + v.lots + ' lot' + (v.lots > 1 ? 's' : '') + ' of ' + F.num(v.strike) + (call ? ' CE' : ' PE') },
+          rows: [
+            ['Breakeven at expiry', F.inr2(be)],
+            [buy ? 'Premium paid' : 'Premium received', F.inr(premTotal)],
+            ['Maximum profit', maxProfit],
+            ['Maximum loss', maxLoss],
+            ['Quantity', F.num(qty) + ' units']
+          ],
+          table: { title: 'Payoff at expiry (strike ± 5%)', head: ['Underlying at expiry', 'P&L'], rows: table }
+        };
+      }
+    },
+
+    'option-premium': {
+      inputs: [
+        { id: 'kind', label: 'Option type', type: 'options', options: [['call', 'Call (CE)'], ['put', 'Put (PE)']], value: 'call' },
+        { id: 's', label: 'Spot price', prefix: '₹', min: 1, max: 100000, step: 1, value: 25000 },
+        { id: 'k', label: 'Strike price', prefix: '₹', min: 1, max: 100000, step: 50, value: 25000 },
+        { id: 'days', label: 'Days to expiry', suffix: 'days', min: 1, max: 365, step: 1, value: 7 },
+        { id: 'iv', label: 'Implied volatility (IV)', suffix: '%', min: 1, max: 150, step: 0.5, value: 14 },
+        { id: 'r', label: 'Risk-free rate', suffix: '%', min: 0, max: 15, step: 0.1, value: 6.5 },
+        { id: 'lot', label: 'Lot size', suffix: 'units', min: 1, max: 20000, step: 1, value: 75 }
+      ],
+      compute: function (v) {
+        var call = v.kind === 'call', T = v.days / 365, sig = v.iv / 100, r = v.r / 100;
+        var sq = Math.sqrt(T), d1 = (Math.log(v.s / v.k) + (r + sig * sig / 2) * T) / (sig * sq), d2 = d1 - sig * sq;
+        var disc = v.k * Math.exp(-r * T);
+        var price = call ? v.s * ncdf(d1) - disc * ncdf(d2) : disc * ncdf(-d2) - v.s * ncdf(-d1);
+        var intrinsic = Math.max(0, call ? v.s - v.k : v.k - v.s);
+        var delta = call ? ncdf(d1) : ncdf(d1) - 1;
+        var gamma = npdf(d1) / (v.s * sig * sq);
+        var theta = (-v.s * npdf(d1) * sig / (2 * sq) + (call ? -r * disc * ncdf(d2) : r * disc * ncdf(-d2))) / 365;
+        var vega = v.s * npdf(d1) * sq / 100;
+        var rho = (call ? disc * T * ncdf(d2) : -disc * T * ncdf(-d2)) / 100;
+        var money = Math.abs(v.s - v.k) < v.k * 0.005 ? 'At the money' : ((call ? v.s > v.k : v.s < v.k) ? 'In the money' : 'Out of the money');
+        return {
+          hero: { label: 'Fair premium (Black-Scholes)', value: F.inr2(price), sub: money + ' · ' + F.inr(price * v.lot) + ' per lot' },
+          rows: [
+            ['Intrinsic value', F.inr2(intrinsic)],
+            ['Time value', F.inr2(Math.max(0, price - intrinsic))],
+            ['Delta', n(delta, 3)],
+            ['Gamma', n(gamma, 5)],
+            ['Theta (per day)', F.inr2(theta)],
+            ['Vega (per 1% IV)', F.inr2(vega)],
+            ['Rho (per 1% rate)', F.inr2(rho)]
+          ]
+        };
+      }
+    },
+
+    'hedging': {
+      inputs: [
+        { id: 'pv', label: 'Portfolio value', prefix: '₹', min: 100000, max: 1000000000, step: 50000, value: 5000000 },
+        { id: 'beta', label: 'Portfolio beta', min: 0.1, max: 3, step: 0.05, value: 1.2 },
+        { id: 'fut', label: 'Index futures price', prefix: '₹', min: 100, max: 100000, step: 10, value: 25000 },
+        { id: 'lot', label: 'Index lot size', suffix: 'units', min: 1, max: 1000, step: 1, value: 75 },
+        { id: 'margin', label: 'Margin per lot', suffix: '%', min: 5, max: 50, step: 0.5, value: 12 }
+      ],
+      compute: function (v) {
+        var exposure = v.pv * v.beta, cv = v.fut * v.lot, exact = cv ? exposure / cv : 0, lots = Math.round(exact);
+        var cover = exposure ? lots * cv / exposure * 100 : 0;
+        return {
+          hero: {
+            label: 'Index futures lots to sell', value: F.num(lots) + (lots === 1 ? ' lot' : ' lots'), tone: lots ? '' : 'down',
+            sub: lots ? 'Exact hedge ' + n(exact, 2) + ' lots · covers ' + F.pct(cover, 0) + ' of beta exposure' : 'Portfolio is smaller than half a lot; a futures hedge is too large'
+          },
+          rows: [
+            ['Beta-adjusted exposure', F.inr(exposure)],
+            ['Value of one lot', F.inr(cv)],
+            ['Hedge value (lots × lot value)', F.inr(lots * cv)],
+            ['Margin required', F.inr(lots * cv * v.margin / 100)]
+          ]
+        };
+      }
+    },
+
+    'beta': {
+      inputs: [
+        { id: 'stock', label: 'Stock returns (%) — one per period', type: 'text', value: '4.2, -2.1, 3.5, 5.1, -4.9, 3.0, 5.1, -2.4, 1.9, -3.2, 3.8, 4.4' },
+        { id: 'market', label: 'Market returns (%) — same periods', type: 'text', value: '2.9, -1.2, 2.1, 4.3, -3.1, 1.6, 3.2, -0.6, 2.4, -2.2, 1.9, 2.7' }
+      ],
+      compute: function (v) {
+        var s = parseList(v.stock), m = parseList(v.market);
+        var err = s.length < 2 || m.length < 2 ? 'Enter at least two returns in each list' : (s.length !== m.length ? 'Both lists need the same number of returns (' + s.length + ' vs ' + m.length + ')' : '');
+        if (err) return { hero: { label: 'Beta', value: '—', sub: err }, rows: [] };
+        var N = s.length, ms = 0, mm = 0, cov = 0, vs = 0, vm = 0;
+        for (var i = 0; i < N; i++) { ms += s[i] / N; mm += m[i] / N; }
+        for (i = 0; i < N; i++) { cov += (s[i] - ms) * (m[i] - mm) / N; vs += Math.pow(s[i] - ms, 2) / N; vm += Math.pow(m[i] - mm, 2) / N; }
+        if (!vm) return { hero: { label: 'Beta', value: '—', sub: 'Market returns must vary to calculate beta' }, rows: [] };
+        var beta = cov / vm, corr = vs ? cov / Math.sqrt(vs * vm) : 0;
+        var read = beta > 1.05 ? 'More volatile than the market (aggressive)' : (beta >= 0.95 ? 'Moves broadly in line with the market' : (beta > 0 ? 'Less volatile than the market (defensive)' : 'Tends to move opposite to the market'));
+        return {
+          hero: { label: 'Beta', value: n(beta, 2), sub: read },
+          rows: [
+            ['Correlation with market', n(corr, 2)],
+            ['Covariance', n(cov, 3)],
+            ['Market variance', n(vm, 3)],
+            ['Average stock return', F.pct(ms)],
+            ['Average market return', F.pct(mm)],
+            ['Data points', F.num(N)]
+          ]
+        };
+      }
+    },
+
+    'income-tax': {
+      inputs: [
+        { id: 'income', label: 'Gross annual income', prefix: '₹', min: 0, max: 50000000, step: 10000, value: 1500000 },
+        { id: 'salaried', label: 'Salaried or pensioner?', type: 'options', options: [['yes', 'Yes'], ['no', 'No']], value: 'yes' },
+        { id: 'ded', label: 'Deductions (old regime: 80C, 80D, HRA, home-loan interest…)', prefix: '₹', min: 0, max: 1500000, step: 5000, value: 250000 }
+      ],
+      compute: function (v) {
+        var sal = v.salaried === 'yes';
+        var tiNew = Math.max(0, v.income - (sal ? 75000 : 0));
+        var tiOld = Math.max(0, v.income - (sal ? 50000 : 0) - v.ded);
+        var newBase = slabTax(tiNew, [[400000, 0], [800000, 0.05], [1200000, 0.10], [1600000, 0.15], [2000000, 0.20], [2400000, 0.25], [Infinity, 0.30]]);
+        if (tiNew <= 1200000) newBase = 0; else newBase = Math.min(newBase, tiNew - 1200000);
+        var oldBase = tiOld <= 500000 ? 0 : slabTax(tiOld, [[250000, 0], [500000, 0.05], [1000000, 0.20], [Infinity, 0.30]]);
+        var newTax = newBase * 1.04, oldTax = oldBase * 1.04, best = Math.min(newTax, oldTax), diff = Math.abs(newTax - oldTax);
+        var better = newTax <= oldTax ? 'New regime' : 'Old regime';
+        return {
+          hero: { label: 'Tax payable (' + better.toLowerCase() + ')', value: F.inr(best), sub: diff < 1 ? 'Both regimes cost the same' : better + ' saves ' + F.inr(diff) },
+          rows: [
+            ['Tax under new regime', F.inr(newTax)],
+            ['Taxable income (new)', F.inr(tiNew)],
+            ['Tax under old regime', F.inr(oldTax)],
+            ['Taxable income (old)', F.inr(tiOld)],
+            ['Effective tax rate', F.pct(v.income ? best / v.income * 100 : 0)],
+            ['Monthly income after tax', F.inr((v.income - best) / 12)]
+          ],
+          donut: v.income > 0 ? [{ label: 'Take-home', value: v.income - best }, { label: 'Tax', value: best }] : null
+        };
+      }
+    },
+
+    'break-even': {
+      inputs: [
+        { id: 'fc', label: 'Fixed costs', prefix: '₹', min: 0, max: 100000000, step: 1000, value: 100000 },
+        { id: 'vc', label: 'Variable cost per unit', prefix: '₹', min: 0, max: 100000, step: 1, value: 50 },
+        { id: 'sp', label: 'Selling price per unit', prefix: '₹', min: 1, max: 100000, step: 1, value: 100 }
+      ],
+      compute: function (v) {
+        var cm = v.sp - v.vc;
+        if (cm <= 0) return { hero: { label: 'Break-even units', value: 'Not possible', tone: 'down', sub: 'Selling price must be higher than the variable cost per unit' }, rows: [['Loss on every unit sold', F.inr2(-cm)]] };
+        var exact = v.fc / cm, units = Math.ceil(exact), table = [];
+        [0.5, 0.75, 1, 1.25, 1.5, 2].forEach(function (f) {
+          var u = Math.round(units * f);
+          table.push([F.num(u), F.inr(u * v.sp), F.inr(u * cm - v.fc)]);
+        });
+        return {
+          hero: { label: 'Break-even units', value: F.num(units) + ' units', sub: 'Sales of ' + F.inr(units * v.sp) + ' cover all costs' },
+          rows: [
+            ['Break-even sales revenue', F.inr(exact * v.sp)],
+            ['Contribution per unit', F.inr2(cm)],
+            ['Contribution margin', F.pct(cm / v.sp * 100)]
+          ],
+          table: { title: 'Profit at different sales volumes', head: ['Units sold', 'Revenue', 'Profit'], rows: table }
+        };
+      }
     }
   };
 
@@ -443,6 +821,14 @@
             render();
           });
         });
+      } else if (inp.type === 'text') {
+        state[inp.id] = String(initial);
+        var tid = 'f-' + inp.id;
+        row.innerHTML = '<div class="field-top"><label for="' + tid + '">' + esc(inp.label) + '</label></div>' +
+          '<textarea id="' + tid + '" class="calc-text" rows="3" spellcheck="false"></textarea>';
+        var ta = row.querySelector('textarea');
+        ta.value = state[inp.id];
+        ta.addEventListener('input', function () { state[inp.id] = ta.value; render(); });
       } else {
         var val = parseFloat(initial);
         if (!isFinite(val)) val = inp.value;
@@ -532,7 +918,7 @@
       return '<div class="rr"><span>' + esc(r[0]) + '</span><b>' + esc(r[1]) + '</b></div>';
     }).join('') + '</div>';
     if (out.table && out.table.rows.length) {
-      html += '<details class="card" data-yr ' + (tableOpen ? 'open' : '') + ' style="overflow:hidden"><summary style="cursor:pointer;padding:12px 16px;font-weight:600;font-size:14px">Year-wise breakdown</summary>' +
+      html += '<details class="card" data-yr ' + (tableOpen ? 'open' : '') + ' style="overflow:hidden"><summary style="cursor:pointer;padding:12px 16px;font-weight:600;font-size:14px">' + esc(out.table.title || 'Year-wise breakdown') + '</summary>' +
         '<div class="table-wrap" style="max-height:320px;overflow:auto"><table class="table yr-table"><thead><tr>' +
         out.table.head.map(function (x, i) { return '<th' + (i ? ' class="r"' : '') + '>' + esc(x) + '</th>'; }).join('') + '</tr></thead><tbody>' +
         out.table.rows.map(function (row) {

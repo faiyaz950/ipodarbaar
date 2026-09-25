@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Ipo;
 use App\Services\IpoSyncService;
 use App\Services\NewsService;
+use App\Support\Calculators;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
@@ -113,6 +114,9 @@ class IpoDarbaarTest extends TestCase
         $this->get('/calculators')->assertOk()->assertSee('SIP Calculator');
         $this->get('/calculators/ipo-gmp')->assertOk()->assertSee('data-calc="ipo-gmp"', false);
         $this->get('/calculators/does-not-exist')->assertNotFound();
+        foreach (Calculators::all() as $slug => $calc) {
+            $this->get('/calculators/'.$slug)->assertOk()->assertSee('data-calc="'.$slug.'"', false);
+        }
         $this->get('/about')->assertOk()->assertSee('IPO Darbaar is an information platform');
         $this->get('/disclaimer')->assertOk();
         $this->get('/sitemap.xml')->assertOk()->assertSee('alpha-tech-ipo');

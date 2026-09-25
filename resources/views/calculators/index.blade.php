@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Financial Calculators: IPO, SIP, EMI, FD, Tax & More')
-@section('description', 'Free IPO GMP, listing profit, allotment chance, SIP, lumpsum, SWP, EMI, FD, RD, PPF, CAGR, brokerage and capital gains tax calculators.')
+@section('title', 'Financial Calculators: IPO, SIP, EMI, F&O, Income Tax & More')
+@section('description', 'Free IPO GMP, SIP, retirement, home loan, EMI, FD, PPF, income tax, F&O margin, option premium (Black-Scholes), P&L, hedging, beta, brokerage and capital gains calculators.')
 
 @section('content')
 <section class="page-head">
