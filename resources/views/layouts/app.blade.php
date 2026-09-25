@@ -11,8 +11,10 @@
     <meta property="og:title" content="@yield('title', 'IPO Darbaar')">
     <meta property="og:description" content="@yield('description', 'Live IPO GMP, upcoming IPOs, market news & calculators.')">
     <meta property="og:type" content="@yield('og_type', 'website')">
-    @hasSection('og_image')<meta property="og:image" content="@yield('og_image')">@endif
-    <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
+    <meta property="og:image" content="{{ trim($__env->yieldContent('og_image')) ?: asset('images/brand/og-logo.png') }}">
+    <link rel="icon" href="{{ asset('favicon-32.png') }}" sizes="32x32" type="image/png">
+    <link rel="icon" href="{{ asset('favicon-192.png') }}" sizes="192x192" type="image/png">
+    <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">

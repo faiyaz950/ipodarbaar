@@ -150,7 +150,7 @@ p { margin: 0; }
 }
 .site-header .container { display: flex; align-items: center; height: var(--header-h); gap: 28px; }
 .brand { display: flex; align-items: center; gap: 11px; flex-shrink: 0; }
-.brand-mark { width: 40px; height: 40px; filter: drop-shadow(0 4px 10px rgba(200,150,46,.35)); }
+.brand-mark { width: 42px; height: 42px; object-fit: contain; filter: drop-shadow(0 3px 8px rgba(200,150,46,.3)); }
 .brand-name { font-family: var(--font-display); font-size: 22px; font-weight: 700; letter-spacing: -.01em; line-height: 1; }
 .brand-name span { color: var(--gold-2); }
 .brand-tag { display: block; font-family: var(--font); font-size: 10.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: #8F9BBD; margin-top: 4px; }
