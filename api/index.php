@@ -56,11 +56,42 @@ if (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https') {
     $_SERVER['HTTPS'] = 'on';
 }
 
+$diag = str_starts_with($_SERVER['REQUEST_URI'] ?? '', '/__diag-7f3a9c');
+if ($diag) {
+    $setEnv('LOG_CHANNEL', 'single');
+    $setEnv('LOG_LEVEL', 'debug');
+}
+
 define('LARAVEL_START', microtime(true));
 
 require __DIR__.'/../vendor/autoload.php';
 
 $app = require_once __DIR__.'/../bootstrap/app.php';
 $app->useStoragePath("{$tmp}/storage");
+
+if ($diag) {
+    $key = (string) getenv('APP_KEY');
+    $raw = str_starts_with($key, 'base64:') ? base64_decode(substr($key, 7), true) : $key;
+    $log = "{$tmp}/storage/logs/laravel.log";
+    @unlink($log);
+    try {
+        $status = $app->make(Illuminate\Contracts\Http\Kernel::class)->handle(Request::create('/'))->getStatusCode();
+    } catch (Throwable $e) {
+        $status = get_class($e).': '.$e->getMessage();
+    }
+    header('Content-Type: text/plain', true, 200);
+    echo json_encode([
+        'php' => PHP_VERSION,
+        'pdo_drivers' => PDO::getAvailableDrivers(),
+        'sqlite3' => extension_loaded('sqlite3'),
+        'app_key_set' => $key !== '',
+        'app_key_base64_prefix' => str_starts_with($key, 'base64:'),
+        'app_key_bytes' => $raw === false ? 'invalid base64' : strlen($raw),
+        'db_copied' => is_file("{$tmp}/database.sqlite"),
+        'home_status' => $status,
+    ], JSON_PRETTY_PRINT)."\n\n";
+    echo is_file($log) ? substr(file_get_contents($log), 0, 4000) : 'no log';
+    exit;
+}
 
 $app->handleRequest(Request::capture());
