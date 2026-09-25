@@ -26,7 +26,8 @@ class LogoService
 
     public function filename(Ipo $ipo): ?string
     {
-        if (! $ipo->image_url) {
+        // Without GD (e.g. the Vercel PHP runtime) thumbnails can't be built; the monogram is shown instead.
+        if (! $ipo->image_url || ! function_exists('imagewebp')) {
             return null;
         }
 
