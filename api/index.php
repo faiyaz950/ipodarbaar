@@ -8,6 +8,17 @@ use Illuminate\Http\Request;
  * instance starts from the bundled database snapshot and refreshes it from the API.
  */
 
+ini_set('display_errors', '0');
+
+// Variables imported into Vercel from .env.example can be blank; a blank value would
+// override the config defaults (e.g. APP_TIMEZONE='' breaks date_default_timezone_set).
+foreach (array_merge(getenv(), $_ENV, $_SERVER) as $key => $value) {
+    if ($value === '' && is_string($key) && preg_match('/^[A-Z][A-Z0-9_]*$/', $key)) {
+        putenv($key);
+        unset($_ENV[$key], $_SERVER[$key]);
+    }
+}
+
 $tmp = '/tmp/ipodarbar';
 
 foreach (['storage/framework/views', 'storage/framework/cache/data', 'storage/framework/sessions', 'storage/logs'] as $dir) {
