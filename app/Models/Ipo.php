@@ -469,6 +469,19 @@ class Ipo extends Model
 
     public function metaDescription(): string
     {
-        return Str::limit($this->description ?: "{$this->name} IPO details: dates, price band, lot size, GMP and listing.", 158);
+        if ($this->about) {
+            return Str::limit(Str::squish($this->about), 158);
+        }
+
+        $parts = ["{$this->name} {$this->typeLabel()} IPO"];
+        if ($this->open_date) {
+            $parts[] = 'opens '.$this->open_date->format('j M')
+                .($this->close_date ? '–'.$this->close_date->format('j M Y') : '');
+        }
+        if ($this->price) {
+            $parts[] = 'price band '.$this->priceBand();
+        }
+
+        return Str::limit(implode(', ', $parts).'. Check live GMP, lot size, subscription, allotment and listing date.', 158);
     }
 }

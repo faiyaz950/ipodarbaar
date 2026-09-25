@@ -5,11 +5,13 @@
     $gmpCls = ! $ipo->hasGmp() ? 'flat' : ($ipo->gmp > 0 ? 'up' : ($ipo->gmp < 0 ? 'down' : 'flat'));
     $lotTable = $ipo->lotTable();
     $timeline = $ipo->timeline();
+    $registrar = $ipo->registrarInfo();
+    $listingGainCls = $ipo->listingGain() === null ? 'flat' : ($ipo->listingGain() > 0 ? 'up' : ($ipo->listingGain() < 0 ? 'down' : 'flat'));
 @endphp
 
 @section('title', $ipo->name.' IPO: GMP, Price Band, Dates & Details')
 @section('description', $ipo->metaDescription())
-@section('og_image', $ipo->bannerUrl() ?? '')
+@section('og_image', $ipo->logoUrl() ?? '')
 
 @push('head')
 <script type="application/ld+json">
@@ -23,7 +25,7 @@
     'eventStatus' => 'https://schema.org/EventScheduled',
     'eventAttendanceMode' => 'https://schema.org/OnlineEventAttendanceMode',
     'location' => ['@type' => 'VirtualLocation', 'url' => $ipo->url()],
-    'image' => $ipo->bannerUrl(),
+    'image' => $ipo->logoUrl(),
 ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
 </script>
 @endpush
@@ -159,6 +161,105 @@
                 </div>
             </div>
 
+            {{-- GMP trend --}}
+            @if ($gmpTrend->count() >= 2)
+                @php
+                    $values = $gmpTrend->pluck('gmp')->all();
+                    $min = min(0, min($values));
+                    $max = max(0, max($values));
+                    $range = ($max - $min) ?: 1;
+                    $w = 600; $h = 160; $pad = 12;
+                    $step = ($w - 2 * $pad) / max(1, count($values) - 1);
+                    $y = fn ($v) => round($h - $pad - ($v - $min) / $range * ($h - 2 * $pad), 1);
+                    $points = collect($values)->map(fn ($v, $i) => round($pad + $i * $step, 1).','.$y($v))->implode(' ');
+                    $change = end($values) - reset($values);
+                @endphp
+                <div class="card">
+                    <div class="card-head">
+                        <div class="card-title"><span class="ico"><x-icon name="activity" :size="16" /></span> GMP Trend</div>
+                        <span class="card-sub">
+                            {{ $gmpTrend->first()->date->format('j M') }} – {{ $gmpTrend->last()->date->format('j M') }} ·
+                            <b class="{{ $change > 0 ? 'up' : ($change < 0 ? 'down' : 'flat') }}">{{ $change > 0 ? '+' : '' }}₹{{ Ipo::num($change) }}</b>
+                        </span>
+                    </div>
+                    <div class="gmp-trend">
+                        <svg viewBox="0 0 {{ $w }} {{ $h }}" preserveAspectRatio="none" role="img" aria-label="GMP trend for {{ $ipo->name }}">
+                            <line x1="0" x2="{{ $w }}" y1="{{ $y(0) }}" y2="{{ $y(0) }}" class="zero" />
+                            <polyline points="{{ $points }}" class="{{ $change < 0 ? 'down' : 'up' }}" />
+                        </svg>
+                    </div>
+                    <div class="table-wrap">
+                        <table class="table">
+                            <thead><tr><th>Date</th><th class="r">GMP</th><th class="r">Est. listing</th></tr></thead>
+                            <tbody>
+                                @foreach ($gmpTrend->reverse()->take(7) as $point)
+                                    <tr>
+                                        <td>{{ $point->date->format('D, j M') }}</td>
+                                        <td class="r"><b class="{{ $point->gmp > 0 ? 'up' : ($point->gmp < 0 ? 'down' : 'flat') }}">{{ $point->gmp > 0 ? '+' : '' }}₹{{ Ipo::num($point->gmp) }}</b></td>
+                                        <td class="r">{{ $ipo->price ? '₹'.Ipo::num($ipo->price + $point->gmp) : '—' }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @endif
+
+            {{-- Subscription --}}
+            @if ($ipo->hasSubscription())
+                @php $maxSub = max(1, collect($ipo->subscriptionRows())->max('value')); @endphp
+                <div class="card">
+                    <div class="card-head">
+                        <div class="card-title"><span class="ico"><x-icon name="users" :size="16" /></span> Subscription Status</div>
+                        @if ($ipo->subscription_updated_at)<span class="card-sub">Updated {{ $ipo->subscription_updated_at->diffForHumans() }}</span>@endif
+                    </div>
+                    <div class="subs">
+                        @foreach ($ipo->subscriptionRows() as $row)
+                            <div class="subs-row {{ $row['label'] === 'Total' ? 'total' : '' }}">
+                                <span>{{ $row['label'] }}</span>
+                                <div class="subs-bar"><i style="width: {{ round($row['value'] / $maxSub * 100, 1) }}%"></i></div>
+                                <b>{{ number_format($row['value'], 2) }}x</b>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            {{-- Listing performance --}}
+            @if ($ipo->listing_price)
+                <div class="card">
+                    <div class="card-head"><div class="card-title"><span class="ico"><x-icon name="rocket" :size="16" /></span> Listing Performance</div></div>
+                    <div class="gmp-panel">
+                        <div class="cell"><span>Issue price</span><b>{{ Ipo::money($ipo->price) }}</b></div>
+                        <div class="cell"><span>Listing price</span><b>{{ Ipo::money($ipo->listing_price) }}</b></div>
+                        <div class="cell"><span>Listing gain</span><b class="{{ $listingGainCls }}">{{ $ipo->listingGain() !== null ? ($ipo->listingGain() > 0 ? '+' : '').'₹'.Ipo::num($ipo->listingGain()) : '—' }}</b></div>
+                        <div class="cell"><span>Gain %</span><b class="{{ $listingGainCls }}">{{ $ipo->listingGainPercent() !== null ? number_format($ipo->listingGainPercent(), 2).'%' : '—' }}</b></div>
+                    </div>
+                </div>
+            @endif
+
+            {{-- Allotment status --}}
+            @if ($registrar || in_array($ipo->status(), ['closed', 'listed'], true))
+                <div class="card card-pad">
+                    <div class="card-title" style="margin-bottom:12px"><span class="ico"><x-icon name="ticket" :size="16" /></span> Check Allotment Status</div>
+                    <p class="muted" style="font-size:14px; margin-bottom:14px">
+                        @if ($registrar)
+                            The registrar for this IPO is <b style="color:var(--text)">{{ $registrar['name'] }}</b>. You can also check on the exchange websites using your PAN or application number.
+                        @else
+                            Check allotment on the registrar’s website or the exchange websites using your PAN or application number.
+                        @endif
+                    </p>
+                    <div class="allot-links">
+                        @if ($registrar && $registrar['url'])
+                            <a class="btn btn-gold btn-sm" href="{{ $registrar['url'] }}" target="_blank" rel="noopener nofollow">{{ $registrar['name'] }} <x-icon name="external" :size="14" /></a>
+                        @endif
+                        @foreach (config('ipodarbar.allotment_links') as $link)
+                            <a class="btn btn-outline btn-sm" href="{{ $link['url'] }}" target="_blank" rel="noopener nofollow">{{ $link['name'] }} <x-icon name="external" :size="14" /></a>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
             {{-- Lot table --}}
             @if ($lotTable)
             <div class="card">
@@ -188,7 +289,6 @@
             <div class="card card-pad">
                 <div class="card-title" style="margin-bottom:14px"><span class="ico"><x-icon name="building" :size="16" /></span> About {{ $ipo->name }} IPO</div>
                 <div class="prose">
-                    @if ($ipo->description)<p>{{ $ipo->description }}</p>@endif
                     @php
                         $sentences = [];
                         $first = e($ipo->name).' is '.($ipo->isMainboard() ? 'a mainboard' : 'an SME').' IPO';
@@ -204,10 +304,12 @@
                         }
                     @endphp
                     <p>{!! implode(' ', $sentences) !!}</p>
+                    @if ($ipo->about)
+                        @foreach (preg_split('/\R{2,}/', trim($ipo->about)) as $para)
+                            <p>{!! nl2br(e($para)) !!}</p>
+                        @endforeach
+                    @endif
                 </div>
-                @if ($ipo->bannerUrl())
-                    <img src="{{ $ipo->bannerUrl() }}" alt="{{ $ipo->name }} IPO" loading="lazy" style="border-radius:14px; margin-top:8px; border:1px solid var(--border); width:100%; max-width:560px">
-                @endif
             </div>
 
             <div class="card card-pad">

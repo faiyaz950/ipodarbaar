@@ -53,6 +53,7 @@ class IpoController extends Controller
 
         return view('ipos.show', [
             'ipo' => $ipo,
+            'gmpTrend' => $ipo->gmpHistory()->get(['date', 'gmp']),
             'related' => $related,
             'ipoNews' => $news->latest(5, 1, 9)['items'],
         ]);

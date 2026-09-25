@@ -1,11 +1,14 @@
 <?php
 
+use App\Http\Controllers\Admin;
 use App\Http\Controllers\CalculatorController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IpoController;
 use App\Http\Controllers\LogoController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\PageController;
+use App\Http\Middleware\EnsureAdmin;
+use App\Http\Middleware\RefreshIpoData;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
@@ -31,5 +34,21 @@ Route::get('/calculators/{slug}', [CalculatorController::class, 'show'])->name('
 // Pages
 Route::get('/about', [PageController::class, 'about'])->name('about');
 Route::get('/disclaimer', [PageController::class, 'disclaimer'])->name('disclaimer');
-Route::get('/logos/{file}', LogoController::class)->where('file', '[a-z0-9-]+\.webp')->withoutMiddleware(\App\Http\Middleware\RefreshIpoData::class)->name('logos');
+Route::get('/logos/{file}', LogoController::class)->where('file', '[a-z0-9-]+\.webp')->withoutMiddleware(RefreshIpoData::class)->name('logos');
 Route::get('/sitemap.xml', [PageController::class, 'sitemap'])->name('sitemap');
+
+// Admin
+Route::prefix('admin')->name('admin.')->withoutMiddleware(RefreshIpoData::class)->group(function () {
+    Route::get('/login', [Admin\AuthController::class, 'show'])->name('login');
+    Route::post('/login', [Admin\AuthController::class, 'login'])->middleware('throttle:5,1')->name('login.attempt');
+
+    Route::middleware(['auth', EnsureAdmin::class])->group(function () {
+        Route::post('/logout', [Admin\AuthController::class, 'logout'])->name('logout');
+        Route::get('/', [Admin\DashboardController::class, 'index'])->name('dashboard');
+        Route::post('/sync', [Admin\DashboardController::class, 'sync'])->middleware('throttle:6,1')->name('sync');
+        Route::get('/ipos', [Admin\IpoController::class, 'index'])->name('ipos.index');
+        Route::get('/ipos/{ipo}/edit', [Admin\IpoController::class, 'edit'])->name('ipos.edit');
+        Route::put('/ipos/{ipo}', [Admin\IpoController::class, 'update'])->name('ipos.update');
+        Route::post('/ipos/{ipo}/unlock', [Admin\IpoController::class, 'unlock'])->name('ipos.unlock');
+    });
+});

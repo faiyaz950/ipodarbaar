@@ -928,6 +928,74 @@ body.shorts-page .ticker, body.shorts-page .site-footer, body.shorts-page .topst
 .hp-row .meta > * { white-space: nowrap; }
 .hp-row .right { flex-shrink: 0; }
 
+/* GMP trend, subscription, allotment (IPO page) */
+.gmp-trend { padding: 18px 22px 8px; }
+.gmp-trend svg { width: 100%; height: 160px; display: block; overflow: visible; }
+.gmp-trend polyline { fill: none; stroke-width: 2.5; vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round; }
+.gmp-trend polyline.up { stroke: var(--green); }
+.gmp-trend polyline.down { stroke: var(--red); }
+.gmp-trend .zero { stroke: var(--border-strong); stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; }
+.subs { padding: 18px 22px; display: grid; gap: 14px; }
+.subs-row { display: grid; grid-template-columns: 110px 1fr 70px; align-items: center; gap: 14px; font-size: 14px; }
+.subs-row > span { color: var(--text-2); font-weight: 500; }
+.subs-row > b { text-align: right; font-variant-numeric: tabular-nums; }
+.subs-bar { height: 10px; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
+.subs-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--gold), var(--gold-2)); }
+.subs-row.total { padding-top: 12px; border-top: 1px solid var(--border); }
+.subs-row.total .subs-bar i { background: linear-gradient(90deg, var(--navy-700), var(--navy-600)); }
+.allot-links { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Admin */
+body.admin { min-height: 100vh; }
+.admin-bar { background: var(--navy-900); color: #fff; }
+.admin-bar .container { display: flex; align-items: center; gap: 24px; height: 62px; }
+.admin-tag { font-family: var(--font); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--gold-2); margin-left: 4px; }
+.admin-nav { display: flex; gap: 4px; flex: 1; }
+.admin-nav a { display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 12px; border-radius: 9px; font-size: 14px; font-weight: 600; color: #B7C1DE; }
+.admin-nav a:hover { color: #fff; background: rgba(255,255,255,.06); }
+.admin-nav a.active { color: #fff; background: rgba(255,255,255,.1); }
+.admin-main { padding: 28px 0 56px; }
+.admin-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+.admin-head h1 { font-family: var(--font-display); font-size: 30px; margin: 4px 0; }
+.admin-head p { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.admin-actions { display: flex; gap: 8px; }
+.admin-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+.admin-stats .card { display: grid; gap: 4px; }
+.admin-stats .kpi { font-size: 28px; font-weight: 800; }
+.admin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start; }
+.admin-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 22px; border-bottom: 1px solid var(--border); font-size: 14px; }
+.admin-row:last-child { border-bottom: 0; }
+a.admin-row:hover { background: var(--surface-2); }
+.admin-row small { display: block; font-size: 12.5px; }
+.admin-login { max-width: 420px; margin: 8vh auto 0; }
+.admin-login h1 { font-family: var(--font-display); font-size: 26px; }
+.admin-form { display: grid; gap: 16px; }
+.af { display: grid; gap: 6px; }
+.af-label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text-2); }
+.af .input { width: 100%; }
+.af textarea.input { height: auto; padding: 10px 12px; line-height: 1.55; resize: vertical; }
+.af.is-locked .input { border-color: var(--gold); background: var(--gold-soft); }
+.af-hint { font-size: 12.5px; color: var(--muted); }
+.af-error { font-size: 12.5px; color: var(--red); font-weight: 500; }
+.af-unlock { border: 0; background: none; padding: 0; font-size: 12px; font-weight: 600; color: var(--blue); }
+.af-unlock:hover { text-decoration: underline; }
+.af-check { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-2); }
+.af-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+.af-section { margin-bottom: 16px; font-size: 16px; }
+.admin-save { display: flex; gap: 10px; position: sticky; bottom: 0; padding: 14px 0; background: linear-gradient(transparent, var(--bg) 35%); }
+.flash { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 12px; margin-bottom: 18px; font-size: 14px; font-weight: 500; }
+.flash.ok { background: var(--green-soft); color: var(--green); }
+.flash.err { background: var(--red-soft); color: var(--red); }
+@media (max-width: 1000px) {
+  .admin-grid { grid-template-columns: 1fr; }
+  .admin-stats { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 720px) {
+  .admin-bar .container { height: auto; padding-top: 10px; padding-bottom: 10px; flex-wrap: wrap; gap: 10px; }
+  .admin-nav { order: 3; flex-basis: 100%; overflow-x: auto; }
+  .subs-row { grid-template-columns: 90px 1fr 60px; gap: 10px; }
+}
+
 /* IPO table → cards on phones */
 @media (max-width: 720px) {
   .ipo-table thead { display: none; }
