@@ -3,7 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>{{ trim($__env->yieldContent('title')) ? trim($__env->yieldContent('title')).' | IPO Darbaar' : 'IPO Darbaar — Live IPO GMP, Upcoming IPOs, Market News & Calculators' }}</title>
+    {{-- Section content is already escaped by @section, so it must not be escaped again. --}}
+    <title>{!! trim($__env->yieldContent('title')) ? trim($__env->yieldContent('title')).' | IPO Darbaar' : e('IPO Darbaar — Live IPO GMP, Upcoming IPOs, Market News & Calculators') !!}</title>
     <meta name="description" content="@yield('description', 'Track every mainboard and SME IPO in India — live GMP, subscription dates, price bands, listing calendar, market news shorts and investing calculators.')">
     <link rel="canonical" href="{{ url()->current() }}">
     <meta name="theme-color" content="#0A1633">
