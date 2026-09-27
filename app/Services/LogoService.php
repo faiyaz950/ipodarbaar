@@ -71,7 +71,8 @@ class LogoService
 
         // Don't hammer the source for images that recently failed. When this host can't reach
         // the image source, banners arrive through the relay instead (see RelayController).
-        if ($this->hasFailed($ipo) || ! config('ipodarbar.ipo_api.pull')) {
+        $retryKey = 'logo-retry:'.$file;
+        if ($this->hasFailed($ipo) || Cache::has($retryKey) || ! config('ipodarbar.ipo_api.pull')) {
             return null;
         }
 
@@ -82,7 +83,7 @@ class LogoService
             }
         } catch (Throwable) {
             // Network hiccup: try again soon.
-            Cache::put($this->failKey($file), true, now()->addMinutes(10));
+            Cache::put($retryKey, true, now()->addMinutes(10));
 
             return null;
         }
@@ -129,6 +130,7 @@ class LogoService
         return $path;
     }
 
+    /** Whether the banner is known to be in a layout that can't be cropped. */
     public function hasFailed(Ipo $ipo): bool
     {
         $file = $this->filename($ipo);
@@ -138,7 +140,7 @@ class LogoService
 
     private function failKey(string $file): string
     {
-        return 'logo-fail:'.$file;
+        return 'logo-unsupported:'.$file;
     }
 
     /** Crop the logo out of banner bytes and return a padded 2:1 thumbnail. */
