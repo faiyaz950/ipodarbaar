@@ -27,7 +27,7 @@
     <div class="table-wrap">
         <table class="table">
             <thead>
-                <tr><th>IPO</th><th>Status</th><th>Open – Close</th><th>Listing</th><th class="r">Price</th><th class="r">GMP</th><th>Edits</th><th></th></tr>
+                <tr><th>IPO</th><th>Status</th><th>Open – Close</th><th>Listing</th><th class="r">Price</th><th class="r">GMP</th><th>Added</th><th>Edits</th><th></th></tr>
             </thead>
             <tbody>
                 @forelse ($ipos as $ipo)
@@ -41,6 +41,7 @@
                         <td>{{ $ipo->listing_date?->format('j M Y') ?? '—' }}</td>
                         <td class="r">{{ $ipo->priceBand() }}</td>
                         <td class="r">{{ $ipo->hasGmp() ? '₹'.\App\Models\Ipo::num($ipo->gmp) : '—' }}</td>
+                        <td><span title="{{ $ipo->source_created_at?->format('j M Y, g:i A') }}">{{ $ipo->source_created_at?->diffForHumans() ?? '—' }}</span></td>
                         <td>
                             @if ($ipo->locked_fields)<span class="badge b-gold" title="{{ implode(', ', $ipo->locked_fields) }}">{{ count($ipo->locked_fields) }} locked</span>@endif
                             @if ($ipo->registrar)<span class="badge b-plain">RTA</span>@endif
@@ -49,7 +50,7 @@
                         <td class="r"><a class="btn btn-outline btn-sm" href="{{ route('admin.ipos.edit', $ipo) }}">Edit</a></td>
                     </tr>
                 @empty
-                    <tr><td colspan="8" class="table-empty">No IPOs match.</td></tr>
+                    <tr><td colspan="9" class="table-empty">No IPOs match.</td></tr>
                 @endforelse
             </tbody>
         </table>

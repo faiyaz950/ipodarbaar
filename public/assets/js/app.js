@@ -52,6 +52,7 @@
   $$('[data-search]').forEach(function (form) {
     var input = $('[data-search-input]', form);
     var box = $('[data-suggest]', form);
+    var compareUrl = form.getAttribute('data-compare-url');
     var timer, controller, focusIndex = -1;
 
     function close() { box.classList.remove('show'); focusIndex = -1; }
@@ -61,10 +62,11 @@
         box.innerHTML = '<div class="s-empty">No IPOs match “' + escapeHtml(q) + '”</div>';
       } else {
         box.innerHTML = items.map(function (i) {
-          return '<a href="' + i.url + '"><span style="flex:1;min-width:0"><span class="s-name">' + escapeHtml(i.name) +
+          var href = compareUrl ? compareUrl.replace('__SLUG__', encodeURIComponent(i.slug)) : i.url;
+          return '<a href="' + escapeHtml(href) + '"><span style="flex:1;min-width:0"><span class="s-name">' + escapeHtml(i.name) +
             '</span><span class="s-meta"> · ' + escapeHtml(i.type) + ' · ' + escapeHtml(i.meta) + '</span></span>' +
             '<span class="badge b-' + i.statusKey + '">' + escapeHtml(i.status) + '</span></a>';
-        }).join('') + '<a class="s-all" href="' + window.IPO_DARBAAR.searchUrl + '?q=' + encodeURIComponent(q) + '">See all results</a>';
+        }).join('') + (compareUrl ? '' : '<a class="s-all" href="' + window.IPO_DARBAAR.searchUrl + '?q=' + encodeURIComponent(q) + '">See all results</a>');
       }
       box.classList.add('show');
     }
@@ -99,6 +101,14 @@
         close();
       }
     });
+
+    if (compareUrl) {
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var first = $('a', box);
+        if (first) window.location = first.href;
+      });
+    }
 
     document.addEventListener('click', function (e) { if (!form.contains(e.target)) close(); });
   });
@@ -147,6 +157,7 @@
     var url = btn.getAttribute('data-url') || window.location.href;
     var title = btn.getAttribute('data-title') || document.title;
     var mode = btn.getAttribute('data-share');
+    track('share', { method: mode, url: url });
 
     if (mode === 'whatsapp') {
       window.open('https://wa.me/?text=' + encodeURIComponent(title + ' ' + url), '_blank', 'noopener');
@@ -184,4 +195,193 @@
     });
   }
   window.darbaarApplyLang = applyLang;
+
+  /* ---------- Analytics events (no-op unless GA4 is configured) ---------- */
+  function track(name, params) {
+    if (typeof window.darbaarTrack === 'function') window.darbaarTrack(name, params);
+  }
+
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-track]');
+    if (el) track(el.getAttribute('data-track'), { label: el.getAttribute('data-track-label') || '' });
+  });
+
+  var compareTable = $('.compare-table');
+  if (compareTable) track('compare', { count: $$('thead th', compareTable).length - 1 });
+
+  function csrfToken() {
+    var meta = $('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '';
+  }
+
+  function postJson(url, data) {
+    return fetch(url, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': csrfToken(),
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify(data)
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (body) { return { ok: r.ok, status: r.status, body: body }; });
+    });
+  }
+
+  /* ---------- Watchlist (stored in this browser only) ---------- */
+  var WATCH_KEY = 'darbaar:watchlist';
+  var WATCH_MAX = 50;
+
+  function watchlist() {
+    try {
+      var list = JSON.parse(store.get(WATCH_KEY) || '[]');
+      return Array.isArray(list) ? list.filter(function (s) { return typeof s === 'string' && /^[a-z0-9-]{1,120}$/.test(s); }) : [];
+    } catch (e) { return []; }
+  }
+
+  function syncWatchUi() {
+    var list = watchlist();
+    $$('[data-watch]').forEach(function (btn) {
+      var on = list.indexOf(btn.getAttribute('data-watch')) !== -1;
+      btn.classList.toggle('on', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      var label = $('[data-watch-label]', btn);
+      if (label) label.textContent = on ? 'Watching' : 'Watch';
+    });
+    $$('[data-watch-count]').forEach(function (el) {
+      el.textContent = list.length;
+      el.hidden = list.length === 0;
+    });
+  }
+
+  function loadWatchlistPage() {
+    var root = $('[data-watchlist]');
+    if (!root) return;
+    var list = watchlist();
+    var items = $('[data-watchlist-items]', root);
+    var empty = $('[data-watchlist-empty]', root);
+    if (!list.length) {
+      items.innerHTML = '';
+      empty.hidden = false;
+      return;
+    }
+    empty.hidden = true;
+    fetch(root.getAttribute('data-url') + '?slugs=' + encodeURIComponent(list.join(',')), {
+      headers: { 'Accept': 'text/html', 'X-Requested-With': 'XMLHttpRequest' }
+    }).then(function (r) { return r.text(); })
+      .then(function (html) { items.innerHTML = html; syncWatchUi(); })
+      .catch(function () { items.innerHTML = '<div class="card card-pad muted">Could not load your watchlist. Check your connection and try again.</div>'; });
+  }
+
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-watch]');
+    if (!btn) return;
+    e.preventDefault();
+    var slug = btn.getAttribute('data-watch');
+    var list = watchlist();
+    var index = list.indexOf(slug);
+    if (index === -1) {
+      if (list.length >= WATCH_MAX) { toast('Watchlist is full (' + WATCH_MAX + ' IPOs)'); return; }
+      list.unshift(slug);
+      toast('Added to your watchlist');
+      track('watchlist_add', { ipo: slug });
+    } else {
+      list.splice(index, 1);
+      toast('Removed from your watchlist');
+      track('watchlist_remove', { ipo: slug });
+    }
+    store.set(WATCH_KEY, JSON.stringify(list));
+    syncWatchUi();
+    if ($('[data-watchlist]')) loadWatchlistPage();
+  });
+
+  window.addEventListener('storage', function (e) { if (e.key === WATCH_KEY) syncWatchUi(); });
+  syncWatchUi();
+  loadWatchlistPage();
+
+  /* ---------- IPO sentiment poll ---------- */
+  function renderPoll(poll, data) {
+    var total = data.total || 0;
+    $$('[data-poll-choice]', poll).forEach(function (row) {
+      var key = row.getAttribute('data-poll-choice');
+      var pct = total ? Math.round((data.counts[key] || 0) * 100 / total) : 0;
+      $('[data-poll-bar]', row).style.width = pct + '%';
+      $('[data-poll-pct]', row).textContent = pct + '%';
+      row.classList.toggle('mine', data.mine === key);
+    });
+    var totalEl = $('[data-poll-total]', poll);
+    if (totalEl) totalEl.textContent = total.toLocaleString('en-IN') + (total === 1 ? ' vote' : ' votes');
+    poll.classList.add('voted');
+  }
+
+  $$('[data-poll]').forEach(function (poll) {
+    poll.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-poll-vote]');
+      if (!btn || poll.classList.contains('busy')) return;
+      poll.classList.add('busy');
+      postJson(poll.getAttribute('data-url'), { choice: btn.getAttribute('data-poll-vote') })
+        .then(function (res) {
+          if (res.ok) {
+            renderPoll(poll, res.body);
+            toast('Thanks for voting!');
+            track('poll_vote', { ipo: poll.getAttribute('data-ipo'), choice: btn.getAttribute('data-poll-vote') });
+          } else {
+            toast((res.body && res.body.message) || 'Could not record your vote. Please try again.');
+          }
+        })
+        .catch(function () { toast('Could not record your vote. Please try again.'); })
+        .then(function () { poll.classList.remove('busy'); });
+    });
+  });
+
+  /* ---------- Email digest sign-up ---------- */
+  $$('[data-subscribe]').forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var status = $('[data-subscribe-status]', form);
+      var button = $('button[type="submit"]', form);
+      var data = {};
+      new FormData(form).forEach(function (value, key) { data[key] = value; });
+      button.disabled = true;
+      postJson(form.getAttribute('action'), data)
+        .then(function (res) {
+          var errors = res.body && res.body.errors;
+          var message = (errors && errors[Object.keys(errors)[0]][0]) || (res.body && res.body.message) || 'Something went wrong. Please try again.';
+          status.textContent = message;
+          status.className = 'subscribe-status ' + (res.ok ? 'ok' : 'err');
+          if (res.ok) { form.reset(); track('subscribe', { frequency: data.frequency || 'daily' }); }
+        })
+        .catch(function () {
+          status.textContent = 'Something went wrong. Please try again.';
+          status.className = 'subscribe-status err';
+        })
+        .then(function () { button.disabled = false; });
+    });
+  });
+
+  /* ---------- Installable app (PWA) ---------- */
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js').catch(function () {});
+    });
+  }
+
+  var installPrompt = null;
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    installPrompt = e;
+    $$('[data-install-app]').forEach(function (btn) { btn.hidden = false; });
+  });
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-install-app]');
+    if (!btn || !installPrompt) return;
+    installPrompt.prompt();
+    installPrompt.userChoice.then(function (choice) {
+      track('app_install_prompt', { outcome: choice.outcome });
+      installPrompt = null;
+      $$('[data-install-app]').forEach(function (b) { b.hidden = true; });
+    });
+  });
 })();

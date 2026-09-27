@@ -6,8 +6,7 @@
 @section('og_image', $item['banner'] ?? '')
 
 @push('head')
-<script type="application/ld+json">
-{!! json_encode([
+<x-jsonld :data="[
     '@context' => 'https://schema.org',
     '@type' => 'NewsArticle',
     'headline' => \Illuminate\Support\Str::limit($item['headline'], 110, ''),
@@ -15,8 +14,13 @@
     'datePublished' => $item['date']?->toIso8601String(),
     'articleSection' => $item['category']['name'],
     'publisher' => ['@type' => 'Organization', 'name' => 'IPO Darbaar'],
-], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
-</script>
+]" />
+<x-jsonld :breadcrumbs="[
+    ['Home', route('home')],
+    ['News', route('news.index')],
+    [$item['category']['name'], route('news.index', ['category' => $item['category']['slug']])],
+    [\Illuminate\Support\Str::limit($item['headline'], 110, ''), url()->current()],
+]" />
 @endpush
 
 @section('content')
@@ -61,6 +65,8 @@
 
             <div class="prose" data-lang-en>{!! $item['html'] !!}</div>
             <div class="prose" data-lang-hi>{!! $item['html_hi'] !!}</div>
+
+            <x-ad-slot name="article" style="margin-top:24px" />
 
             <div class="note" style="margin-top:24px">
                 <x-icon name="info" />

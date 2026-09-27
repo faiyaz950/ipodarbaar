@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\NewsOverride;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -18,7 +20,7 @@ class NewsService
      *
      * @return array{items: array<int, array>, total:int, page:int, per_page:int, has_more:bool}
      */
-    public function latest(int $perPage = 20, int $page = 1, ?int $categoryId = null): array
+    public function latest(int $perPage = 20, int $page = 1, ?int $categoryId = null, bool $withHidden = false): array
     {
         $perPage = max(1, min(100, $perPage));
         $page = max(1, $page);
@@ -32,8 +34,19 @@ class NewsService
             return ['items' => [], 'total' => 0, 'page' => $page, 'per_page' => $perPage, 'has_more' => false];
         }
 
+        $rows = array_values(array_filter($payload['data'] ?? [], fn ($n) => is_array($n) && ! empty($n['id'])));
+        $overrides = $this->overridesFor(array_column($rows, 'id'));
+        $items = [];
+        foreach ($rows as $n) {
+            $override = $overrides->get((int) $n['id']);
+            if ($override?->is_hidden && ! $withHidden) {
+                continue;
+            }
+            $items[] = $this->normalize($n, $override);
+        }
+
         return [
-            'items' => array_values(array_map(fn ($n) => $this->normalize($n), $payload['data'] ?? [])),
+            'items' => $items,
             'total' => (int) ($payload['total'] ?? 0),
             'page' => (int) ($payload['page'] ?? $page),
             'per_page' => (int) ($payload['per_page'] ?? $perPage),
@@ -51,7 +64,27 @@ class NewsService
         ]);
     }
 
-    public function find(int $id): ?array
+    public function find(int $id, bool $withHidden = false): ?array
+    {
+        $data = $this->original($id);
+        if (! $data) {
+            return null;
+        }
+
+        $override = NewsOverride::firstWhere('news_id', (int) $data['id']);
+        if ($override?->is_hidden && ! $withHidden) {
+            return null;
+        }
+
+        return $this->normalize($data, $override);
+    }
+
+    /**
+     * The raw API row for a news item, without admin edits.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function original(int $id): ?array
     {
         try {
             $payload = $this->cached("news:item:{$id}", fn () => $this->request('/'.$id));
@@ -61,7 +94,20 @@ class NewsService
 
         $data = $payload['data'] ?? null;
 
-        return is_array($data) && ! empty($data['id']) ? $this->normalize($data) : null;
+        return is_array($data) && ! empty($data['id']) ? $data : null;
+    }
+
+    /**
+     * @param  array<int, int|string>  $ids
+     * @return Collection<int, NewsOverride>
+     */
+    protected function overridesFor(array $ids): Collection
+    {
+        if ($ids === []) {
+            return collect();
+        }
+
+        return NewsOverride::whereIn('news_id', array_map('intval', $ids))->get()->keyBy('news_id');
     }
 
     /** @return array<int, array{id:int, name:string, slug:string, color:string}> */
@@ -108,8 +154,19 @@ class NewsService
         return $json;
     }
 
-    public function normalize(array $n): array
+    public function normalize(array $n, ?NewsOverride $override = null): array
     {
+        if ($override) {
+            foreach (NewsOverride::FIELDS as $field) {
+                if ($override->{$field} !== null) {
+                    $n[$field] = $override->{$field};
+                }
+            }
+            if ($imageUrl = $override->imageUrl()) {
+                $n['image'] = $n['image_banner'] = $imageUrl;
+            }
+        }
+
         $category = $this->categoryById((int) ($n['category_id'] ?? 0))
             ?? (! empty($n['category']['name']) ? [
                 'id' => (int) $n['category']['id'],
@@ -152,6 +209,8 @@ class NewsService
             'banner' => ($n['image_banner'] ?? null) ?: ($n['image'] ?? null),
             'category' => $category,
             'read_time' => max(1, (int) ceil($words / 200)),
+            'is_hidden' => (bool) $override?->is_hidden,
+            'edits' => $override?->changedLabels() ?? [],
         ];
     }
 
@@ -227,12 +286,57 @@ class NewsService
         return Str::limit(self::plain($html), $limit);
     }
 
-    /** @return array<int, string> */
-    public static function points(string $html, int $max = 4): array
+    /**
+     * Extractive key-point summary: editor-written bullets first, then the lead
+     * sentence of each paragraph, then remaining sentences, kept in reading order.
+     *
+     * @return array<int, string>
+     */
+    public static function points(string $html, int $max = 5): array
     {
-        preg_match_all('#<li>(.*?)</li>#is', $html, $m);
+        preg_match_all('#<(p|li|blockquote)>(.*?)</\1>#is', $html, $blocks, PREG_SET_ORDER);
+        if ($blocks === [] && trim($html) !== '') {
+            $blocks = [['', 'p', $html]];
+        }
 
-        return array_values(array_slice(array_filter(array_map(fn ($li) => Str::limit(self::plain($li), 110), $m[1] ?? [])), 0, $max));
+        /** @var array<int, array{text: string, tier: int, pos: int}> $candidates */
+        $candidates = [];
+        $seen = [];
+        foreach ($blocks as [, $tag, $inner]) {
+            $isBullet = strtolower($tag) === 'li';
+            $sentences = $isBullet ? [self::plain($inner)] : self::sentences(self::plain($inner));
+            foreach ($sentences as $index => $sentence) {
+                $sentence = trim(preg_replace('/^[^\p{L}\p{N}₹$"“‘(]+/u', '', $sentence));
+                $key = mb_strtolower($sentence);
+                $isDateline = (bool) preg_match('/^[\p{L}\/ ,.]+\s[—–-]\s\p{L}+ \d{4}$/u', $sentence);
+                if ($sentence === '' || isset($seen[$key]) || str_ends_with($sentence, '?')
+                    || (! $isBullet && (mb_strlen($sentence) < 15 || $isDateline))) {
+                    continue;
+                }
+                $seen[$key] = true;
+                $candidates[] = [
+                    'text' => Str::limit($sentence, 160),
+                    'tier' => $isBullet ? 0 : ($index === 0 ? 1 : 2),
+                    'pos' => count($candidates),
+                ];
+            }
+        }
+
+        return collect($candidates)
+            ->sortBy([['tier', 'asc'], ['pos', 'asc']])
+            ->take($max)
+            ->sortBy('pos')
+            ->pluck('text')
+            ->values()
+            ->all();
+    }
+
+    /** @return array<int, string> */
+    protected static function sentences(string $text): array
+    {
+        $parts = preg_split('/(?<=[.!?])\s+(?=["“‘(]?[\p{Lu}₹])/u', $text) ?: [];
+
+        return array_values(array_filter(array_map('trim', $parts)));
     }
 
     public static function plain(string $html): string

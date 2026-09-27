@@ -18,6 +18,14 @@ return [
     ],
 
     /*
+    | The scheduler writes a heartbeat every minute; while it is younger than this many
+    | minutes, page requests skip the fallback IPO sync.
+    */
+    'scheduler' => [
+        'heartbeat_grace' => 15,
+    ],
+
+    /*
     |--------------------------------------------------------------------------
     | Market news source
     |--------------------------------------------------------------------------
@@ -55,6 +63,47 @@ return [
     'allotment_links' => [
         ['name' => 'BSE', 'url' => 'https://www.bseindia.com/investors/appli_check'],
         ['name' => 'NSE', 'url' => 'https://www.nseindia.com/invest/check-trades-bids-verify-ipo-bids'],
+    ],
+
+    /*
+    | Outgoing mail: shared hosting SMTP servers cap messages per hour, so digest
+    | emails are queued and released at most this many per hour.
+    */
+    'mail' => [
+        'hourly_limit' => (int) env('MAIL_HOURLY_LIMIT', 250),
+    ],
+
+    /*
+    | Defaults for admin-editable settings (Admin → Settings). A value saved in the
+    | database overrides the default here. Keys are read as "ads.enabled", etc.
+    */
+    'settings' => [
+        'ads' => [
+            'enabled' => (bool) env('ADS_ENABLED', false),
+            'client' => env('ADSENSE_CLIENT'),
+            'slots' => [
+                'home_top' => null,
+                'home_mid' => null,
+                'ipo_after_gmp' => null,
+                'ipo_sidebar' => null,
+                'article' => null,
+                'calculator' => null,
+                'list' => null,
+            ],
+        ],
+        'analytics' => [
+            'ga4_id' => env('GA4_MEASUREMENT_ID'),
+            'cf_token' => env('CF_ANALYTICS_TOKEN'),
+        ],
+        'brokers' => [],
+        'telegram' => [
+            'digest' => true,
+            'gmp' => true,
+            'new_ipo' => true,
+        ],
+        'email' => [
+            'digest' => true,
+        ],
     ],
 
     /*

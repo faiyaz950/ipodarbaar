@@ -16,9 +16,9 @@
     });
   }
 
-  function list(points, lang) {
-    if (!points || !points.length) return '';
-    return '<ul data-lang-' + lang + '>' + points.slice(0, 3).map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('') + '</ul>';
+  function list(points, summary, lang) {
+    if (!points || !points.length) return '<p class="sum" data-lang-' + lang + '>' + esc(summary) + '</p>';
+    return '<ul class="short-points" data-lang-' + lang + '>' + points.map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('') + '</ul>';
   }
 
   function card(item) {
@@ -33,8 +33,7 @@
         '</div>' +
         '<div class="short-body">' +
           '<h2><span data-lang-en>' + esc(item.headline) + '</span><span data-lang-hi>' + esc(item.headline_hi) + '</span></h2>' +
-          '<p class="sum"><span data-lang-en>' + esc(item.summary) + '</span><span data-lang-hi>' + esc(item.summary_hi) + '</span></p>' +
-          list(item.points, 'en') + list(item.points_hi, 'hi') +
+          list(item.points, item.summary, 'en') + list(item.points_hi, item.summary_hi, 'hi') +
         '</div>' +
         '<div class="short-foot">' +
           '<span class="when">' + esc(item.date_label) + ' · IPO Darbaar</span>' +
@@ -101,6 +100,16 @@
     var l = feed.querySelector('[data-loader]');
     if (l) io.observe(l);
   }
+
+  var viewed = 1;
+  var lastCard = 0;
+  feed.addEventListener('scroll', function () {
+    var card = Math.round(feed.scrollTop / Math.max(1, feed.clientHeight));
+    if (card <= lastCard) return;
+    lastCard = card;
+    viewed++;
+    if (viewed % 5 === 0 && typeof window.darbaarTrack === 'function') window.darbaarTrack('shorts_view', { count: viewed });
+  }, { passive: true });
 
   function step(dir) {
     feed.scrollBy({ top: dir * feed.clientHeight, behavior: 'smooth' });

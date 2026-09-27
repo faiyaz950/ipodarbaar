@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Ipo;
+use App\Models\IpoVote;
 use App\Services\NewsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Str;
 
 class IpoController extends Controller
 {
@@ -38,8 +41,14 @@ class IpoController extends Controller
         return view('ipos.index', compact('ipos', 'type', 'status', 'q', 'counts', 'title'));
     }
 
-    public function show(Ipo $ipo, NewsService $news)
+    public function show(Request $request, Ipo $ipo, NewsService $news)
     {
+        $voterId = (string) $request->cookie(IpoVote::COOKIE);
+        if (! Str::isUuid($voterId)) {
+            $voterId = (string) Str::uuid();
+            Cookie::queue(IpoVote::COOKIE, $voterId, 60 * 24 * 365);
+        }
+
         $related = Ipo::query()
             ->whereKeyNot($ipo->getKey())
             ->inStatus(in_array($ipo->status(), ['open', 'upcoming', 'closed'], true) ? $ipo->status() : 'listed')
@@ -51,9 +60,13 @@ class IpoController extends Controller
                 ->orderBy('open_date')->limit(6 - $related->count())->get());
         }
 
+        $ipo->load(['detail', 'financials']);
+
         return view('ipos.show', [
             'ipo' => $ipo,
             'gmpTrend' => $ipo->gmpHistory()->get(['date', 'gmp']),
+            'poll' => IpoVote::results($ipo),
+            'myVote' => $ipo->votes()->where('voter_hash', IpoVote::hash($voterId))->value('choice'),
             'related' => $related,
             'ipoNews' => $news->latest(5, 1, 9)['items'],
         ]);
@@ -139,6 +152,7 @@ class IpoController extends Controller
             ->limit(8)->get()
             ->map(fn (Ipo $i) => [
                 'name' => $i->name,
+                'slug' => $i->slug,
                 'url' => $i->url(),
                 'type' => $i->typeLabel(),
                 'status' => $i->statusLabel(),

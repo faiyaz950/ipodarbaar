@@ -18,6 +18,8 @@
     </div>
 </div>
 
+@include('admin.ipos.tabs', ['ipo' => $ipo])
+
 @if ($errors->any())
     <div class="flash err" role="alert"><x-icon name="alert" :size="17" /> Please fix the highlighted fields.</div>
 @endif

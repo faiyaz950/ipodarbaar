@@ -102,7 +102,11 @@ class IpoDarbaarTest extends TestCase
 
     public function test_pages_render(): void
     {
-        $this->get('/')->assertOk()->assertSee('Alpha Tech')->assertSee('One Darbaar');
+        $this->get('/')->assertOk()->assertSee('Alpha Tech')->assertSee('One Darbaar')
+            ->assertSee('Everything in IPO Darbaar')
+            ->assertSee(route('compare'))
+            ->assertSee(route('ipos.report-card'))
+            ->assertSee('IPO Report Card 2026');
         $this->get('/ipo')->assertOk()->assertSee('Delta Old');
         $this->get('/ipo?status=open')->assertOk()->assertSee('Alpha Tech')->assertDontSee('delta-old-ipo" class="co-name"', false);
         $this->get('/ipo/type/sme')->assertOk()->assertSee('Beta Foods')->assertDontSee('alpha-tech-ipo" class="co-name"', false);
@@ -119,7 +123,7 @@ class IpoDarbaarTest extends TestCase
         }
         $this->get('/about')->assertOk()->assertSee('IPO Darbaar is an information platform');
         $this->get('/disclaimer')->assertOk();
-        $this->get('/sitemap.xml')->assertOk()->assertSee('alpha-tech-ipo');
+        $this->get('/sitemaps/ipos.xml')->assertOk()->assertSee('alpha-tech-ipo');
     }
 
     public function test_search_suggestions(): void
@@ -148,6 +152,32 @@ class IpoDarbaarTest extends TestCase
         $clean = NewsService::sanitize('<p onclick="x()">Hi <strong style="color:red">there</strong></p><script>alert(1)</script><p><br></p><a href="javascript:bad()">x</a><a href="https://example.com" class="y">ok</a>');
 
         $this->assertSame('<p>Hi <strong>there</strong></p><a>x</a><a href="https://example.com" target="_blank" rel="noopener nofollow">ok</a>', $clean);
+    }
+
+    public function test_news_points_prefer_bullets_then_paragraph_leads_in_reading_order(): void
+    {
+        $points = NewsService::points(
+            '<p>Washington — September 2026</p>'
+            .'<p>First paragraph lead sentence. First paragraph follow-up detail.</p>'
+            .'<p>What happened next?</p>'
+            .'<p>Second paragraph lead sentence. Second paragraph follow-up detail.</p>'
+            .'<ul><li>• Bullet alpha</li><li>🔹 Bullet beta</li></ul>'
+            .'<p>Third paragraph lead sentence.</p>'
+        );
+
+        $this->assertSame([
+            'First paragraph lead sentence.',
+            'Second paragraph lead sentence.',
+            'Bullet alpha',
+            'Bullet beta',
+            'Third paragraph lead sentence.',
+        ], $points);
+    }
+
+    public function test_shorts_show_numbered_key_points(): void
+    {
+        $this->get('/shorts')->assertOk()
+            ->assertSee('<ul class="short-points" data-lang-en><li>Indian markets rallied strongly today as investors lined up for new listings across sectors.</li><li>Point one</li></ul>', false);
     }
 
     public function test_name_and_band_parsing(): void

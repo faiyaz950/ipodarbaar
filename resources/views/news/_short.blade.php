@@ -6,12 +6,15 @@
         </div>
         <div class="short-body">
             <h2><span data-lang-en>{{ $item['headline'] }}</span><span data-lang-hi>{{ $item['headline_hi'] }}</span></h2>
-            <p class="sum"><span data-lang-en>{{ $item['summary'] }}</span><span data-lang-hi>{{ $item['summary_hi'] }}</span></p>
             @if (count($item['points']))
-                <ul data-lang-en>@foreach (array_slice($item['points'], 0, 3) as $p)<li>{{ $p }}</li>@endforeach</ul>
+                <ul class="short-points" data-lang-en>@foreach ($item['points'] as $p)<li>{{ $p }}</li>@endforeach</ul>
+            @else
+                <p class="sum" data-lang-en>{{ $item['summary'] }}</p>
             @endif
             @if (count($item['points_hi']))
-                <ul data-lang-hi>@foreach (array_slice($item['points_hi'], 0, 3) as $p)<li>{{ $p }}</li>@endforeach</ul>
+                <ul class="short-points" data-lang-hi>@foreach ($item['points_hi'] as $p)<li>{{ $p }}</li>@endforeach</ul>
+            @else
+                <p class="sum" data-lang-hi>{{ $item['summary_hi'] }}</p>
             @endif
         </div>
         <div class="short-foot">

@@ -3,14 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\Ipo;
+use App\Services\IpoStatsService;
 use App\Services\NewsService;
 use App\Support\Calculators;
 use Illuminate\Support\Carbon;
 
 class HomeController extends Controller
 {
-    public function __invoke(NewsService $news)
+    public function __invoke(NewsService $news, IpoStatsService $ipoStats)
     {
+        $reportYear = $ipoStats->years()[0] ?? null;
+
         $boards = [];
         foreach (['open', 'upcoming', 'closed', 'listed'] as $status) {
             $boards[$status] = Ipo::inStatus($status)->limit(10)->get();
@@ -34,6 +37,7 @@ class HomeController extends Controller
             'ipoNews' => $ipoNews['items'],
             'calculators' => Calculators::featured(),
             'categories' => $news->categories(),
+            'report' => $reportYear ? $ipoStats->forYear($reportYear) : null,
         ]);
     }
 

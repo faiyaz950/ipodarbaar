@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Ipo;
 use App\Models\IpoGmpHistory;
+use App\Services\IpoStatsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
@@ -18,12 +19,12 @@ class IpoController extends Controller
 
         $query = Ipo::query()->search($q);
         $query = match ($filter) {
-            'all' => $query->inStatus(null),
-            'listed' => $query->inStatus('listed'),
+            'all' => $query->latest('source_created_at')->latest('api_id'),
+            'listed' => $query->listed()->latest('source_created_at')->latest('api_id'),
             'edited' => $query->where(fn ($w) => $w->whereNotNull('locked_fields')->orWhereNotNull('registrar')
                 ->orWhereNotNull('subscription_total')->orWhereNotNull('listing_price')->orWhereNotNull('about'))
                 ->orderByDesc('updated_at'),
-            default => $query->active()->orderByRaw('open_date is null')->orderBy('open_date'),
+            default => $query->active()->latest('source_created_at')->latest('api_id'),
         };
 
         return view('admin.ipos.index', [
@@ -42,7 +43,7 @@ class IpoController extends Controller
         ]);
     }
 
-    public function update(Request $request, Ipo $ipo)
+    public function update(Request $request, Ipo $ipo, IpoStatsService $stats)
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -89,6 +90,7 @@ class IpoController extends Controller
             IpoGmpHistory::record([$ipo]);
         }
         Cache::forget('layout:ticker');
+        $stats->flush();
 
         return redirect()->route('admin.ipos.edit', $ipo)->with('status', 'Saved. Changed API fields are now locked.');
     }

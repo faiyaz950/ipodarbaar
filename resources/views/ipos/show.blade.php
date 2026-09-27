@@ -11,11 +11,10 @@
 
 @section('title', $ipo->name.' IPO: GMP, Price Band, Dates & Details')
 @section('description', $ipo->metaDescription())
-@section('og_image', $ipo->logoUrl() ?? '')
+@section('og_image', $ipo->shareImageUrl() ?? '')
 
 @push('head')
-<script type="application/ld+json">
-{!! json_encode([
+<x-jsonld :data="[
     '@context' => 'https://schema.org',
     '@type' => 'Event',
     'name' => $ipo->name.' IPO',
@@ -25,9 +24,13 @@
     'eventStatus' => 'https://schema.org/EventScheduled',
     'eventAttendanceMode' => 'https://schema.org/OnlineEventAttendanceMode',
     'location' => ['@type' => 'VirtualLocation', 'url' => $ipo->url()],
-    'image' => $ipo->logoUrl(),
-], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
-</script>
+    'image' => $ipo->shareImageUrl() ?? $ipo->logoUrl(),
+]" />
+<x-jsonld :breadcrumbs="[
+    ['Home', route('home')],
+    [$ipo->typeLabel().' IPOs', route('ipos.type', $ipo->type)],
+    [$ipo->name.' IPO', $ipo->url()],
+]" />
 @endpush
 
 @section('content')
@@ -75,7 +78,9 @@
                 <div class="row"><span>Issue size</span><b>{{ $ipo->issue_size ? '₹'.Ipo::num($ipo->issue_size).' Cr' : '—' }}</b></div>
                 <div class="actions">
                     <a href="{{ $ipo->calculatorUrl() }}" class="btn btn-gold btn-sm"><x-icon name="calculator" :size="15" /> GMP Calculator</a>
-                    <button type="button" class="btn btn-ghost-light btn-sm" data-share="native" data-title="{{ $ipo->name }} IPO: GMP & details" data-url="{{ $ipo->url() }}"><x-icon name="share" :size="15" /> Share</button>
+                    <x-watch-button :ipo="$ipo" :label="true" class="btn btn-ghost-light btn-sm" />
+                    <a href="{{ route('compare', ['ipos' => $ipo->slug]) }}" class="btn btn-ghost-light btn-sm" title="Compare with other IPOs"><x-icon name="columns" :size="15" /> Compare</a>
+                    <button type="button" class="btn btn-ghost-light btn-sm" data-share="native" data-title="{{ $ipo->name }} IPO: GMP & details" data-url="{{ $ipo->url() }}" aria-label="Share"><x-icon name="share" :size="15" /></button>
                 </div>
             </div>
         </div>
@@ -160,6 +165,10 @@
                     </div>
                 </div>
             </div>
+
+            <x-ad-slot name="ipo_after_gmp" />
+
+            <x-ipo-poll :ipo="$ipo" :results="$poll" :mine="$myVote" />
 
             {{-- GMP trend --}}
             @if ($gmpTrend->count() >= 2)
@@ -285,6 +294,8 @@
             </div>
             @endif
 
+            @include('ipos.company')
+
             {{-- About --}}
             <div class="card card-pad">
                 <div class="card-title" style="margin-bottom:14px"><span class="ico"><x-icon name="building" :size="16" /></span> About {{ $ipo->name }} IPO</div>
@@ -323,6 +334,16 @@
         </div>
 
         <aside class="sidebar">
+            <div class="card card-pad subscribe-card">
+                <div class="card-title" style="margin-bottom:6px"><span class="ico"><x-icon name="bell" :size="16" /></span> Don't miss the dates</div>
+                <p class="muted" style="font-size:13.5px;margin-bottom:12px">Get open, allotment and listing reminders plus GMP moves by email.</p>
+                <x-subscribe-form />
+            </div>
+
+            <x-broker-cta />
+
+            <x-ad-slot name="ipo_sidebar" />
+
             <div class="card widget">
                 <div class="card-head">
                     <div class="card-title"><span class="ico"><x-icon name="layers" :size="16" /></span> Other IPOs</div>

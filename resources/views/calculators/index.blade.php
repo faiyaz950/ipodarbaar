@@ -25,7 +25,7 @@
                 </div>
                 <div class="grid-4">
                     @foreach ($groups[$key] as $calc)
-                        <a class="calc-card" href="{{ route('calculators.show', $calc['slug']) }}">
+                        <a class="calc-card g-{{ $calc['group'] }}" href="{{ route('calculators.show', $calc['slug']) }}">
                             <span class="ico"><x-icon :name="$calc['icon']" :size="22" /></span>
                             <h3>{{ $calc['name'] }}</h3>
                             <p>{{ $calc['short'] }}</p>

@@ -3,14 +3,21 @@
 namespace App\Models;
 
 use App\Services\LogoService;
+use App\Services\ShareCardService;
+use Database\Factories\IpoFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 class Ipo extends Model
 {
+    /** @use HasFactory<IpoFactory> */
+    use HasFactory;
+
     public const STATUSES = [
         'open' => 'Open Now',
         'upcoming' => 'Upcoming',
@@ -63,6 +70,27 @@ class Ipo extends Model
     public function gmpHistory(): HasMany
     {
         return $this->hasMany(IpoGmpHistory::class)->orderBy('date');
+    }
+
+    public function detail(): HasOne
+    {
+        return $this->hasOne(IpoDetail::class);
+    }
+
+    public function financials(): HasMany
+    {
+        return $this->hasMany(IpoFinancial::class)->orderBy('period_end');
+    }
+
+    public function votes(): HasMany
+    {
+        return $this->hasMany(IpoVote::class);
+    }
+
+    /** Sentiment voting stays open until the shares list. */
+    public function pollIsOpen(): bool
+    {
+        return $this->status() !== 'listed';
     }
 
     public function isLocked(string $field): bool
@@ -145,11 +173,15 @@ class Ipo extends Model
         return in_array($type, ['mainboard', 'sme'], true) ? $q->where('type', $type) : $q;
     }
 
+    /**
+     * Case-insensitive name search on every database driver. LIKE wildcards typed by the
+     * visitor are treated as spaces rather than escaped, since escaping differs per driver.
+     */
     public function scopeSearch(Builder $q, ?string $term): Builder
     {
-        $term = trim((string) $term);
+        $term = trim(str_replace(['%', '_'], ' ', (string) $term));
 
-        return $term === '' ? $q : $q->where('name', 'like', '%'.str_replace(['%', '_'], ['\%', '\_'], $term).'%');
+        return $term === '' ? $q : $q->whereLike('name', '%'.$term.'%');
     }
 
     /* ------------------------------------------------------------------
@@ -361,6 +393,12 @@ class Ipo extends Model
     public function logoUrl(): ?string
     {
         return app(LogoService::class)->url($this);
+    }
+
+    /** 1200×630 social share card (null when the server can't render one). */
+    public function shareImageUrl(): ?string
+    {
+        return app(ShareCardService::class)->url($this);
     }
 
     /** Original full-size banner from the data source. */

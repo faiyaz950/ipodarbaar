@@ -4,8 +4,11 @@ namespace App\Providers;
 
 use App\Models\Ipo;
 use App\Services\IpoSyncService;
+use App\Support\Settings;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -13,12 +16,18 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        $this->app->singleton(Settings::class);
+
+        if ($publicPath = config('app.public_path')) {
+            $this->app->usePublicPath($publicPath);
+        }
     }
 
     public function boot(): void
     {
         Paginator::defaultView('partials.pagination');
+
+        RateLimiter::for('digest-mail', fn (): Limit => Limit::perHour((int) config('ipodarbar.mail.hourly_limit', 250)));
 
         // Site-wide GMP ticker + live counts for the header.
         View::composer('layouts.app', function ($view) {

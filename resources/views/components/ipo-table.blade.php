@@ -21,7 +21,7 @@
                         <div class="co">
                             <x-logo-tile :ipo="$ipo" />
                             <div style="min-width:0">
-                                <a href="{{ $ipo->url() }}" class="co-name">{{ $ipo->name }}</a>
+                                <span class="co-title"><a href="{{ $ipo->url() }}" class="co-name">{{ $ipo->name }}</a> <x-watch-button :ipo="$ipo" /></span>
                                 <div class="co-meta">
                                     <span class="badge b-{{ $ipo->type }}">{{ $ipo->typeLabel() }}</span>
                                     <x-status-badge :ipo="$ipo" />

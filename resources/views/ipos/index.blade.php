@@ -16,6 +16,7 @@
 @endphp
 
 @section('title', $heading)
+@section('robots', $q !== '' ? 'noindex, follow' : 'index, follow')
 @section('description', 'Complete list of '.strtolower($title).' in India with price band, issue size, GMP, subscription dates and listing dates. Updated daily.')
 
 @section('content')
@@ -67,6 +68,7 @@
             <x-ipo-table :ipos="$ipos" :status="$status" :empty="$q !== '' ? 'No IPOs match your search.' : 'No IPOs in this category right now.'" />
 
             @if ($ipos->hasPages())
+                <x-ad-slot name="list" style="margin:16px 20px 0" />
                 <div style="border-top: 1px solid var(--border)">{{ $ipos->links() }}</div>
             @endif
         </div>

@@ -67,6 +67,17 @@ class AdminTest extends TestCase
         $this->get('/admin/ipos/alpha-tech-ipo/edit')->assertOk()->assertSee('Save changes');
     }
 
+    public function test_ipo_list_shows_newest_added_ipos_first(): void
+    {
+        Ipo::factory()->upcoming()->create(['name' => 'Older Listing Co', 'source_created_at' => now()->subDays(5)]);
+        Ipo::factory()->upcoming()->create(['name' => 'Newest Listing Co', 'source_created_at' => now()->subHour()]);
+
+        $this->actingAs($this->admin());
+
+        $this->get('/admin/ipos')->assertOk()->assertSeeInOrder(['Newest Listing Co', 'Alpha Tech', 'Older Listing Co']);
+        $this->get('/admin/ipos?filter=all')->assertOk()->assertSeeInOrder(['Newest Listing Co', 'Alpha Tech', 'Older Listing Co']);
+    }
+
     public function test_update_locks_changed_api_fields_and_records_gmp(): void
     {
         $this->actingAs($this->admin())

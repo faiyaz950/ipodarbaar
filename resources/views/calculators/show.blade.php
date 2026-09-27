@@ -3,6 +3,25 @@
 @section('title', $calc['name'])
 @section('description', $calc['short'].' '.\Illuminate\Support\Str::limit($calc['about'], 100))
 
+@push('head')
+<x-jsonld :breadcrumbs="[
+    ['Home', route('home')],
+    ['Calculators', route('calculators.index')],
+    [$calc['name'], route('calculators.show', $calc['slug'])],
+]" />
+@if (! empty($calc['faqs']))
+<x-jsonld :data="[
+    '@context' => 'https://schema.org',
+    '@type' => 'FAQPage',
+    'mainEntity' => array_map(fn (array $faq): array => [
+        '@type' => 'Question',
+        'name' => $faq[0],
+        'acceptedAnswer' => ['@type' => 'Answer', 'text' => strip_tags($faq[1])],
+    ], $calc['faqs']),
+]" />
+@endif
+@endpush
+
 @section('content')
 <section class="page-head">
     <div class="container">
@@ -26,6 +45,8 @@
                 <div class="calc-results" data-results></div>
             </div>
         </div>
+
+        <x-ad-slot name="calculator" />
 
         <div class="grid-2">
             <div class="card card-pad">
@@ -64,7 +85,7 @@
                 </div>
                 <div class="grid-4">
                     @foreach ($related->take(4) as $r)
-                        <a class="calc-card" href="{{ route('calculators.show', $r['slug']) }}">
+                        <a class="calc-card g-{{ $r['group'] }}" href="{{ route('calculators.show', $r['slug']) }}">
                             <span class="ico"><x-icon :name="$r['icon']" :size="22" /></span>
                             <h3>{{ $r['name'] }}</h3>
                             <p>{{ $r['short'] }}</p>

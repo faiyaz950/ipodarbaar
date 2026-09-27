@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Ipo;
 use App\Models\IpoGmpHistory;
+use App\Support\SchedulerHeartbeat;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -17,6 +18,8 @@ use function Illuminate\Support\defer;
 class IpoSyncService
 {
     public const SYNCED_AT_KEY = 'ipo:synced_at';
+
+    public function __construct(private IpoStatsService $stats) {}
 
     /**
      * Pull IPOs from the API into the local database.
@@ -50,6 +53,7 @@ class IpoSyncService
         } while ($hasMore && count($rows) > 0 && ($maxPages === null || $pages < $maxPages));
 
         Cache::forever(self::SYNCED_AT_KEY, now()->toIso8601String());
+        $this->stats->flush();
         Cache::forget('layout:ticker');
 
         return ['fetched' => $fetched, 'pages' => $pages, 'total' => $total];
@@ -69,11 +73,16 @@ class IpoSyncService
     }
 
     /**
-     * Keep data fresh without relying on cron: an empty table is filled right away,
-     * a stale one is refreshed after the response has been sent.
+     * Fallback for when cron isn't running: an empty table is filled right away and a
+     * stale one is refreshed after the response has been sent. While the scheduler is
+     * alive it keeps the data fresh, so page requests never trigger a sync.
      */
     public function ensureFresh(): void
     {
+        if (SchedulerHeartbeat::isAlive()) {
+            return;
+        }
+
         $staleAfter = (int) config('ipodarbar.ipo_api.stale_after', 20);
         $last = self::lastSyncedAt();
 

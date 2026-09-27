@@ -8,11 +8,18 @@
     <meta name="description" content="@yield('description', 'Track every mainboard and SME IPO in India — live GMP, subscription dates, price bands, listing calendar, market news shorts and investing calculators.')">
     <link rel="canonical" href="{{ url()->current() }}">
     <meta name="theme-color" content="#0A1633">
+    <meta name="robots" content="@yield('robots', 'index, follow')">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="IPO Darbaar">
     <meta property="og:site_name" content="IPO Darbaar">
     <meta property="og:title" content="@yield('title', 'IPO Darbaar')">
     <meta property="og:description" content="@yield('description', 'Live IPO GMP, upcoming IPOs, market news & calculators.')">
     <meta property="og:type" content="@yield('og_type', 'website')">
+    <meta property="og:url" content="{{ url()->current() }}">
     <meta property="og:image" content="{{ trim($__env->yieldContent('og_image')) ?: asset('images/brand/og-logo.png') }}">
+    <meta name="twitter:card" content="{{ trim($__env->yieldContent('og_image')) ? 'summary_large_image' : 'summary' }}">
     <link rel="icon" href="{{ asset('favicon-32.png') }}" sizes="32x32" type="image/png">
     <link rel="icon" href="{{ asset('favicon-192.png') }}" sizes="192x192" type="image/png">
     <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
@@ -29,6 +36,19 @@
             } catch (e) {}
         })();
     </script>
+    @include('partials.analytics')
+    @if (request()->routeIs('home'))
+        <x-jsonld :data="[
+            '@context' => 'https://schema.org',
+            '@graph' => [
+                ['@type' => 'Organization', '@id' => route('home').'#org', 'name' => 'IPO Darbaar', 'url' => route('home'), 'logo' => asset('favicon-192.png')],
+                [
+                    '@type' => 'WebSite', 'name' => 'IPO Darbaar', 'url' => route('home'), 'publisher' => ['@id' => route('home').'#org'],
+                    'potentialAction' => ['@type' => 'SearchAction', 'target' => route('ipos.index').'?q={search_term_string}', 'query-input' => 'required name=search_term_string'],
+                ],
+            ],
+        ]" />
+    @endif
     @stack('head')
 </head>
 <body class="@yield('body_class')">
@@ -62,18 +82,19 @@
 
         <nav class="nav" aria-label="Main">
             <a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'active' : '' }}">Home</a>
-            <div class="dd {{ request()->routeIs('ipos.index', 'ipos.type', 'ipos.show', 'ipos.calendar') ? 'active' : '' }}">
+            <div class="dd {{ request()->routeIs('ipos.index', 'ipos.type', 'ipos.show', 'ipos.calendar', 'ipos.year', 'ipos.report-card', 'compare') ? 'active' : '' }}">
                 <button type="button" aria-haspopup="true">IPOs <x-icon name="chevron-down" :size="15" /></button>
                 <div class="dd-menu">
                     <a href="{{ route('ipos.index') }}"><span class="ico"><x-icon name="layers" /></span><span>All IPOs<small>Open, upcoming & listed</small></span></a>
                     <a href="{{ route('ipos.type', 'mainboard') }}"><span class="ico"><x-icon name="building" /></span><span>Mainboard IPOs<small>NSE & BSE main board issues</small></span></a>
                     <a href="{{ route('ipos.type', 'sme') }}"><span class="ico"><x-icon name="briefcase" /></span><span>SME IPOs<small>NSE Emerge & BSE SME</small></span></a>
                     <a href="{{ route('ipos.calendar') }}"><span class="ico"><x-icon name="calendar" /></span><span>IPO Calendar<small>Open, close & listing dates</small></span></a>
+                    <a href="{{ route('ipos.report-card') }}"><span class="ico"><x-icon name="trophy" /></span><span>IPO Report Card<small>Year-wise listing performance</small></span></a>
+                    <a href="{{ route('compare') }}"><span class="ico"><x-icon name="columns" /></span><span>Compare IPOs<small>Up to 3 side by side</small></span></a>
                 </div>
             </div>
             <a href="{{ route('ipos.gmp') }}" class="{{ request()->routeIs('ipos.gmp') ? 'active' : '' }}"><span class="live"></span> Live GMP</a>
             <a href="{{ route('news.index') }}" class="{{ request()->routeIs('news.index', 'news.show') ? 'active' : '' }}">News</a>
-            <a href="{{ route('news.shorts') }}" class="{{ request()->routeIs('news.shorts') ? 'active' : '' }}">Shorts <span class="pill">NEW</span></a>
             <a href="{{ route('calculators.index') }}" class="{{ request()->routeIs('calculators.*') ? 'active' : '' }}">Calculators</a>
         </nav>
 
@@ -86,6 +107,10 @@
                 </label>
                 <div class="suggest" data-suggest></div>
             </form>
+            <a href="{{ route('watchlist') }}" class="icon-btn watch-link" aria-label="My watchlist" title="My watchlist">
+                <x-icon name="star" />
+                <span class="watch-count" data-watch-count hidden>0</span>
+            </a>
             <button type="button" class="icon-btn theme-toggle" data-theme-toggle aria-label="Toggle dark mode">
                 <x-icon name="moon" class="i-moon" />
                 <x-icon name="sun" class="i-sun" />
@@ -113,11 +138,14 @@
         <a href="{{ route('ipos.type', 'sme') }}" class="sub">SME IPOs</a>
         <a href="{{ route('ipos.gmp') }}"><x-icon name="trending-up" /> Live GMP</a>
         <a href="{{ route('ipos.calendar') }}"><x-icon name="calendar" /> IPO Calendar</a>
+        <a href="{{ route('ipos.report-card') }}"><x-icon name="trophy" /> IPO Report Card</a>
+        <a href="{{ route('compare') }}"><x-icon name="columns" /> Compare IPOs</a>
         <a href="{{ route('news.index') }}"><x-icon name="newspaper" /> Market News</a>
-        <a href="{{ route('news.shorts') }}"><x-icon name="smartphone" /> News Shorts</a>
         <a href="{{ route('calculators.index') }}"><x-icon name="calculator" /> Calculators</a>
+        <a href="{{ route('watchlist') }}"><x-icon name="star" /> My Watchlist</a>
         <a href="{{ route('about') }}"><x-icon name="info" /> About</a>
     </nav>
+    <button type="button" class="btn btn-gold btn-block" data-install-app hidden style="margin-top:18px"><x-icon name="download" :size="16" /> Install IPO Darbaar app</button>
 </div>
 
 @sectionMissing('hide_ticker')
@@ -148,6 +176,13 @@
 
 <footer class="site-footer">
     <div class="container">
+        <div class="footer-subscribe" id="subscribe">
+            <div>
+                <h3>Get the IPO Darbaar digest</h3>
+                <p>Open IPOs, GMP moves, allotment and listing dates in your inbox. Free, no spam, one-click unsubscribe.</p>
+            </div>
+            <x-subscribe-form />
+        </div>
         <div class="footer-grid">
             <div class="footer-about">
                 <a href="{{ route('home') }}" class="brand">
@@ -165,6 +200,8 @@
                     <li><a href="{{ route('ipos.type', 'sme') }}">SME IPOs</a></li>
                     <li><a href="{{ route('ipos.gmp') }}">IPO GMP Today</a></li>
                     <li><a href="{{ route('ipos.calendar') }}">IPO Calendar</a></li>
+                    <li><a href="{{ route('ipos.report-card') }}">IPO Report Card</a></li>
+                    <li><a href="{{ route('compare') }}">Compare IPOs</a></li>
                 </ul>
             </div>
             <div>
@@ -192,7 +229,7 @@
         </p>
         <div class="footer-bottom">
             <span>© {{ now()->year }} IPO Darbaar. All rights reserved.</span>
-            <span><a href="{{ route('about') }}">About</a> · <a href="{{ route('disclaimer') }}">Disclaimer</a> · <a href="{{ route('sitemap') }}">Sitemap</a></span>
+            <span><a href="{{ route('about') }}">About</a> · <a href="{{ route('disclaimer') }}">Disclaimer</a> · <a href="{{ route('privacy') }}">Privacy</a> · <a href="{{ route('sitemap') }}">Sitemap</a></span>
         </div>
     </div>
 </footer>

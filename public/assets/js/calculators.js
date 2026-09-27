@@ -782,6 +782,11 @@
   var def = CALCS[slug];
   if (!def) return;
 
+  root.addEventListener('input', function trackUse() {
+    root.removeEventListener('input', trackUse);
+    if (typeof window.darbaarTrack === 'function') window.darbaarTrack('calculator_use', { calculator: slug });
+  });
+
   var inputsEl = root.querySelector('[data-inputs]');
   var resultsEl = root.querySelector('[data-results]');
   var state = {};

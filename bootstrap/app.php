@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\RefreshIpoData;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -14,9 +15,12 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
+            SecurityHeaders::class,
             RefreshIpoData::class,
         ]);
         $middleware->redirectGuestsTo(fn () => route('admin.login'));
+        // Mail providers' one-click unsubscribe posts without a token; the URL is signed instead.
+        $middleware->validateCsrfTokens(except: ['unsubscribe/*']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

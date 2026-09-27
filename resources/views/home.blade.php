@@ -39,7 +39,7 @@
                 <a href="{{ route('ipos.type', 'mainboard') }}"><x-icon name="building" :size="15" /> Mainboard</a>
                 <a href="{{ route('ipos.type', 'sme') }}"><x-icon name="briefcase" :size="15" /> SME</a>
                 <a href="{{ route('ipos.calendar') }}"><x-icon name="calendar" :size="15" /> Calendar</a>
-                <a href="{{ route('news.shorts') }}"><x-icon name="smartphone" :size="15" /> News Shorts</a>
+                <a href="{{ route('ipos.report-card') }}"><x-icon name="trophy" :size="15" /> Report Card</a>
             </div>
         </div>
 
@@ -101,8 +101,10 @@
     </div>
 </section>
 
+<div class="container"><x-ad-slot name="home_top" /></div>
+
 {{-- ============ IPO BOARD + SIDEBAR ============ --}}
-<section class="section">
+<section class="section home-board">
     <div class="container layout">
         <div class="card" data-tabs>
             <div class="card-head">
@@ -160,7 +162,7 @@
                     <div class="card-title"><span class="ico"><x-icon name="newspaper" :size="16" /></span> IPO News</div>
                     <a href="{{ route('news.index', ['category' => 'ipo']) }}" class="link-gold">All <x-icon name="chevron-right" :size="14" /></a>
                 </div>
-                @forelse (array_slice($ipoNews, 0, 4) as $n)
+                @forelse (array_slice($ipoNews, 0, 5) as $n)
                     <a class="list-link" href="{{ $n['url'] }}">
                         @if ($n['image'])<img class="thumb" src="{{ $n['image'] }}" alt="" loading="lazy">@endif
                         <span>
@@ -172,20 +174,47 @@
                     <div class="empty" style="padding:26px"><p>News will appear here shortly.</p></div>
                 @endforelse
             </div>
-
-            <div class="card widget">
-                <div class="card-head">
-                    <div class="card-title"><span class="ico"><x-icon name="calculator" :size="16" /></span> Quick Tools</div>
-                </div>
-                @foreach (array_slice($calculators, 0, 4) as $calc)
-                    <a class="list-link" href="{{ route('calculators.show', $calc['slug']) }}">
-                        <span class="ico"><x-icon :name="$calc['icon']" :size="17" /></span>
-                        <span><span class="t" style="-webkit-line-clamp:1">{{ $calc['name'] }}</span></span>
-                        <x-icon name="chevron-right" :size="16" class="chev" />
-                    </a>
-                @endforeach
-            </div>
         </aside>
+    </div>
+</section>
+
+{{-- ============ EXPLORE ============ --}}
+@php
+    $explore = [
+        ['route' => route('ipos.gmp'), 'icon' => 'trending-up', 'title' => 'Live GMP', 'text' => 'Grey market premium & expected listing price'],
+        ['route' => route('ipos.index'), 'icon' => 'layers', 'title' => 'All IPOs', 'text' => 'Open, upcoming, listing soon & listed'],
+        ['route' => route('ipos.type', 'mainboard'), 'icon' => 'building', 'title' => 'Mainboard IPOs', 'text' => 'NSE & BSE main board issues'],
+        ['route' => route('ipos.type', 'sme'), 'icon' => 'briefcase', 'title' => 'SME IPOs', 'text' => 'NSE Emerge & BSE SME issues'],
+        ['route' => route('ipos.calendar'), 'icon' => 'calendar', 'title' => 'IPO Calendar', 'text' => 'Open, close, allotment & listing dates'],
+        ['route' => route('ipos.report-card'), 'icon' => 'trophy', 'title' => 'IPO Report Card', 'text' => 'Year-wise listing gains & funds raised'],
+        ['route' => route('compare'), 'icon' => 'columns', 'title' => 'Compare IPOs', 'text' => 'Up to 3 IPOs side by side'],
+        ['route' => route('watchlist'), 'icon' => 'star', 'title' => 'My Watchlist', 'text' => 'Star IPOs to track them in one place'],
+        ['route' => route('news.index'), 'icon' => 'newspaper', 'title' => 'Market News', 'text' => 'Latest stories in English & Hinglish'],
+        ['route' => route('news.shorts'), 'icon' => 'smartphone', 'title' => 'News Shorts', 'text' => 'Market news in 60-second swipes'],
+        ['route' => route('calculators.index'), 'icon' => 'calculator', 'title' => count(\App\Support\Calculators::all()).' Calculators', 'text' => 'Listing gain, allotment odds, SIP, tax'],
+        ['route' => '#subscribe', 'icon' => 'bell', 'title' => 'Free IPO Digest', 'text' => 'Daily IPO & GMP update by email'],
+    ];
+@endphp
+<section class="section explore" style="padding-top:0">
+    <div class="container">
+        <div class="section-head">
+            <div>
+                <span class="eyebrow">Explore</span>
+                <h2 class="section-title">Everything in IPO Darbaar</h2>
+            </div>
+            <button type="button" class="btn btn-outline" data-install-app hidden><x-icon name="download" :size="16" /> Install the app</button>
+        </div>
+        <div class="explore-grid">
+            @foreach ($explore as $tile)
+                <a class="explore-tile" href="{{ $tile['route'] }}">
+                    <span class="ico"><x-icon :name="$tile['icon']" :size="20" /></span>
+                    <span>
+                        <b>{{ $tile['title'] }}</b>
+                        <small>{{ $tile['text'] }}</small>
+                    </span>
+                </a>
+            @endforeach
+        </div>
     </div>
 </section>
 
@@ -227,6 +256,76 @@
     </div>
 </section>
 
+{{-- ============ REPORT CARD + COMPARE ============ --}}
+@if ($report && $report['count'])
+@php
+    $pct = fn (?float $value): string => $value === null ? '—' : ($value > 0 ? '+' : '').number_format($value, 1).'%';
+    $trend = fn (?float $value): string => $value === null ? 'flat' : ($value > 0 ? 'up' : ($value < 0 ? 'down' : 'flat'));
+@endphp
+<section class="section" style="padding-top:0">
+    <div class="container home-report">
+        <div class="card">
+            <div class="card-head">
+                <div>
+                    <div class="card-title"><span class="ico"><x-icon name="trophy" :size="16" /></span> IPO Report Card {{ $report['year'] }}</div>
+                    <div class="card-sub">How this year's IPOs have performed so far</div>
+                </div>
+                <a class="link-gold" href="{{ route('ipos.year', $report['year']) }}">Full {{ $report['year'] }} report <x-icon name="arrow-right" :size="15" /></a>
+            </div>
+            <div class="home-report-stats">
+                <div><span class="kpi">{{ number_format($report['count']) }}</span><span class="lbl" title="{{ $report['mainboard'] }} mainboard · {{ $report['sme'] }} SME">IPOs so far</span></div>
+                <div><span class="kpi">{{ $report['raised'] ? '₹'.Ipo::num($report['raised'], 0) : '—' }}</span><span class="lbl">Crore raised</span></div>
+                @if ($report['avg_gain'] !== null)
+                    <div><span class="kpi {{ $trend($report['avg_gain']) }}">{{ $pct($report['avg_gain']) }}</span><span class="lbl">Average listing gain</span></div>
+                    <div><span class="kpi">{{ number_format($report['positive_share'] ?? 0, 0) }}%</span><span class="lbl">Listed at a premium</span></div>
+                @else
+                    <div><span class="kpi">₹{{ Ipo::num($report['raised_mainboard'], 0) }}</span><span class="lbl">Crore via mainboard</span></div>
+                    <div><span class="kpi">₹{{ Ipo::num($report['raised_sme'], 0) }}</span><span class="lbl">Crore via SME</span></div>
+                @endif
+            </div>
+            @php
+                $months = $report['year'] === now()->year
+                    ? array_filter($report['months'], fn (int $month): bool => $month <= now()->month, ARRAY_FILTER_USE_KEY)
+                    : $report['months'];
+                $maxMonth = max(1, ...array_column($months, 'count'));
+            @endphp
+            <div class="fin-chart month-chart home-month-chart" role="img" aria-label="Number of IPOs opening each month of {{ $report['year'] }}">
+                @foreach ($months as $month => $data)
+                    <div class="fin-col" title="{{ $data['count'] }} IPOs · ₹{{ Ipo::num($data['raised'], 0) }} Cr">
+                        <div class="fin-bars">
+                            <b class="fin-val">{{ $data['count'] ?: '' }}</b>
+                            <i class="rev" style="height: {{ round($data['count'] / $maxMonth * 100, 1) }}%"></i>
+                        </div>
+                        <span class="fin-label">{{ \Illuminate\Support\Carbon::create($report['year'], $month)->format('M') }}</span>
+                    </div>
+                @endforeach
+            </div>
+            @if (count($report['best']))
+                <div class="home-report-best">
+                    <span class="eyebrow">Top listing gains</span>
+                    @foreach (array_slice($report['best'], 0, 3) as $row)
+                        <a class="admin-row" href="{{ $row['url'] }}">
+                            <span>{{ $row['name'] }} <small class="muted">{{ $row['type'] === 'sme' ? 'SME' : 'Mainboard' }}</small></span>
+                            <b class="{{ $trend($row['gain']) }}">{{ $pct($row['gain']) }}</b>
+                        </a>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+
+        <div class="promo">
+            <span class="badge b-gold" style="background:rgba(230,190,98,.18);color:var(--gold-2)"><x-icon name="columns" :size="13" /> Compare IPOs</span>
+            <h3>Confused between two IPOs?</h3>
+            <p>Put up to 3 IPOs side by side: price, GMP, subscription, issue size, P/E and financials, with the better number highlighted.</p>
+            <a href="{{ route('compare') }}" class="btn btn-gold btn-block"><x-icon name="columns" :size="15" /> Compare now</a>
+            <a href="{{ route('watchlist') }}" class="btn btn-ghost-light btn-block" style="margin-top:10px"><x-icon name="star" :size="15" /> Open my watchlist</a>
+        </div>
+    </div>
+</section>
+@endif
+
+<div class="container"><x-ad-slot name="home_mid" style="margin-bottom:28px" /></div>
+
 {{-- ============ NEWS ============ --}}
 @if (count($news))
 <section class="section" style="padding-top:8px">
@@ -266,41 +365,13 @@
         </div>
         <div class="grid-4">
             @foreach ($calculators as $calc)
-                <a class="calc-card" href="{{ route('calculators.show', $calc['slug']) }}">
+                <a class="calc-card g-{{ $calc['group'] }}" href="{{ route('calculators.show', $calc['slug']) }}">
                     <span class="ico"><x-icon :name="$calc['icon']" :size="22" /></span>
                     <h3>{{ $calc['name'] }}</h3>
                     <p>{{ $calc['short'] }}</p>
                     <span class="go">Calculate <x-icon name="arrow-right" :size="14" /></span>
                 </a>
             @endforeach
-        </div>
-    </div>
-</section>
-
-{{-- ============ WHY ============ --}}
-<section class="section" style="padding-top:8px">
-    <div class="container">
-        <div class="features">
-            <div class="feature">
-                <span class="ico ico-green"><x-icon name="activity" :size="22" /></span>
-                <h3>Live GMP tracking</h3>
-                <p>Grey market premium and estimated listing price for every active IPO, refreshed through the day.</p>
-            </div>
-            <div class="feature">
-                <span class="ico ico-blue"><x-icon name="calendar" :size="22" /></span>
-                <h3>Complete IPO calendar</h3>
-                <p>Opening, closing, allotment and listing dates for mainboard and SME issues at a glance.</p>
-            </div>
-            <div class="feature">
-                <span class="ico ico-violet"><x-icon name="languages" :size="22" /></span>
-                <h3>News in your language</h3>
-                <p>Market stories as quick shorts, in English and Hinglish, so you never miss what moves the market.</p>
-            </div>
-            <div class="feature">
-                <span class="ico ico-gold"><x-icon name="calculator" :size="22" /></span>
-                <h3>{{ count(\App\Support\Calculators::all()) }} free calculators</h3>
-                <p>Plan applications, estimate gains, compare returns and work out tax in seconds.</p>
-            </div>
         </div>
     </div>
 </section>

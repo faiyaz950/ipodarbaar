@@ -68,6 +68,13 @@ return [
     'timezone' => env('APP_TIMEZONE', 'Asia/Kolkata'),
 
     /*
+    | Web root when it lives outside this project (e.g. cPanel's public_html). Logos and
+    | share cards are written here by both web requests and cron commands.
+    */
+
+    'public_path' => env('APP_PUBLIC_PATH'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------

@@ -87,7 +87,7 @@ class Calculators
             'swp' => [
                 'name' => 'SWP Calculator',
                 'short' => 'Plan regular monthly withdrawals from an invested corpus.',
-                'icon' => 'arrow-down-right',
+                'icon' => 'hand-coins',
                 'group' => 'invest',
                 'about' => 'A Systematic Withdrawal Plan (SWP) lets you withdraw a fixed amount every month while the remaining corpus stays invested. See how long your money lasts and what is left at the end.',
                 'formula' => 'Each month: Balance = Balance × (1 + r/12) − Withdrawal',
@@ -96,7 +96,7 @@ class Calculators
             'cagr' => [
                 'name' => 'CAGR Calculator',
                 'short' => 'Annualised growth rate between a starting and ending value.',
-                'icon' => 'bar-chart',
+                'icon' => 'chart-line',
                 'group' => 'invest',
                 'about' => 'Compound Annual Growth Rate (CAGR) smooths returns into a single yearly rate, making it easy to compare investments held for different periods.',
                 'formula' => 'CAGR = (Final value ÷ Initial value)^(1 ÷ years) − 1',
@@ -105,7 +105,7 @@ class Calculators
             'stock-average' => [
                 'name' => 'Stock Average Calculator',
                 'short' => 'Your new average buy price after averaging up or down.',
-                'icon' => 'layers',
+                'icon' => 'candlestick',
                 'group' => 'invest',
                 'about' => 'When you buy more of a stock you already hold, your average cost changes. Enter both purchases to see the new average price and total investment.',
                 'formula' => 'Average = (Q₁ × P₁ + Q₂ × P₂) ÷ (Q₁ + Q₂)',
@@ -125,7 +125,7 @@ class Calculators
             'compound-interest' => [
                 'name' => 'Compound Interest Calculator',
                 'short' => 'Growth of a deposit with monthly, quarterly or yearly compounding.',
-                'icon' => 'sparkles',
+                'icon' => 'sprout',
                 'group' => 'invest',
                 'about' => 'Compound interest earns interest on previously earned interest, so money grows faster than with simple interest. Choose how often interest is compounded to see the maturity value and how much extra compounding earns over simple interest.',
                 'formula' => 'A = P × (1 + r/n)^(n × t) · Simple interest = P × r × t',
@@ -157,7 +157,7 @@ class Calculators
             'fd' => [
                 'name' => 'FD Calculator',
                 'short' => 'Maturity value and interest earned on a fixed deposit.',
-                'icon' => 'landmark',
+                'icon' => 'vault',
                 'group' => 'savings',
                 'about' => 'Fixed deposits pay a fixed rate for a chosen tenure. Most Indian banks compound interest quarterly. Choose the compounding frequency your bank uses.',
                 'formula' => 'A = P × (1 + r/n)^(n × t)',
@@ -166,7 +166,7 @@ class Calculators
             'rd' => [
                 'name' => 'RD Calculator',
                 'short' => 'Maturity value of a monthly recurring deposit.',
-                'icon' => 'calendar',
+                'icon' => 'calendar-clock',
                 'group' => 'savings',
                 'about' => 'A Recurring Deposit (RD) lets you deposit a fixed sum every month. Banks typically compound RD interest quarterly; this calculator follows that convention.',
                 'formula' => 'M = Σ R × (1 + r/4)^(months remaining ÷ 3)',
@@ -175,7 +175,7 @@ class Calculators
             'ppf' => [
                 'name' => 'PPF Calculator',
                 'short' => 'Tax-free maturity value of your Public Provident Fund.',
-                'icon' => 'shield',
+                'icon' => 'piggy-bank',
                 'group' => 'savings',
                 'about' => 'The Public Provident Fund is a government-backed, tax-free savings scheme with a 15-year lock-in, extendable in blocks of 5 years. Deposits of ₹500 to ₹1.5 lakh a year qualify for Section 80C (old regime).',
                 'formula' => 'Each year: Balance = (Balance + Deposit) × (1 + r)',
@@ -186,7 +186,7 @@ class Calculators
             'emi' => [
                 'name' => 'EMI Calculator',
                 'short' => 'Monthly EMI, total interest and payment for any loan.',
-                'icon' => 'home',
+                'icon' => 'credit-card',
                 'group' => 'savings',
                 'about' => 'Equated Monthly Instalments (EMIs) repay both principal and interest over the loan tenure. Use it for home, car, personal or education loans.',
                 'formula' => 'EMI = P × r × (1 + r)ⁿ ÷ ((1 + r)ⁿ − 1), where r = monthly rate',
@@ -195,7 +195,7 @@ class Calculators
             'home-loan' => [
                 'name' => 'Home Loan Calculator',
                 'short' => 'Loan amount, EMI and the total cost of buying a home.',
-                'icon' => 'building',
+                'icon' => 'home',
                 'group' => 'savings',
                 'about' => 'Start from the property price and your down payment. The rest is the home loan: see the monthly EMI, the total interest over the tenure and the full cost of the home including your down payment. Banks usually fund up to 75–90% of the property value.',
                 'formula' => 'Loan = Price × (1 − Down payment %) · EMI = L × r × (1 + r)ⁿ ÷ ((1 + r)ⁿ − 1)',
@@ -206,7 +206,7 @@ class Calculators
             'loan-eligibility' => [
                 'name' => 'Loan Eligibility Calculator',
                 'short' => 'Maximum loan you can get based on income and existing EMIs.',
-                'icon' => 'check-circle',
+                'icon' => 'user-check',
                 'group' => 'savings',
                 'about' => 'Lenders cap your total EMIs at a share of your monthly income, called FOIR (Fixed Obligation to Income Ratio), typically 50–60%. Existing EMIs are subtracted from that limit, and the remaining EMI capacity is converted into a loan amount for the chosen rate and tenure.',
                 'formula' => 'Max EMI = Income × FOIR − Existing EMIs · Max loan = EMI × ((1 + r)ⁿ − 1) ÷ (r × (1 + r)ⁿ)',
@@ -240,7 +240,7 @@ class Calculators
             'option-premium' => [
                 'name' => 'Option Premium & Greeks Calculator',
                 'short' => 'Black-Scholes fair value of a call or put, with Delta, Gamma, Theta, Vega and Rho.',
-                'icon' => 'activity',
+                'icon' => 'sigma',
                 'group' => 'fno',
                 'about' => 'The Black-Scholes model prices a European option from the spot price, strike, days to expiry, risk-free rate and implied volatility (IV). The Greeks show how the premium reacts: Delta to a ₹1 move in the underlying, Gamma to changes in Delta, Theta to one day passing, Vega to a 1% change in IV and Rho to a 1% change in interest rates.',
                 'formula' => 'Call = S·N(d₁) − K·e^(−rT)·N(d₂) · Put = K·e^(−rT)·N(−d₂) − S·N(−d₁) · d₁ = [ln(S/K) + (r + σ²/2)T] ÷ (σ√T), d₂ = d₁ − σ√T',
@@ -263,7 +263,7 @@ class Calculators
             'beta' => [
                 'name' => 'Stock Beta Calculator',
                 'short' => 'Measure how volatile a stock is compared with the market.',
-                'icon' => 'bar-chart',
+                'icon' => 'activity',
                 'group' => 'fno',
                 'about' => 'Beta compares a stock’s returns with the market’s returns over the same periods. Paste matching lists of periodic returns (for example, monthly % returns of the stock and of Nifty 50). A beta above 1 means the stock tends to swing more than the market, below 1 means it is more defensive.',
                 'formula' => 'Beta = Covariance(stock, market) ÷ Variance(market) · Correlation = Covariance ÷ (σ stock × σ market)',
@@ -274,7 +274,7 @@ class Calculators
             'income-tax' => [
                 'name' => 'Income Tax Calculator (FY 2025-26)',
                 'short' => 'Compare tax under the new and old regime and see which saves more.',
-                'icon' => 'receipt',
+                'icon' => 'landmark',
                 'group' => 'trading',
                 'about' => 'Enter your annual income and, for the old regime, your deductions such as 80C, 80D, HRA and home-loan interest. The calculator applies FY 2025-26 (AY 2026-27) slabs, the standard deduction for salaried people, the Section 87A rebate (no tax up to ₹12 lakh taxable income in the new regime, ₹5 lakh in the old) and 4% health & education cess.',
                 'formula' => 'New regime: 0–4L nil, 4–8L 5%, 8–12L 10%, 12–16L 15%, 16–20L 20%, 20–24L 25%, above 24L 30% · Old regime: 0–2.5L nil, 2.5–5L 5%, 5–10L 20%, above 10L 30% · + 4% cess',
@@ -306,7 +306,7 @@ class Calculators
             'capital-gains' => [
                 'name' => 'Capital Gains Tax Calculator',
                 'short' => 'STCG / LTCG tax on listed shares and equity funds.',
-                'icon' => 'scale',
+                'icon' => 'badge-percent',
                 'group' => 'trading',
                 'about' => 'For listed equity shares and equity mutual funds, gains on holdings up to 12 months are short-term (STCG, 20%) and above 12 months are long-term (LTCG, 12.5% on gains above ₹1.25 lakh a year). A 4% health & education cess applies on the tax.',
                 'formula' => 'STCG tax = Gain × 20% · LTCG tax = (Gain − Exemption) × 12.5% · plus 4% cess',

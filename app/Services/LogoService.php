@@ -6,6 +6,7 @@ use App\Models\Ipo;
 use GdImage;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Sleep;
 use Throwable;
 
 /**
@@ -26,7 +27,7 @@ class LogoService
 
     public function filename(Ipo $ipo): ?string
     {
-        // Without GD (e.g. the Vercel PHP runtime) thumbnails can't be built; the monogram is shown instead.
+        // Without GD (webp support) thumbnails can't be built; the monogram is shown instead.
         if (! $ipo->image_url || ! function_exists('imagewebp')) {
             return null;
         }
@@ -217,7 +218,8 @@ class LogoService
     }
 
     /**
-     * Pre-build thumbnails so visitors never wait on generation.
+     * Pre-build thumbnails so visitors never wait on generation. Pauses briefly between
+     * downloads to be gentle with the image host.
      *
      * @param  iterable<Ipo>  $ipos
      */
@@ -231,7 +233,7 @@ class LogoService
             if ($this->ensure($ipo)) {
                 $made++;
             }
-            usleep(150_000); // be gentle with the image host
+            Sleep::usleep(150_000);
         }
 
         return $made;
