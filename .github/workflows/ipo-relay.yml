@@ -1,0 +1,52 @@
+# Relays IPO API pages to the site for hosts whose firewall can't reach the IPO API.
+# Needs repository secrets IPO_API_KEY and IPO_PUSH_TOKEN (same value as the server's .env),
+# and IPO_API_PULL=false on the server so it stops trying to pull directly.
+name: IPO relay
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'   # latest 150 IPOs
+    - cron: '0 22 * * *'     # full catalogue at 03:30 IST
+  workflow_dispatch:
+    inputs:
+      full:
+        description: Relay every page
+        type: boolean
+        default: false
+
+concurrency:
+  group: ipo-relay
+  cancel-in-progress: false
+
+jobs:
+  relay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      IPO_API_URL: https://www.finowings.com/ipo-sync.php
+      PUSH_URL: https://ipodarbaar.brolyticstechnologies.com/internal/ipo-push
+      IPO_API_KEY: ${{ secrets.IPO_API_KEY }}
+      PUSH_TOKEN: ${{ secrets.IPO_PUSH_TOKEN }}
+      FULL: ${{ github.event.schedule == '0 22 * * *' || inputs.full == true }}
+    steps:
+      - name: Relay IPO pages
+        run: |
+          set -euo pipefail
+          max_pages=3
+          if [ "$FULL" = "true" ]; then max_pages=100; fi
+          offset=0
+          page=0
+          while [ "$page" -lt "$max_pages" ]; do
+            curl -fsS --retry 2 -m 30 -G "$IPO_API_URL" \
+              --data-urlencode "limit=50" --data-urlencode "offset=$offset" --data-urlencode "key=$IPO_API_KEY" \
+              -o page.json
+            jq -e '.status == "success"' page.json > /dev/null
+            count=$(jq '.data | length' page.json)
+            jq -c '{data: .data}' page.json | curl -fsS --retry 2 -m 60 -X POST "$PUSH_URL" \
+              -H "Authorization: Bearer $PUSH_TOKEN" -H "Content-Type: application/json" -H "Accept: application/json" \
+              --data-binary @- -o /dev/null
+            page=$((page + 1))
+            offset=$((offset + 50))
+            echo "page $page: $count rows"
+            if [ "$(jq '.pagination.has_more // false' page.json)" != "true" ] || [ "$count" -eq 0 ]; then break; fi
+          done

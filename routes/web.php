@@ -5,6 +5,7 @@ use App\Http\Controllers\CalculatorController;
 use App\Http\Controllers\CompareController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IpoController;
+use App\Http\Controllers\IpoPushController;
 use App\Http\Controllers\IpoVoteController;
 use App\Http\Controllers\IpoYearController;
 use App\Http\Controllers\LogoController;
@@ -67,6 +68,9 @@ Route::withoutMiddleware(RefreshIpoData::class)->group(function () {
     Route::get('/sitemap.xml', [SeoController::class, 'sitemapIndex'])->name('sitemap');
     Route::get('/sitemaps/{part}.xml', [SeoController::class, 'sitemap'])->whereIn('part', ['pages', 'ipos', 'news'])->name('sitemaps.show');
 });
+
+// IPO relay (see IpoPushController)
+Route::post('/internal/ipo-push', IpoPushController::class)->withoutMiddleware(RefreshIpoData::class)->middleware('throttle:120,1')->name('ipo.push');
 
 // Admin
 Route::prefix('admin')->name('admin.')->withoutMiddleware(RefreshIpoData::class)->group(function () {

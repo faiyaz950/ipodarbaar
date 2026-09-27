@@ -12,6 +12,8 @@ return [
     'ipo_api' => [
         'url' => env('IPO_API_URL', 'https://www.finowings.com/ipo-sync.php'),
         'key' => env('IPO_API_KEY'),
+        'pull' => (bool) env('IPO_API_PULL', true),     // false when the relay pushes data instead
+        'push_token' => env('IPO_PUSH_TOKEN'),          // enables POST /internal/ipo-push
         'page_size' => 50,          // API maximum per request
         'recent_pages' => 3,        // pages refreshed on a quick sync (latest 150 IPOs)
         'stale_after' => 20,        // minutes before a background refresh is triggered

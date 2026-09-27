@@ -52,11 +52,30 @@ class IpoSyncService
             }
         } while ($hasMore && count($rows) > 0 && ($maxPages === null || $pages < $maxPages));
 
+        $this->markSynced();
+
+        return ['fetched' => $fetched, 'pages' => $pages, 'total' => $total];
+    }
+
+    /**
+     * Store one page of API rows pushed by the relay instead of pulled from the API.
+     *
+     * @param  array<int, array<string, mixed>>  $rows
+     */
+    public function import(array $rows): int
+    {
+        $rows = array_values(array_filter($rows, 'is_array'));
+        $this->store($rows);
+        $this->markSynced();
+
+        return count($rows);
+    }
+
+    protected function markSynced(): void
+    {
         Cache::forever(self::SYNCED_AT_KEY, now()->toIso8601String());
         $this->stats->flush();
         Cache::forget('layout:ticker');
-
-        return ['fetched' => $fetched, 'pages' => $pages, 'total' => $total];
     }
 
     /** Quick refresh of the most recent IPOs (GMP/dates change most there). */
@@ -152,6 +171,9 @@ class IpoSyncService
             if ($record) {
                 $records[$record['api_id']] = $record;
             }
+        }
+        if ($records === []) {
+            return;
         }
 
         // Guarantee unique slugs: a slug already owned by another API record gets the id appended.
