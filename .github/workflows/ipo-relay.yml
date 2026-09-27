@@ -24,6 +24,7 @@ jobs:
     timeout-minutes: 10
     env:
       IPO_API_URL: https://www.finowings.com/ipo-sync.php
+      SITE_URL: https://ipodarbaar.brolyticstechnologies.com
       PUSH_URL: https://ipodarbaar.brolyticstechnologies.com/internal/ipo-push
       IPO_API_KEY: ${{ secrets.IPO_API_KEY }}
       PUSH_TOKEN: ${{ secrets.IPO_PUSH_TOKEN }}
@@ -49,4 +50,22 @@ jobs:
             offset=$((offset + 50))
             echo "page $page: $count rows"
             if [ "$(jq '.pagination.has_more // false' page.json)" != "true" ] || [ "$count" -eq 0 ]; then break; fi
+          done
+
+      - name: Relay missing logo banners
+        run: |
+          set -euo pipefail
+          curl -fsS --retry 2 -m 60 "$SITE_URL/internal/logos/missing" \
+            -H "Authorization: Bearer $PUSH_TOKEN" -H "Accept: application/json" -o missing.json
+          echo "$(jq length missing.json) logos missing"
+          jq -c '.[]' missing.json | while read -r item; do
+            id=$(jq -r '.api_id' <<< "$item")
+            url=$(jq -r '.url' <<< "$item")
+            if ! curl -fsS --retry 1 -m 20 "$url" -o banner.img; then
+              echo "download failed: $id"
+              continue
+            fi
+            curl -sS -m 60 -X POST "$SITE_URL/internal/logos/$id" \
+              -H "Authorization: Bearer $PUSH_TOKEN" -H "Accept: application/json" \
+              -F "banner=@banner.img" -w " $id\n" || echo "push failed: $id"
           done

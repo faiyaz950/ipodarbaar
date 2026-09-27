@@ -5,13 +5,13 @@ use App\Http\Controllers\CalculatorController;
 use App\Http\Controllers\CompareController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IpoController;
-use App\Http\Controllers\IpoPushController;
 use App\Http\Controllers\IpoVoteController;
 use App\Http\Controllers\IpoYearController;
 use App\Http\Controllers\LogoController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\OgImageController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\RelayController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\WatchlistController;
@@ -69,8 +69,12 @@ Route::withoutMiddleware(RefreshIpoData::class)->group(function () {
     Route::get('/sitemaps/{part}.xml', [SeoController::class, 'sitemap'])->whereIn('part', ['pages', 'ipos', 'news'])->name('sitemaps.show');
 });
 
-// IPO relay (see IpoPushController)
-Route::post('/internal/ipo-push', IpoPushController::class)->withoutMiddleware(RefreshIpoData::class)->middleware('throttle:120,1')->name('ipo.push');
+// IPO relay (see RelayController)
+Route::prefix('internal')->name('relay.')->withoutMiddleware(RefreshIpoData::class)->middleware('throttle:300,1')->group(function () {
+    Route::post('/ipo-push', [RelayController::class, 'ipos'])->name('ipos');
+    Route::get('/logos/missing', [RelayController::class, 'missingLogos'])->name('logos.missing');
+    Route::post('/logos/{ipo:api_id}', [RelayController::class, 'logo'])->whereNumber('ipo')->name('logos.store');
+});
 
 // Admin
 Route::prefix('admin')->name('admin.')->withoutMiddleware(RefreshIpoData::class)->group(function () {

@@ -21,7 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn () => route('admin.login'));
         // Mail providers' one-click unsubscribe posts without a token; the URL is signed instead.
         // The IPO relay authenticates with a bearer token instead.
-        $middleware->validateCsrfTokens(except: ['unsubscribe/*', 'internal/ipo-push']);
+        $middleware->validateCsrfTokens(except: ['unsubscribe/*', 'internal/*']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

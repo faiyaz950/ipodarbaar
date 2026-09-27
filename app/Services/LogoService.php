@@ -69,9 +69,9 @@ class LogoService
             return $path;
         }
 
-        // Don't hammer the source for images that recently failed.
-        $failKey = 'logo-fail:'.$file;
-        if (Cache::has($failKey)) {
+        // Don't hammer the source for images that recently failed. When this host can't reach
+        // the image source, banners arrive through the relay instead (see RelayController).
+        if ($this->hasFailed($ipo) || ! config('ipodarbar.ipo_api.pull')) {
             return null;
         }
 
@@ -80,37 +80,65 @@ class LogoService
             if (! $response->successful()) {
                 throw new \RuntimeException('HTTP '.$response->status());
             }
-
-            $thumb = $this->make($response->body());
-
-            if (! is_dir(dirname($path))) {
-                mkdir(dirname($path), 0755, true);
-            }
-
-            // Remove thumbnails from an older banner of the same IPO.
-            foreach (glob($this->path($ipo->slug.'-*.webp')) ?: [] as $old) {
-                if (preg_match('/^'.preg_quote($ipo->slug, '/').'-[0-9a-f]{8}\.webp$/', basename($old))) {
-                    @unlink($old);
-                }
-            }
-
-            $tmp = $path.'.'.getmypid().'.tmp';
-            imagewebp($thumb, $tmp, 82);
-            imagedestroy($thumb);
-            rename($tmp, $path);
-
-            return $path;
-        } catch (UnsupportedBanner) {
-            // Old banner layouts never become croppable; the monogram is shown instead.
-            Cache::put($failKey, true, now()->addDays(7));
-
-            return null;
         } catch (Throwable) {
             // Network hiccup: try again soon.
-            Cache::put($failKey, true, now()->addMinutes(10));
+            Cache::put($this->failKey($file), true, now()->addMinutes(10));
 
             return null;
         }
+
+        return $this->storeBanner($ipo, $response->body());
+    }
+
+    /** Build and save the thumbnail from downloaded banner bytes. Returns the absolute path, or null. */
+    public function storeBanner(Ipo $ipo, string $bytes): ?string
+    {
+        $file = $this->filename($ipo);
+        if (! $file) {
+            return null;
+        }
+        $path = $this->path($file);
+
+        try {
+            $thumb = $this->make($bytes);
+        } catch (UnsupportedBanner) {
+            // Old banner layouts never become croppable; the monogram is shown instead.
+            Cache::put($this->failKey($file), true, now()->addDays(7));
+
+            return null;
+        } catch (Throwable) {
+            return null;
+        }
+
+        if (! is_dir(dirname($path))) {
+            mkdir(dirname($path), 0755, true);
+        }
+
+        // Remove thumbnails from an older banner of the same IPO.
+        foreach (glob($this->path($ipo->slug.'-*.webp')) ?: [] as $old) {
+            if (preg_match('/^'.preg_quote($ipo->slug, '/').'-[0-9a-f]{8}\.webp$/', basename($old))) {
+                @unlink($old);
+            }
+        }
+
+        $tmp = $path.'.'.getmypid().'.tmp';
+        imagewebp($thumb, $tmp, 82);
+        imagedestroy($thumb);
+        rename($tmp, $path);
+
+        return $path;
+    }
+
+    public function hasFailed(Ipo $ipo): bool
+    {
+        $file = $this->filename($ipo);
+
+        return $file !== null && Cache::has($this->failKey($file));
+    }
+
+    private function failKey(string $file): string
+    {
+        return 'logo-fail:'.$file;
     }
 
     /** Crop the logo out of banner bytes and return a padded 2:1 thumbnail. */
