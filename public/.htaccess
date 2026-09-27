@@ -5,10 +5,11 @@
 
     RewriteEngine On
 
-    # Force HTTPS. Uncomment once https://your-domain works (cPanel → SSL/TLS Status → AutoSSL).
-    # RewriteCond %{HTTPS} off
-    # RewriteCond %{HTTP:X-Forwarded-Proto} !https
-    # RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+    # Force HTTPS. AutoSSL validation under /.well-known must stay reachable over plain HTTP.
+    RewriteCond %{HTTPS} off
+    RewriteCond %{HTTP:X-Forwarded-Proto} !https
+    RewriteCond %{REQUEST_URI} !^/\.well-known/
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
