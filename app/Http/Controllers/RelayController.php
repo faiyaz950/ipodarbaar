@@ -3,13 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Ipo;
+use App\Services\IpoPageImporter;
 use App\Services\IpoSyncService;
 use App\Services\LogoService;
-use App\Services\RegistrarExtractor;
 use App\Support\PageCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 
 /**
  * Receives IPO API pages and logo banners relayed from outside (see
@@ -57,26 +56,32 @@ class RelayController extends Controller
     }
 
     /** IPOs without a registrar whose source page hasn't been checked recently, newest first. */
-    public function missingRegistrars(Request $request): JsonResponse
+    /**
+     * Source IPO pages to read: never read yet, or current IPOs whose page may have gained
+     * details (lead managers, financials) since the last read. Current IPOs come first.
+     */
+    public function stalePages(Request $request): JsonResponse
     {
         $this->authorizeRelay($request);
 
         $limit = min(max((int) $request->query('limit', 30), 1), 1500);
+        $refreshBefore = now()->subHours(12);
 
-        $missing = Ipo::query()
-            ->whereNull('registrar')
+        $stale = Ipo::query()
+            ->where(fn ($q) => $q->whereNull('page_synced_at')
+                ->orWhere(fn ($q) => $q->active()->where('page_synced_at', '<', $refreshBefore)))
             ->orderByDesc('open_date')
-            ->get(['id', 'api_id', 'slug'])
-            ->reject(fn (Ipo $ipo) => Cache::has($this->registrarMissKey($ipo)))
+            ->get()
+            ->sortByDesc(fn (Ipo $ipo) => in_array($ipo->status(), ['upcoming', 'open', 'closed'], true))
             ->take($limit)
             ->map(fn (Ipo $ipo) => ['api_id' => $ipo->api_id, 'url' => config('ipodarbar.ipo_api.page_url').$ipo->slug])
             ->values();
 
-        return response()->json($missing);
+        return response()->json($stale);
     }
 
-    /** Receives the gzipped source IPO page and fills the registrar unless an editor already set it. */
-    public function registrar(Request $request, Ipo $ipo, RegistrarExtractor $extractor): JsonResponse
+    /** Receives a gzipped source IPO page and fills whatever details are still missing. */
+    public function page(Request $request, Ipo $ipo, IpoPageImporter $importer): JsonResponse
     {
         $this->authorizeRelay($request);
 
@@ -84,21 +89,13 @@ class RelayController extends Controller
 
         $bytes = $request->file('page')->get();
         $html = @gzdecode($bytes);
-        $registrar = $extractor->fromHtml($html === false ? $bytes : $html);
+        $filled = $importer->import($ipo, $html === false ? $bytes : $html);
 
-        if ($registrar === null) {
-            Cache::put($this->registrarMissKey($ipo), true, now()->addDays(7));
-        } elseif ($ipo->registrar === null) {
-            $ipo->update(['registrar' => $registrar]);
+        if ($filled !== []) {
             PageCache::flush();
         }
 
-        return response()->json(['registrar' => $ipo->registrar]);
-    }
-
-    private function registrarMissKey(Ipo $ipo): string
-    {
-        return 'registrar-miss:'.$ipo->id;
+        return response()->json(['filled' => $filled]);
     }
 
     private function authorizeRelay(Request $request): void

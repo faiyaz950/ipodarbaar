@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Ipo;
+use App\Models\IpoFinancial;
 use App\Services\IpoSyncService;
 use App\Services\LogoService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -126,56 +127,78 @@ class RelayControllerTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_missing_registrars_lists_ipos_without_one_newest_first(): void
+    public function test_stale_pages_lists_unread_pages_and_current_ipos_read_long_ago(): void
     {
-        $older = Ipo::factory()->listed()->create(['slug' => 'older-co-ipo']);
-        $newer = Ipo::factory()->upcoming()->create(['slug' => 'newer-co-ipo']);
-        Ipo::factory()->create(['registrar' => 'KFin Technologies']);
+        $unreadOld = Ipo::factory()->listed()->create(['slug' => 'unread-old-ipo', 'open_date' => now()->subYear()]);
+        $staleCurrent = Ipo::factory()->open()->create(['slug' => 'stale-current-ipo', 'page_synced_at' => now()->subDay(), 'open_date' => now()->subYears(2)]);
+        Ipo::factory()->open()->create(['page_synced_at' => now()->subHour()]);
+        Ipo::factory()->listed()->create(['page_synced_at' => now()->subMonth()]);
 
         $this->withToken(self::TOKEN)
-            ->getJson(route('relay.registrars.missing', ['limit' => 5]))
+            ->getJson(route('relay.pages.stale', ['limit' => 5]))
             ->assertOk()
             ->assertExactJson([
-                ['api_id' => $newer->api_id, 'url' => 'https://www.finowings.com/ipo/newer-co-ipo'],
-                ['api_id' => $older->api_id, 'url' => 'https://www.finowings.com/ipo/older-co-ipo'],
+                ['api_id' => $staleCurrent->api_id, 'url' => 'https://www.finowings.com/ipo/stale-current-ipo'],
+                ['api_id' => $unreadOld->api_id, 'url' => 'https://www.finowings.com/ipo/unread-old-ipo'],
             ]);
     }
 
-    public function test_a_relayed_page_fills_the_registrar(): void
+    public function test_a_relayed_page_fills_missing_details(): void
     {
-        $ipo = Ipo::factory()->create();
+        $ipo = Ipo::factory()->create(['lot_size' => null]);
 
         $this->withToken(self::TOKEN)
-            ->post(route('relay.registrars.store', $ipo), ['page' => $this->page('<tr><td>Registrar</td><td>Bigshare Services Pvt. Ltd.</td></tr>')], ['Accept' => 'application/json'])
+            ->post(route('relay.pages.store', $ipo), ['page' => $this->page()], ['Accept' => 'application/json'])
             ->assertOk()
-            ->assertExactJson(['registrar' => 'Bigshare Services']);
+            ->assertExactJson(['filled' => ['registrar', 'lot_size', 'face_value', 'lead_managers', 'financials']]);
 
-        $this->assertSame('Bigshare Services', $ipo->fresh()->registrar);
+        $ipo->refresh();
+        $this->assertSame('Bigshare Services', $ipo->registrar);
+        $this->assertSame(1600, $ipo->lot_size);
+        $this->assertSame(10.0, $ipo->detail->face_value);
+        $this->assertSame('Hem Securities Ltd.', $ipo->detail->lead_managers);
+        $this->assertSame(46.76, $ipo->financials->first()->revenue);
+        $this->assertNotNull($ipo->page_synced_at);
     }
 
-    public function test_a_registrar_set_by_an_editor_is_not_overwritten(): void
+    public function test_details_entered_by_an_editor_are_not_overwritten(): void
     {
-        $ipo = Ipo::factory()->create(['registrar' => 'Cameo Corporate Services']);
+        $ipo = Ipo::factory()->create(['registrar' => 'Cameo Corporate Services', 'lot_size' => 800]);
+        $ipo->detail()->create(['face_value' => 2, 'lead_managers' => 'Axis Capital']);
+        IpoFinancial::factory()->for($ipo)->create(['period' => 'FY25', 'revenue' => 10]);
 
         $this->withToken(self::TOKEN)
-            ->post(route('relay.registrars.store', $ipo), ['page' => $this->page('<tr><td>Registrar</td><td>KFin Technologies Ltd.</td></tr>')], ['Accept' => 'application/json'])
-            ->assertExactJson(['registrar' => 'Cameo Corporate Services']);
+            ->post(route('relay.pages.store', $ipo), ['page' => $this->page()], ['Accept' => 'application/json'])
+            ->assertExactJson(['filled' => []]);
+
+        $ipo->refresh();
+        $this->assertSame([800, 2.0, 'Axis Capital'], [$ipo->lot_size, $ipo->detail->face_value, $ipo->detail->lead_managers]);
+        $this->assertSame(['FY25'], $ipo->financials->pluck('period')->all());
     }
 
-    public function test_pages_without_a_registrar_are_skipped_for_a_while(): void
+    public function test_the_api_sync_keeps_a_lot_size_found_on_the_source_page(): void
     {
-        $ipo = Ipo::factory()->create();
+        $ipo = Ipo::factory()->create(['api_id' => 11, 'lot_size' => null]);
+        $this->withToken(self::TOKEN)->post(route('relay.pages.store', $ipo), ['page' => $this->page()], ['Accept' => 'application/json']);
 
-        $this->withToken(self::TOKEN)
-            ->post(route('relay.registrars.store', $ipo), ['page' => $this->page('<tr><td>Issue Type</td><td>Book Built</td></tr>')], ['Accept' => 'application/json'])
-            ->assertExactJson(['registrar' => null]);
+        $this->withToken(self::TOKEN)->postJson(route('relay.ipos'), ['data' => [$this->row(11, 'Alpha Tech IPO | Finowings')]])->assertOk();
 
-        $this->withToken(self::TOKEN)->getJson(route('relay.registrars.missing'))->assertExactJson([]);
+        $this->assertSame(1600, $ipo->fresh()->lot_size);
     }
 
-    private function page(string $rows): UploadedFile
+    private function page(): UploadedFile
     {
-        return UploadedFile::fake()->createWithContent('page.html.gz', gzencode("<html><body><table>{$rows}</table></body></html>"));
+        return UploadedFile::fake()->createWithContent('page.html.gz', gzencode(<<<'HTML'
+            <h2>Company Financials</h2><p>(Amount in Cr)</p>
+            <table><tr><th>Period</th><th>31 Mar 2026</th></tr><tr><td>Total Income</td><td>46.76</td></tr></table>
+            <h2>IPO Summary</h2>
+            <table>
+                <tr><td>Face Value</td><td>Rs. 10 per Share</td></tr>
+                <tr><td>Lot Size</td><td>1600 Shares</td></tr>
+                <tr><td>Registrar</td><td>Bigshare Services Pvt. Ltd.</td></tr>
+            </table>
+            <h2>IPO Lead Managers</h2><p>Hem Securities Ltd.</p>
+            HTML));
     }
 
     /** A banner in the source template: a white card with a dark logo in the middle. */

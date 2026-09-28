@@ -201,6 +201,12 @@ class IpoSyncService
             }
         }
 
+        // The API only sometimes mentions the lot size; keep one found elsewhere (the source IPO page).
+        $lots = Ipo::query()->whereIn('api_id', array_keys($records))->whereNotNull('lot_size')->pluck('lot_size', 'api_id');
+        foreach ($lots as $apiId => $lot) {
+            $records[$apiId]['lot_size'] ??= $lot;
+        }
+
         $columns = array_keys(reset($records));
         Ipo::query()->upsert(array_values($records), ['api_id'], array_diff($columns, ['api_id']));
 

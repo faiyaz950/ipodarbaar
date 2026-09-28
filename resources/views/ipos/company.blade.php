@@ -58,6 +58,30 @@
     </div>
 @endif
 
+@if ($detail && ($detail->strengthsList() || $detail->weaknessesList()))
+    <div class="card card-pad">
+        <h2 class="card-title" style="margin-bottom:14px" id="strengths"><span class="ico"><x-icon name="scale" :size="16" /></span> {{ $ipo->name }} IPO Strengths &amp; Risks</h2>
+        <div class="pros-cons">
+            @if ($detail->strengthsList())
+                <div class="pc pros">
+                    <h3><x-icon name="check" :size="15" /> Strengths</h3>
+                    <ul>
+                        @foreach ($detail->strengthsList() as $point)<li>{{ $point }}</li>@endforeach
+                    </ul>
+                </div>
+            @endif
+            @if ($detail->weaknessesList())
+                <div class="pc cons">
+                    <h3><x-icon name="alert" :size="15" /> Risks</h3>
+                    <ul>
+                        @foreach ($detail->weaknessesList() as $point)<li>{{ $point }}</li>@endforeach
+                    </ul>
+                </div>
+            @endif
+        </div>
+    </div>
+@endif
+
 @if ($financials->isNotEmpty())
     @php
         $chartMax = max(1, $financials->max(fn (IpoFinancial $f) => max(abs($f->revenue ?? 0), abs($f->pat ?? 0))));

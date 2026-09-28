@@ -1174,6 +1174,14 @@ button.poll-btn:hover { border-color: var(--gold); }
 .fin-col { flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .fin-bars { flex: 1; width: 100%; max-width: 96px; display: flex; align-items: flex-end; justify-content: center; gap: 6px; position: relative; }
 .fin-bars i { flex: 1; max-width: 34px; min-height: 2px; border-radius: 6px 6px 0 0; }
+.pros-cons { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.pros-cons .pc { border-radius: 12px; padding: 14px 16px; border: 1px solid var(--border); }
+.pros-cons .pros { background: var(--green-soft); }
+.pros-cons .cons { background: var(--red-soft); }
+.pros-cons h3 { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; font-size: 14.5px; }
+.pros-cons .pros h3 { color: var(--green); }
+.pros-cons .cons h3 { color: var(--red); }
+.pros-cons ul { margin: 0; padding-left: 18px; display: grid; gap: 7px; font-size: 14px; line-height: 1.55; color: var(--text-2); }
 .fin-bars .rev, .fin-legend .rev { background: var(--chart-1); }
 .fin-bars .pat, .fin-legend .pat { background: var(--gold-2); }
 .fin-bars .pat.neg { background: var(--red); }

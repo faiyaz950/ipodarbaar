@@ -51,6 +51,7 @@ class Ipo extends Model
         'is_published' => 'boolean',
         'source_created_at' => 'datetime',
         'source_updated_at' => 'datetime',
+        'page_synced_at' => 'datetime',
         'subscription_retail' => 'float',
         'subscription_nii' => 'float',
         'subscription_qib' => 'float',

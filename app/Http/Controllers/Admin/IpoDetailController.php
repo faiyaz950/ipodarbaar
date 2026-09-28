@@ -52,6 +52,8 @@ class IpoDetailController extends Controller
             'lead_managers' => ['nullable', 'string', 'max:1000'],
             'market_maker' => ['nullable', 'string', 'max:120'],
             'objects' => ['nullable', 'string', 'max:3000'],
+            'strengths' => ['nullable', 'string', 'max:3000'],
+            'weaknesses' => ['nullable', 'string', 'max:3000'],
             'pe_pre' => $ratio,
             'pe_post' => $ratio,
             'eps' => $ratio,

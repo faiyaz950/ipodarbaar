@@ -100,8 +100,8 @@ Route::prefix('internal')->name('relay.')->withoutMiddleware(RefreshIpoData::cla
     Route::post('/ipo-push', [RelayController::class, 'ipos'])->name('ipos');
     Route::get('/logos/missing', [RelayController::class, 'missingLogos'])->name('logos.missing');
     Route::post('/logos/{ipo:api_id}', [RelayController::class, 'logo'])->whereNumber('ipo')->name('logos.store');
-    Route::get('/registrars/missing', [RelayController::class, 'missingRegistrars'])->name('registrars.missing');
-    Route::post('/registrars/{ipo:api_id}', [RelayController::class, 'registrar'])->whereNumber('ipo')->name('registrars.store');
+    Route::get('/pages/stale', [RelayController::class, 'stalePages'])->name('pages.stale');
+    Route::post('/pages/{ipo:api_id}', [RelayController::class, 'page'])->whereNumber('ipo')->name('pages.store');
 });
 
 // Admin

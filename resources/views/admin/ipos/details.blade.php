@@ -59,6 +59,18 @@
             <textarea class="input" name="objects" rows="5" maxlength="3000" placeholder="Repayment of borrowings&#10;Capital expenditure for new plant&#10;General corporate purposes">{{ old('objects', $detail->objects) }}</textarea>
             @error('objects')<span class="af-error">{{ $message }}</span>@enderror
         </label>
+        <div class="af-grid" style="margin-top:16px">
+            <label class="af">
+                <span class="af-label">Strengths (one per line)</span>
+                <textarea class="input" name="strengths" rows="5" maxlength="3000">{{ old('strengths', $detail->strengths) }}</textarea>
+                @error('strengths')<span class="af-error">{{ $message }}</span>@enderror
+            </label>
+            <label class="af">
+                <span class="af-label">Risks / weaknesses (one per line)</span>
+                <textarea class="input" name="weaknesses" rows="5" maxlength="3000">{{ old('weaknesses', $detail->weaknesses) }}</textarea>
+                @error('weaknesses')<span class="af-error">{{ $message }}</span>@enderror
+            </label>
+        </div>
     </div>
 
     <div class="card card-pad">

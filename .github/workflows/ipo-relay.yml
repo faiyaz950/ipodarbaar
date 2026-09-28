@@ -21,7 +21,7 @@ concurrency:
 jobs:
   relay:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     env:
       IPO_API_URL: https://www.finowings.com/ipo-sync.php
       SITE_URL: https://ipodarbaar.in
@@ -70,23 +70,23 @@ jobs:
               -F "banner=@banner.img" -w " $id\n" || echo "push failed: $id"
           done
 
-      - name: Relay registrars from IPO pages
+      - name: Relay IPO pages (registrar, lot size, company details, financials)
         run: |
           set -euo pipefail
           limit=30
           if [ "$FULL" = "true" ]; then limit=1500; fi
-          curl -fsS --retry 2 -m 60 "$SITE_URL/internal/registrars/missing?limit=$limit" \
-            -H "Authorization: Bearer $PUSH_TOKEN" -H "Accept: application/json" -o registrars.json
-          echo "$(jq length registrars.json) registrars missing"
+          curl -fsS --retry 2 -m 60 "$SITE_URL/internal/pages/stale?limit=$limit" \
+            -H "Authorization: Bearer $PUSH_TOKEN" -H "Accept: application/json" -o pages.json
+          echo "$(jq length pages.json) pages to read"
           relay_one() {
             local id=$1 url=$2 page="page-$1.html.gz"
             if ! curl -fsS --retry 1 -m 30 "$url" | gzip -c > "$page"; then
               echo "download failed: $id"; rm -f "$page"; return 0
             fi
-            curl -sS -m 60 -X POST "$SITE_URL/internal/registrars/$id" \
+            curl -sS -m 60 -X POST "$SITE_URL/internal/pages/$id" \
               -H "Authorization: Bearer $PUSH_TOKEN" -H "Accept: application/json" \
               -F "page=@$page" -w " $id\n" || echo "push failed: $id"
             rm -f "$page"
           }
           export -f relay_one
-          jq -r '.[] | "\(.api_id) \(.url)"' registrars.json | xargs -P 3 -L 1 bash -c 'relay_one "$0" "$1"'
+          jq -r '.[] | "\(.api_id) \(.url)"' pages.json | xargs -P 3 -L 1 bash -c 'relay_one "$0" "$1"'

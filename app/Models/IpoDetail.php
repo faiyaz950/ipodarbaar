@@ -23,7 +23,7 @@ class IpoDetail extends Model
         'fresh_issue_cr', 'ofs_cr', 'face_value', 'market_cap_cr',
         'retail_quota', 'nii_quota', 'qib_quota',
         'promoter_holding_pre', 'promoter_holding_post', 'promoters', 'lead_managers', 'market_maker', 'objects',
-        'pe_pre', 'pe_post', 'eps', 'roe', 'roce', 'ronw', 'debt_equity',
+        'strengths', 'weaknesses', 'pe_pre', 'pe_post', 'eps', 'roe', 'roce', 'ronw', 'debt_equity',
         'anchor_amount_cr', 'anchor_date', 'rhp_url', 'drhp_url', 'website_url',
     ];
 
@@ -57,6 +57,22 @@ class IpoDetail extends Model
     public function leadManagersList(): array
     {
         return $this->lines($this->lead_managers);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function strengthsList(): array
+    {
+        return $this->lines($this->strengths);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function weaknessesList(): array
+    {
+        return $this->lines($this->weaknesses);
     }
 
     public function hasIssueStructure(): bool
