@@ -12,6 +12,7 @@ use App\Http\Controllers\LogoController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\OgImageController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\PortfolioController;
 use App\Http\Controllers\RelayController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\SubscriptionController;
@@ -33,6 +34,7 @@ Route::get('/ipo-gmp', [IpoController::class, 'gmp'])->name('ipos.gmp');
 Route::get('/mainboard-ipo-gmp', [IpoController::class, 'gmp'])->defaults('type', 'mainboard')->name('ipos.gmp.mainboard');
 Route::get('/sme-ipo-gmp', [IpoController::class, 'gmp'])->defaults('type', 'sme')->name('ipos.gmp.sme');
 Route::get('/ipo-listing-today', [IpoController::class, 'listingToday'])->name('ipos.listing-today');
+Route::get('/sme-ipo-dashboard', [IpoController::class, 'smeDashboard'])->name('ipos.sme-dashboard');
 Route::get('/ipo-calendar', [IpoController::class, 'calendar'])->name('ipos.calendar');
 Route::get('/ipo/search/suggest', [IpoController::class, 'suggest'])->name('ipos.suggest');
 Route::get('/ipo-compare', [CompareController::class, 'index'])->name('compare');
@@ -45,6 +47,10 @@ Route::post('/ipo/{ipo}/vote', [IpoVoteController::class, 'store'])->middleware(
 Route::get('/watchlist', [WatchlistController::class, 'index'])->name('watchlist');
 Route::get('/watchlist/items', [WatchlistController::class, 'items'])->name('watchlist.items');
 Route::get('/offline', [PageController::class, 'offline'])->name('offline');
+
+// IPO portfolio tracker (stored in the browser; the server only supplies prices)
+Route::get('/ipo-portfolio', [PortfolioController::class, 'index'])->name('portfolio');
+Route::get('/ipo-portfolio/prices', [PortfolioController::class, 'prices'])->name('portfolio.prices');
 
 // Email digest (double opt-in, signed confirm / unsubscribe links)
 Route::post('/subscribe', [SubscriptionController::class, 'store'])->middleware('throttle:5,1')->name('subscribe');
@@ -93,6 +99,8 @@ Route::prefix('internal')->name('relay.')->withoutMiddleware(RefreshIpoData::cla
     Route::post('/ipo-push', [RelayController::class, 'ipos'])->name('ipos');
     Route::get('/logos/missing', [RelayController::class, 'missingLogos'])->name('logos.missing');
     Route::post('/logos/{ipo:api_id}', [RelayController::class, 'logo'])->whereNumber('ipo')->name('logos.store');
+    Route::get('/registrars/missing', [RelayController::class, 'missingRegistrars'])->name('registrars.missing');
+    Route::post('/registrars/{ipo:api_id}', [RelayController::class, 'registrar'])->whereNumber('ipo')->name('registrars.store');
 });
 
 // Admin

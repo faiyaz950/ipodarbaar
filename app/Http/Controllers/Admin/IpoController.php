@@ -21,8 +21,7 @@ class IpoController extends Controller
         $query = match ($filter) {
             'all' => $query->latest('source_created_at')->latest('api_id'),
             'listed' => $query->listed()->latest('source_created_at')->latest('api_id'),
-            'edited' => $query->where(fn ($w) => $w->whereNotNull('locked_fields')->orWhereNotNull('registrar')
-                ->orWhereNotNull('subscription_total')->orWhereNotNull('listing_price')->orWhereNotNull('about'))
+            'edited' => $query->where(fn ($w) => $w->whereNotNull('locked_fields')->orWhereNotNull('subscription_total')->orWhereNotNull('listing_price')->orWhereNotNull('about'))
                 ->orderByDesc('updated_at'),
             default => $query->active()->latest('source_created_at')->latest('api_id'),
         };

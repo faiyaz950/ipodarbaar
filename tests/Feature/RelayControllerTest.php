@@ -126,6 +126,58 @@ class RelayControllerTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_missing_registrars_lists_ipos_without_one_newest_first(): void
+    {
+        $older = Ipo::factory()->listed()->create(['slug' => 'older-co-ipo']);
+        $newer = Ipo::factory()->upcoming()->create(['slug' => 'newer-co-ipo']);
+        Ipo::factory()->create(['registrar' => 'KFin Technologies']);
+
+        $this->withToken(self::TOKEN)
+            ->getJson(route('relay.registrars.missing', ['limit' => 5]))
+            ->assertOk()
+            ->assertExactJson([
+                ['api_id' => $newer->api_id, 'url' => 'https://www.finowings.com/ipo/newer-co-ipo'],
+                ['api_id' => $older->api_id, 'url' => 'https://www.finowings.com/ipo/older-co-ipo'],
+            ]);
+    }
+
+    public function test_a_relayed_page_fills_the_registrar(): void
+    {
+        $ipo = Ipo::factory()->create();
+
+        $this->withToken(self::TOKEN)
+            ->post(route('relay.registrars.store', $ipo), ['page' => $this->page('<tr><td>Registrar</td><td>Bigshare Services Pvt. Ltd.</td></tr>')], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertExactJson(['registrar' => 'Bigshare Services']);
+
+        $this->assertSame('Bigshare Services', $ipo->fresh()->registrar);
+    }
+
+    public function test_a_registrar_set_by_an_editor_is_not_overwritten(): void
+    {
+        $ipo = Ipo::factory()->create(['registrar' => 'Cameo Corporate Services']);
+
+        $this->withToken(self::TOKEN)
+            ->post(route('relay.registrars.store', $ipo), ['page' => $this->page('<tr><td>Registrar</td><td>KFin Technologies Ltd.</td></tr>')], ['Accept' => 'application/json'])
+            ->assertExactJson(['registrar' => 'Cameo Corporate Services']);
+    }
+
+    public function test_pages_without_a_registrar_are_skipped_for_a_while(): void
+    {
+        $ipo = Ipo::factory()->create();
+
+        $this->withToken(self::TOKEN)
+            ->post(route('relay.registrars.store', $ipo), ['page' => $this->page('<tr><td>Issue Type</td><td>Book Built</td></tr>')], ['Accept' => 'application/json'])
+            ->assertExactJson(['registrar' => null]);
+
+        $this->withToken(self::TOKEN)->getJson(route('relay.registrars.missing'))->assertExactJson([]);
+    }
+
+    private function page(string $rows): UploadedFile
+    {
+        return UploadedFile::fake()->createWithContent('page.html.gz', gzencode("<html><body><table>{$rows}</table></body></html>"));
+    }
+
     /** A banner in the source template: a white card with a dark logo in the middle. */
     private function banner(): UploadedFile
     {

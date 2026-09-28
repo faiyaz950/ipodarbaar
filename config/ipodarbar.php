@@ -11,6 +11,7 @@ return [
     */
     'ipo_api' => [
         'url' => env('IPO_API_URL', 'https://www.finowings.com/ipo-sync.php'),
+        'page_url' => env('IPO_PAGE_URL', 'https://www.finowings.com/ipo/'),   // + slug: source IPO page (registrar)
         'key' => env('IPO_API_KEY'),
         'pull' => (bool) env('IPO_API_PULL', true),     // false when the relay pushes data instead
         'push_token' => env('IPO_PUSH_TOKEN'),          // enables POST /internal/ipo-push
