@@ -112,11 +112,15 @@ class IpoToolsPagesTest extends TestCase
 
     public function test_contact_and_editorial_policy_pages(): void
     {
-        config(['mail.from.address' => 'hello@ipodarbaar.in']);
+        config(['mail.from.address' => 'noreply@ipodarbaar.in', 'ipodarbar.contact_email' => 'hello@ipodarbaar.in']);
 
         $this->get('/contact')->assertOk()
             ->assertSee('href="mailto:hello@ipodarbaar.in"', false)
+            ->assertDontSee('noreply@ipodarbaar.in')
             ->assertSee('"@type":"ContactPage"', false);
+
+        $this->get('/about')->assertOk()
+            ->assertSee('href="mailto:hello@ipodarbaar.in"', false);
 
         $this->get('/editorial-policy')->assertOk()
             ->assertSee('No investment advice')

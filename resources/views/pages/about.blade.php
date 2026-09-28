@@ -53,7 +53,7 @@
 
             <h2 id="contact">Contact</h2>
             @if (config('mail.from.address'))
-                <p>Email us at <a href="mailto:{{ config('mail.from.address') }}">{{ config('mail.from.address') }}</a> for corrections, feedback or partnership enquiries.</p>
+                <p>Email us at <a href="mailto:{{ config('ipodarbar.contact_email') }}">{{ config('ipodarbar.contact_email') }}</a> for corrections, feedback or partnership enquiries.</p>
             @else
                 <p>Reach us through our official channels for corrections, feedback or partnership enquiries.</p>
             @endif

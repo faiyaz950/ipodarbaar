@@ -46,6 +46,12 @@ return [
     'redirect_hosts' => array_filter(array_map('trim', explode(',', (string) env('REDIRECT_HOSTS', '')))),
 
     /*
+    | Public address shown on the Contact and About pages. Use a monitored inbox
+    | (e.g. contact@your-domain.in), not the noreply sender.
+    */
+    'contact_email' => env('CONTACT_EMAIL', env('MAIL_FROM_ADDRESS')),
+
+    /*
     | IndexNow: tells Bing, Yandex and other participating search engines about new
     | and updated pages within minutes. Set INDEXNOW_KEY to any 8–128 character
     | hex/alphanumeric string to enable it.

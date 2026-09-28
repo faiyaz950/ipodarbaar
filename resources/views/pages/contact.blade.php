@@ -3,7 +3,7 @@
 @inject('siteSettings', 'App\Support\Settings')
 
 @php
-    $email = config('mail.from.address');
+    $email = config('ipodarbar.contact_email');
     $profiles = collect(\App\Http\Controllers\Admin\SettingsController::SOCIAL_NETWORKS)
         ->map(fn (string $label, string $network): array => ['label' => $label, 'url' => $siteSettings->get('social.'.$network)])
         ->filter(fn (array $profile): bool => filled($profile['url']));
