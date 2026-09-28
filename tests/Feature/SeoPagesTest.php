@@ -11,11 +11,14 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class SeoPagesTest extends TestCase
 {
     use RefreshDatabase;
+
+    private string $newsHeadline = 'Alpha Tech IPO subscribed 12 times';
 
     protected function setUp(): void
     {
@@ -26,8 +29,9 @@ class SeoPagesTest extends TestCase
         cache()->forever('ipo:synced_at', now()->toIso8601String());
 
         Http::fake([
-            'courses.finowings.com/api/market-news-list/*' => Http::response(['success' => true, 'data' => $this->newsRow()]),
-            'courses.finowings.com/api/market-news-list*' => Http::response([
+            // Closures, so a test can change the fixture headline before the request.
+            'courses.finowings.com/api/market-news-list/*' => fn () => Http::response(['success' => true, 'data' => $this->newsRow()]),
+            'courses.finowings.com/api/market-news-list*' => fn () => Http::response([
                 'success' => true, 'data' => [$this->newsRow()], 'total' => 1, 'page' => 1, 'per_page' => 20, 'has_more' => false,
             ]),
             'api.indexnow.org/*' => Http::response(null, 200),
@@ -140,6 +144,22 @@ class SeoPagesTest extends TestCase
             ->assertSee('IPOs in this story')
             ->assertSee('"@type":"NewsArticle"', false)
             ->assertSee('<meta property="og:type" content="article">', false);
+    }
+
+    public function test_shouting_news_headlines_are_shown_in_title_case_without_changing_the_url(): void
+    {
+        $this->newsHeadline = 'NSE FINALLY GOES PUBLIC! A ₹22,562 CRORE MILESTONE FOR INDIA';
+        // The URL is still built from the feed's original headline.
+        $url = route('news.show', ['id' => 77, 'slug' => Str::slug($this->newsHeadline)]);
+
+        $this->get($url)->assertOk()
+            ->assertSee('<title>NSE Finally Goes Public! A ₹22,562 Crore Milestone for India | IPO Darbaar</title>', false)
+            ->assertSee('<h1 data-lang-en>NSE Finally Goes Public! A ₹22,562 Crore Milestone for India</h1>', false)
+            ->assertDontSee('FINALLY GOES PUBLIC');
+
+        $this->get('/sitemaps/news.xml')->assertOk()
+            ->assertSee('<loc>'.$url.'</loc>', false)
+            ->assertSee('<news:title>NSE Finally Goes Public! A ₹22,562 Crore Milestone for India</news:title>', false);
     }
 
     public function test_ipo_linker_links_each_ipo_once_and_leaves_existing_links_alone(): void
@@ -265,7 +285,7 @@ class SeoPagesTest extends TestCase
     {
         return [
             'id' => 77,
-            'headline' => 'Alpha Tech IPO subscribed 12 times',
+            'headline' => $this->newsHeadline,
             'news_detail' => '<p>The Alpha Tech IPO was subscribed 12 times on the final day of bidding.</p>',
             'date' => '2026-09-23',
             'image' => 'https://courses.finowings.com/storage/market_news/a.avif',

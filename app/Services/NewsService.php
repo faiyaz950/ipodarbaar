@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\NewsOverride;
+use App\Support\Headline;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -224,12 +225,14 @@ class NewsService
                 'color' => '#2F5BEA',
             ] : ['id' => 0, 'name' => 'Markets', 'slug' => 'markets', 'color' => '#2F5BEA']);
 
-        $headline = trim(html_entity_decode((string) ($n['headline'] ?? ''), ENT_QUOTES));
-        $headlineHi = trim(html_entity_decode((string) ($n['headline_hinglish'] ?? ''), ENT_QUOTES)) ?: $headline;
+        $rawHeadline = trim(html_entity_decode((string) ($n['headline'] ?? ''), ENT_QUOTES));
+        $headline = Headline::normalizeCase($rawHeadline);
+        $headlineHi = Headline::normalizeCase(trim(html_entity_decode((string) ($n['headline_hinglish'] ?? ''), ENT_QUOTES))) ?: $headline;
         $html = self::sanitize((string) ($n['news_detail'] ?? ''));
         $htmlHi = self::sanitize((string) ($n['news_detail_hinglish'] ?? '')) ?: $html;
         $id = (int) $n['id'];
-        $slug = Str::slug($headline) ?: 'news';
+        // The slug comes from the feed's headline so article URLs never change.
+        $slug = Str::slug($rawHeadline) ?: 'news';
 
         $date = null;
         try {
