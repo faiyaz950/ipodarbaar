@@ -28,7 +28,7 @@ class SeoController extends Controller
     /** Pages of 100 stories included in the news archive sitemap. */
     private const NEWS_ARCHIVE_PAGES = 10;
 
-    private const DISALLOWED_PATHS = ['/admin', '/ipo/search/suggest', '/shorts/feed', '/watchlist/items', '/subscribe', '/unsubscribe'];
+    private const DISALLOWED_PATHS = ['/admin', '/ipo/search/suggest', '/shorts/feed', '/watchlist/items', '/ipo-portfolio/prices', '/subscribe', '/unsubscribe'];
 
     public function robots(): Response
     {
@@ -152,7 +152,7 @@ class SeoController extends Controller
     {
         $urls = [
             route('home'), route('ipos.index'), route('ipos.gmp'), route('ipos.gmp.mainboard'), route('ipos.gmp.sme'),
-            route('ipos.listing-today'), route('ipos.calendar'), route('ipos.report-card'),
+            route('ipos.listing-today'), route('ipos.sme-dashboard'), route('ipos.calendar'), route('ipos.report-card'), route('portfolio'),
             route('news.index'), route('news.shorts'), route('calculators.index'), route('guides.index'), route('alerts'),
             route('about'), route('contact'), route('editorial-policy'), route('disclaimer'), route('privacy'),
         ];

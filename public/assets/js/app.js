@@ -307,6 +307,27 @@
   syncWatchUi();
   loadWatchlistPage();
 
+  /* ---------- Calculators: search ---------- */
+  var calcSearch = $('[data-calc-search]');
+  if (calcSearch) {
+    calcSearch.addEventListener('input', function () {
+      var words = calcSearch.value.toLowerCase().split(/\s+/).filter(Boolean);
+      var shown = 0;
+      $$('[data-calc-group]').forEach(function (group) {
+        var visible = 0;
+        $$('[data-calc-card]', group).forEach(function (card) {
+          var text = card.getAttribute('data-calc-card');
+          var match = words.every(function (w) { return text.indexOf(w) !== -1; });
+          card.hidden = !match;
+          if (match) visible++;
+        });
+        group.hidden = visible === 0;
+        shown += visible;
+      });
+      $('[data-calc-empty]').hidden = shown !== 0;
+    });
+  }
+
   /* ---------- IPO sentiment poll ---------- */
   function renderPoll(poll, data) {
     var total = data.total || 0;

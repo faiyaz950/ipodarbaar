@@ -135,7 +135,49 @@
             </div>
             <a href="{{ route('ipos.gmp') }}" class="{{ request()->routeIs('ipos.gmp', 'ipos.gmp.*') ? 'active' : '' }}"><span class="live"></span> Live GMP</a>
             <a href="{{ route('news.index') }}" class="{{ request()->routeIs('news.index', 'news.show') ? 'active' : '' }}">News</a>
-            <a href="{{ route('calculators.index') }}" class="{{ request()->routeIs('calculators.*') ? 'active' : '' }}">Calculators</a>
+            @php
+                $toolGroups = [
+                    'IPO calculators' => [
+                        ['calculators.show', 'ipo-gmp', 'trending-up', 'GMP → Listing Price'],
+                        ['calculators.show', 'ipo-application', 'wallet', 'Application Amount'],
+                        ['calculators.show', 'sme-ipo-investment', 'briefcase', 'SME Min Investment'],
+                        ['calculators.show', 'ipo-allotment-chance', 'ticket', 'Allotment Chance'],
+                        ['calculators.show', 'ipo-profit', 'rocket', 'Listing Gain'],
+                        ['calculators.show', 'ipo-net-proceeds', 'banknote', 'Net Proceeds'],
+                        ['calculators.show', 'hni-funding-cost', 'hand-coins', 'HNI Funding Cost'],
+                    ],
+                    'Tax & investing' => [
+                        ['calculators.show', 'capital-gains', 'badge-percent', 'Capital Gains Tax'],
+                        ['calculators.show', 'buyback-acceptance-ratio', 'repeat', 'Buyback Acceptance'],
+                        ['calculators.show', 'dividend-yield', 'coins', 'Dividend Yield'],
+                        ['calculators.show', 'pe-ratio', 'scale', 'P/E Ratio'],
+                        ['calculators.show', 'brokerage', 'receipt', 'Brokerage'],
+                        ['calculators.show', 'sip', 'sprout', 'SIP'],
+                    ],
+                    'Trackers & dashboards' => [
+                        ['portfolio', null, 'briefcase', 'IPO Portfolio Tracker'],
+                        ['ipos.sme-dashboard', null, 'bar-chart', 'SME IPO Dashboard'],
+                        ['compare', null, 'columns', 'Compare IPOs'],
+                        ['ipos.allotment', null, 'check-circle', 'Allotment Status'],
+                        ['ipos.listing-today', null, 'calendar', 'Listing Today'],
+                        ['ipos.report-card', null, 'trophy', 'IPO Report Card'],
+                    ],
+                ];
+            @endphp
+            <div class="dd dd-mega {{ request()->routeIs('calculators.*', 'portfolio', 'ipos.sme-dashboard') ? 'active' : '' }}">
+                <button type="button" aria-haspopup="true">Tools <x-icon name="chevron-down" :size="15" /></button>
+                <div class="dd-menu">
+                    @foreach ($toolGroups as $group => $links)
+                        <div class="dd-group">
+                            <span class="dd-head">{{ $group }}</span>
+                            @foreach ($links as [$routeName, $param, $icon, $label])
+                                <a href="{{ $param ? route($routeName, $param) : route($routeName) }}"><x-icon :name="$icon" :size="16" /> {{ $label }}</a>
+                            @endforeach
+                        </div>
+                    @endforeach
+                    <a class="dd-all" href="{{ route('calculators.index') }}"><x-icon name="grid" :size="16" /> Browse all {{ count(\App\Support\Calculators::all()) }} calculators <x-icon name="arrow-right" :size="15" /></a>
+                </div>
+            </div>
             <a href="{{ route('guides.index') }}" class="{{ request()->routeIs('guides.*') ? 'active' : '' }}">IPO Guide</a>
         </nav>
 
@@ -188,7 +230,9 @@
         <a href="{{ route('ipos.report-card') }}"><x-icon name="trophy" /> IPO Report Card</a>
         <a href="{{ route('compare') }}"><x-icon name="columns" /> Compare IPOs</a>
         <a href="{{ route('news.index') }}"><x-icon name="newspaper" /> Market News</a>
-        <a href="{{ route('calculators.index') }}"><x-icon name="calculator" /> Calculators</a>
+        <a href="{{ route('calculators.index') }}"><x-icon name="calculator" /> Calculators &amp; Tools</a>
+        <a href="{{ route('portfolio') }}" class="sub">IPO Portfolio Tracker</a>
+        <a href="{{ route('ipos.sme-dashboard') }}" class="sub">SME IPO Dashboard</a>
         <a href="{{ route('guides.index') }}"><x-icon name="file-text" /> IPO Guide</a>
         <a href="{{ route('watchlist') }}"><x-icon name="star" /> My Watchlist</a>
         <a href="{{ route('alerts') }}"><x-icon name="bell" /> IPO Alerts</a>
@@ -276,6 +320,8 @@
                     <li><a href="{{ route('calculators.show', 'ipo-allotment-chance') }}">Allotment Chance</a></li>
                     <li><a href="{{ route('calculators.show', 'sip') }}">SIP Calculator</a></li>
                     <li><a href="{{ route('calculators.show', 'brokerage') }}">Brokerage Calculator</a></li>
+                    <li><a href="{{ route('portfolio') }}">IPO Portfolio Tracker</a></li>
+                    <li><a href="{{ route('ipos.sme-dashboard') }}">SME IPO Dashboard</a></li>
                     <li><a href="{{ route('calculators.index') }}">All Calculators</a></li>
                 </ul>
                 <h4 style="margin-top:22px">IPO Guide</h4>

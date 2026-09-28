@@ -42,6 +42,21 @@ class Calculators
             'Enter how many separate PAN applications your family made.',
             'See the chance of each application and of at least one allotment.',
         ]],
+        'sme-ipo-investment' => ['SME IPO Minimum Investment Calculator: 2-Lot Amount & Category', [
+            'Enter the upper price band and the lot size from the SME IPO page.',
+            'Enter how many lots you want to bid for (the minimum is two).',
+            'See the minimum investment, your bid amount and the investor category it falls in.',
+        ]],
+        'ipo-net-proceeds' => ['IPO Net Proceeds Calculator: Money in Hand After Charges & Tax', [
+            'Enter the issue price you paid, the price you sell at and the number of shares.',
+            'Add your broker\'s charge for the sell order and pick the exchange.',
+            'See the charges, the amount credited to your bank and what you keep after short-term capital gains tax.',
+        ]],
+        'dividend-yield' => ['Dividend Yield Calculator: Yield & Dividend Income After Tax', [
+            'Enter the share price and the dividend per share for a full year.',
+            'Enter the number of shares you hold and your income tax rate.',
+            'See the dividend yield and your yearly and monthly dividend income after tax.',
+        ]],
         'hni-funding-cost' => ['HNI IPO Funding Cost Calculator: Break-Even Listing Price', [
             'Enter the application amount, the upper price band and the interest rate on the borrowed money.',
             'Add the number of days the money is blocked, any processing charges and the allotment you expect.',
@@ -227,6 +242,30 @@ class Calculators
                     ['Does applying for more lots help retail investors?', 'In an oversubscribed mainboard IPO, no — each retail application is treated as one entry in the lottery for a single lot.'],
                 ],
             ],
+            'sme-ipo-investment' => [
+                'name' => 'SME IPO Minimum Investment Calculator',
+                'short' => 'Minimum 2-lot amount and investor category for SME IPOs.',
+                'icon' => 'briefcase',
+                'group' => 'ipo',
+                'about' => 'Individual investors must apply for at least two lots in an SME IPO. Enter the price band and lot size to see the minimum amount and the category a larger bid falls in.',
+                'formula' => 'Minimum investment = Upper price band × Lot size × 2',
+                'faqs' => [
+                    ['Why is the minimum investment in SME IPOs so high?', 'SME lot sizes are set so that the two-lot minimum application usually costs more than ₹2 lakh, which keeps SME IPOs for investors who can take higher risk.'],
+                    ['Can I apply for more than two lots in an SME IPO?', 'Yes. Bids above the two-lot minimum are treated as non-institutional (HNI) applications.'],
+                ],
+            ],
+            'ipo-net-proceeds' => [
+                'name' => 'IPO Net Proceeds Calculator',
+                'short' => 'Money in hand after selling IPO shares: charges and STCG tax.',
+                'icon' => 'banknote',
+                'group' => 'ipo',
+                'about' => 'When you sell allotted IPO shares, STT, brokerage, exchange and SEBI charges, GST and a DP charge are deducted from the sale value, and short-term capital gains tax is due on the profit. This calculator shows the amount credited to your bank and what you keep after tax.',
+                'formula' => 'Amount credited = Sale value − (STT + Brokerage + Exchange & SEBI charges + GST + DP) · Tax = (Sale value − Cost − Charges other than STT) × 20% × 1.04',
+                'faqs' => [
+                    ['Are these charges exact?', 'They use common rates for a delivery sell order on NSE or BSE. Brokerage and DP charges differ between brokers, so check your contract note for the exact figures.'],
+                    ['Can STT be deducted from capital gains?', 'No. Securities transaction tax cannot be deducted when working out capital gains, while brokerage and the other selling costs can.'],
+                ],
+            ],
             'hni-funding-cost' => [
                 'name' => 'HNI IPO Funding Cost Calculator',
                 'short' => 'Funding cost and break-even listing price for borrowed IPO applications.',
@@ -297,6 +336,18 @@ class Calculators
                 'about' => 'When you buy more of a stock you already hold, your average cost changes. Enter both purchases to see the new average price and total investment.',
                 'formula' => 'Average = (Q₁ × P₁ + Q₂ × P₂) ÷ (Q₁ + Q₂)',
                 'faqs' => [],
+            ],
+            'dividend-yield' => [
+                'name' => 'Dividend Yield Calculator',
+                'short' => 'Dividend yield and yearly dividend income after tax.',
+                'icon' => 'coins',
+                'group' => 'invest',
+                'about' => 'Dividend yield is the yearly dividend per share as a percentage of the share price. Dividends are added to your income and taxed at your slab rate, so the calculator also shows the yield and income after tax.',
+                'formula' => 'Dividend yield = Dividend per share ÷ Share price × 100 · Income after tax = Dividend × (1 − Tax rate)',
+                'faqs' => [
+                    ['How are dividends taxed in India?', 'Dividends are added to your total income and taxed at your slab rate. Companies also deduct TDS when the dividend paid to you in a year crosses the limit set in the Income-tax Act.'],
+                    ['Is a high dividend yield always good?', 'Not always. A yield can look high because the share price has fallen, and dividends can be cut. Check that profits comfortably cover the dividend.'],
+                ],
             ],
             'pe-ratio' => [
                 'name' => 'P/E Ratio Calculator',

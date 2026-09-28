@@ -404,6 +404,86 @@
       }
     },
 
+    'sme-ipo-investment': {
+      inputs: [
+        { id: 'price', label: 'Upper price band', prefix: '₹', min: 1, max: 3000, step: 1, value: 100 },
+        { id: 'lot', label: 'Lot size', suffix: 'shares', min: 1, max: 20000, step: 1, value: 1200 },
+        { id: 'lots', label: 'Lots you want to apply for', min: 1, max: 200, step: 1, value: 2 }
+      ],
+      compute: function (v) {
+        var perLot = v.price * v.lot, minimum = perLot * 2, amount = perLot * v.lots;
+        var shniMax = Math.max(3, Math.floor(SHNI_MAX / perLot));
+        var cat = v.lots < 2 ? 'Below the SME minimum of 2 lots'
+          : (v.lots === 2 ? 'Individual investor (minimum application)' : (amount <= SHNI_MAX ? 'Small HNI (S-HNI)' : 'Big HNI (B-HNI)'));
+        return {
+          hero: { label: 'Minimum investment (2 lots)', value: F.inr(minimum), sub: 'Your bid of ' + F.num(v.lots) + (v.lots === 1 ? ' lot' : ' lots') + ' = ' + F.inr(amount) + ' · ' + cat },
+          rows: [
+            ['Amount per lot', F.inr(perLot)],
+            ['Shares in 2 lots', F.num(v.lot * 2)],
+            ['Shares in your bid', F.num(v.lot * v.lots)],
+            ['S-HNI range', '3–' + F.num(shniMax) + ' lots · up to ' + F.inr(shniMax * perLot)],
+            ['B-HNI minimum', F.num(shniMax + 1) + ' lots · ' + F.inr((shniMax + 1) * perLot)]
+          ]
+        };
+      }
+    },
+
+    'ipo-net-proceeds': {
+      inputs: [
+        { id: 'price', label: 'Issue price you paid', prefix: '₹', min: 1, max: 3000, step: 0.5, value: 100 },
+        { id: 'sell', label: 'Selling price', prefix: '₹', min: 1, max: 5000, step: 0.05, value: 130 },
+        { id: 'shares', label: 'Shares sold', min: 1, max: 100000, step: 1, value: 140 },
+        { id: 'brk', label: 'Brokerage for the sell order', prefix: '₹', min: 0, max: 100, step: 1, value: 20 },
+        { id: 'ex', label: 'Exchange', type: 'options', options: [['nse', 'NSE'], ['bse', 'BSE']], value: 'nse' },
+        { id: 'tax', label: 'Tax', type: 'options', options: [['yes', 'After STCG tax'], ['no', 'Before tax']], value: 'yes' }
+      ],
+      compute: function (v) {
+        var sv = v.sell * v.shares, cost = v.price * v.shares;
+        var stt = sv * 0.001, exch = sv * (v.ex === 'bse' ? 0.0000375 : 0.0000297), sebi = sv * 0.000001;
+        var gst = (v.brk + exch + sebi) * 0.18, dp = 15.93;
+        var charges = v.brk + stt + exch + sebi + gst + dp, credited = sv - charges;
+        // STT is not deductible when computing capital gains; the other selling costs are.
+        var taxable = sv - cost - (charges - stt);
+        var tax = v.tax === 'yes' && taxable > 0 ? taxable * 0.2 * 1.04 : 0;
+        var inHand = credited - tax, profit = inHand - cost;
+        return {
+          hero: { label: v.tax === 'yes' ? 'Money in hand after tax' : 'Amount credited (before tax)', value: F.inr(inHand), tone: tone(profit), sub: (profit >= 0 ? 'Profit ' : 'Loss ') + F.inr(Math.abs(profit)) + ' · ' + F.pct(cost ? profit / cost * 100 : 0) + ' on ' + F.inr(cost) },
+          rows: [
+            ['Sale value', F.inr2(sv)],
+            ['STT (0.1%)', F.inr2(stt)],
+            ['Brokerage', F.inr2(v.brk)],
+            ['Exchange and SEBI charges', F.inr2(exch + sebi)],
+            ['GST (18%)', F.inr2(gst)],
+            ['DP charges', F.inr2(dp)],
+            ['Amount credited to your bank', F.inr2(credited)],
+            ['STCG tax (20% + 4% cess)', F.inr2(tax)]
+          ]
+        };
+      }
+    },
+
+    'dividend-yield': {
+      inputs: [
+        { id: 'price', label: 'Share price', prefix: '₹', min: 1, max: 20000, step: 0.5, value: 500 },
+        { id: 'dps', label: 'Dividend per share (full year)', prefix: '₹', min: 0, max: 1000, step: 0.25, value: 15 },
+        { id: 'shares', label: 'Shares you hold', min: 1, max: 100000, step: 1, value: 100 },
+        { id: 'slab', label: 'Your income tax rate', suffix: '%', min: 0, max: 39, step: 1, value: 20 }
+      ],
+      compute: function (v) {
+        var yld = v.price ? v.dps / v.price * 100 : 0, income = v.dps * v.shares, tax = income * v.slab / 100;
+        return {
+          hero: { label: 'Dividend yield', value: F.pct(yld), sub: 'After tax at ' + F.num(v.slab) + '%: ' + F.pct(yld * (1 - v.slab / 100)) },
+          rows: [
+            ['Value of your shares', F.inr(v.price * v.shares)],
+            ['Dividend a year', F.inr(income)],
+            ['Tax on dividend', F.inr(tax)],
+            ['Dividend after tax', F.inr(income - tax)],
+            ['Per month after tax', F.inr((income - tax) / 12)]
+          ]
+        };
+      }
+    },
+
     'hni-funding-cost': {
       inputs: [
         { id: 'amount', label: 'Application amount', prefix: '₹', min: 200000, max: 50000000, step: 10000, value: 1000000 },

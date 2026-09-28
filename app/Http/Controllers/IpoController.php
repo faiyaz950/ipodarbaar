@@ -152,6 +152,40 @@ class IpoController extends Controller
     }
 
     /**
+     * One-page overview of the SME IPO market: live issues, GMP leaders and this year's numbers.
+     */
+    public function smeDashboard()
+    {
+        $year = now()->year;
+        $thisYear = Ipo::query()->ofType('sme')->whereYear('open_date', $year)->get();
+        $withGmp = Ipo::active()->ofType('sme')->whereNotNull('gmp')->get()
+            ->filter(fn (Ipo $ipo): bool => $ipo->gmpPercent() !== null);
+
+        $months = [];
+        foreach (range(1, now()->month) as $month) {
+            $inMonth = $thisYear->filter(fn (Ipo $ipo): bool => $ipo->open_date->month === $month);
+            $months[$month] = ['count' => $inMonth->count(), 'raised' => round((float) $inMonth->sum('issue_size'), 2)];
+        }
+
+        return view('ipos.sme-dashboard', [
+            'year' => $year,
+            'open' => Ipo::query()->ofType('sme')->inStatus('open')->get(),
+            'upcoming' => Ipo::query()->ofType('sme')->inStatus('upcoming')->get(),
+            'listingWeek' => Ipo::query()->ofType('sme')
+                ->whereDate('listing_date', '>=', today()->toDateString())
+                ->whereDate('listing_date', '<=', today()->addDays(6)->toDateString())
+                ->count(),
+            'topGmp' => $withGmp->filter(fn (Ipo $ipo): bool => $ipo->gmp > 0)->sortByDesc(fn (Ipo $ipo): float => $ipo->gmpPercent())->take(5)->values(),
+            'avgGmp' => $withGmp->isNotEmpty() ? round($withGmp->avg(fn (Ipo $ipo): float => $ipo->gmpPercent()), 1) : null,
+            'yearCount' => $thisYear->count(),
+            'yearRaised' => round((float) $thisYear->sum('issue_size'), 2),
+            'yearShare' => ($total = Ipo::query()->whereYear('open_date', $year)->count()) ? round($thisYear->count() / $total * 100) : null,
+            'largest' => $thisYear->filter(fn (Ipo $ipo): bool => (bool) $ipo->issue_size)->sortByDesc('issue_size')->take(5)->values(),
+            'months' => $months,
+        ]);
+    }
+
+    /**
      * IPOs listing today, the rest of this week's listings and the last ten days of listings.
      */
     public function listingToday()

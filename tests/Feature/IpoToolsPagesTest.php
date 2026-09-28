@@ -125,12 +125,73 @@ class IpoToolsPagesTest extends TestCase
 
     public function test_new_calculators_have_pages_with_schema(): void
     {
-        foreach (['hni-funding-cost', 'pe-ratio', 'buyback-acceptance-ratio'] as $slug) {
+        foreach (['hni-funding-cost', 'pe-ratio', 'buyback-acceptance-ratio', 'sme-ipo-investment', 'ipo-net-proceeds', 'dividend-yield'] as $slug) {
             $this->get(route('calculators.show', $slug))->assertOk()
                 ->assertSee('data-calc="'.$slug.'"', false)
                 ->assertSee('"@type":"WebApplication"', false)
                 ->assertSee('"@type":"FAQPage"', false);
         }
+    }
+
+    public function test_sme_dashboard_summarises_the_sme_market(): void
+    {
+        Ipo::factory()->open()->sme()->create(['name' => 'Small Open', 'slug' => 'small-open-ipo', 'gmp' => 30]);
+        Ipo::factory()->upcoming()->sme()->create(['name' => 'Small Soon', 'slug' => 'small-soon-ipo', 'gmp' => 12]);
+        Ipo::factory()->sme()->create(['name' => 'Small Big', 'slug' => 'small-big-ipo', 'issue_size' => 95,
+            'open_date' => '2026-03-02', 'close_date' => '2026-03-04', 'listing_date' => '2026-03-09']);
+        Ipo::factory()->open()->create(['name' => 'Board Co', 'slug' => 'board-co-ipo', 'gmp' => 90]);
+
+        $this->get('/sme-ipo-dashboard')->assertOk()
+            ->assertSee('<title>SME IPO Dashboard 2026: GMP, Open &amp; Upcoming SME IPOs | IPO Darbaar</title>', false)
+            ->assertSeeInOrder(['Open now', '<b>1</b>', 'Upcoming', '<b>1</b>'], false)
+            // GMP ₹30 and ₹12 on ₹120: 25% and 10%, averaging 17.5%.
+            ->assertSee('+17.5%')
+            ->assertSeeInOrder(['Highest SME IPO GMP Today', 'Small Open IPO</a>', 'Small Soon IPO</a>'], false)
+            // 3 of the 4 IPOs opening in 2026 are SME.
+            ->assertSee('75% of all IPOs')
+            ->assertSeeInOrder(['Largest SME IPOs of 2026', 'Small Big', '₹95 Cr'], false)
+            // The mainboard IPO stays out of the dashboard's lists (the site-wide ticker still shows it).
+            ->assertDontSee('Board Co IPO</a>', false)
+            ->assertDontSee('board-co-ipo" class="co-name"', false);
+    }
+
+    public function test_portfolio_page_and_price_endpoint(): void
+    {
+        $ipo = Ipo::factory()->open()->sme()->create(['name' => 'Small Open', 'slug' => 'small-open-ipo', 'gmp' => 30]);
+
+        $this->get('/ipo-portfolio')->assertOk()
+            ->assertSee('data-prices="'.route('portfolio.prices').'"', false)
+            ->assertSee('"@type":"WebApplication"', false)
+            ->assertSee('assets/js/portfolio.js', false);
+
+        $this->getJson('/ipo-portfolio/prices?slugs=small-open-ipo,Bad%20Slug,missing-ipo')->assertOk()
+            ->assertExactJson(['small-open-ipo' => [
+                'name' => 'Small Open',
+                'url' => $ipo->url(),
+                'type' => 'SME',
+                'status' => 'open',
+                'statusLabel' => $ipo->statusLabel(),
+                'price' => 120,
+                'lot' => 1200,
+                'gmp' => 30,
+                'listingPrice' => null,
+                'listingDate' => $ipo->listing_date->toDateString(),
+            ]]);
+
+        $this->get('/robots.txt')->assertSee('Disallow: /ipo-portfolio/prices');
+    }
+
+    public function test_tools_menu_and_calculator_search(): void
+    {
+        $this->get('/')->assertOk()
+            ->assertSee('<div class="dd dd-mega', false)
+            ->assertSee(route('portfolio'))
+            ->assertSee(route('ipos.sme-dashboard'))
+            ->assertSee(route('calculators.show', 'ipo-net-proceeds'));
+
+        $this->get('/calculators')->assertOk()
+            ->assertSee('data-calc-search', false)
+            ->assertSee('data-calc-card="ipo net proceeds calculator', false);
     }
 
     public function test_home_page_shows_top_gmp_and_listings_this_week(): void

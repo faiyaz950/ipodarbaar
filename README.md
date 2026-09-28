@@ -1,6 +1,6 @@
 # IPO Darbaar
 
-A Laravel + Blade site covering every Indian IPO: live GMP, open, upcoming, listing-soon and listed IPOs, an IPO calendar, market news with an Inshorts-style **Shorts** feed (English / Hinglish), IPO guides and 31 calculators.
+A Laravel + Blade site covering every Indian IPO: live GMP, open, upcoming, listing-soon and listed IPOs, an IPO calendar, market news with an Inshorts-style **Shorts** feed (English / Hinglish), IPO guides and 34 calculators.
 
 Plain HTML, CSS and vanilla JS. **No npm build step**, so it can be deployed on any PHP host.
 
@@ -10,10 +10,10 @@ Plain HTML, CSS and vanilla JS. **No npm build step**, so it can be deployed on 
 | --- | --- |
 | Home | Live GMP ticker, hero with IPOs closing soon, stats, IPO dashboard tabs (Open / Upcoming / Listing Soon / Recently Listed, filter Mainboard or SME), this week's IPO calendar, latest news, calculators |
 | IPOs | `/ipo` (all IPOs + search), keyword hubs `/current-ipo`, `/upcoming-ipo`, `/ipo-allotment-status`, `/recently-listed-ipo`, `/mainboard-ipo`, `/sme-ipo` (old `?status=` / `/ipo/type/*` URLs 301 here), `/upcoming-sme-ipo`, `/ipo-listing-today`, `/ipo/{slug}` detail (key facts, T+3 timeline, GMP panel and trend, sentiment poll, lot size table, issue structure, financials, KPIs, anchor lock-ins, documents), `/ipo-gmp` (plus `/mainboard-ipo-gmp`, `/sme-ipo-gmp`), `/ipo-calendar` |
-| IPO data | `/ipo-compare?ipos=a,b,c` (up to 3 side by side), `/ipo-report-card` and `/ipo/{year}` (funds raised, listing gains, best/worst listings) |
+| IPO data | `/sme-ipo-dashboard` (SME market at a glance), `/ipo-portfolio` (applications, allotment and profit, stored in the browser), `/ipo-compare?ipos=a,b,c` (up to 3 side by side), `/ipo-report-card` and `/ipo/{year}` (funds raised, listing gains, best/worst listings) |
 | Engagement | `/ipo-alerts` (Telegram, WhatsApp channel, email, watchlist), `/watchlist` (stored in the browser), installable PWA with offline page, email digest with double opt-in, Telegram channel auto-posts |
 | News | `/news` and `/{category}-news` (e.g. `/ipo-news`) with pagination, `/news/{id}/{slug}` article with English/Hinglish toggle, `/shorts` swipeable feed with infinite scroll |
-| Calculators | `/calculators`: IPO GMP, listing profit, application amount, allotment chance, HNI funding cost, buyback acceptance, P/E ratio, SIP (with step-up), lumpsum, SWP, CAGR, stock average, inflation, FD, RD, PPF, EMI, brokerage, capital gains tax |
+| Calculators | `/calculators`: IPO GMP, listing profit, application amount, allotment chance, HNI funding cost, SME minimum investment, net proceeds after charges and tax, buyback acceptance, dividend yield, P/E ratio, SIP (with step-up), lumpsum, SWP, CAGR, stock average, inflation, FD, RD, PPF, EMI, brokerage, capital gains tax |
 | Guides | `/ipo-guide`: how to apply, GMP, allotment status, how allotment works, SME vs mainboard, tax on listing gains, NRI investing, glossary; `/about`, `/contact`, `/editorial-policy` |
 | Growth | SEO (see below), 1200×630 share cards, GA4 / Cloudflare analytics, AdSense slots with `/ads.txt`, sponsored broker links |
 | Admin | `/admin`: IPO overrides that survive syncs, company & financials editor, Settings (ads, analytics, brokers, notification switches), System (health checks, test email/Telegram) |
