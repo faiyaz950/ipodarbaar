@@ -56,6 +56,14 @@ class SeoPagesTest extends TestCase
             ->assertDontSee('open-co-ipo" class="co-name"', false);
     }
 
+    public function test_home_page_leads_with_the_brand_for_brand_searches(): void
+    {
+        $this->get('/')->assertOk()
+            ->assertSee('<title>IPO Darbaar: IPO GMP Today, Upcoming IPO &amp; Allotment Status</title>', false)
+            ->assertSee('<h1 class="hero-h1">IPO Darbaar:', false)
+            ->assertSee('"alternateName":["IPO Darbar","IPODarbaar","ipodarbaar.in"]', false);
+    }
+
     public function test_filtered_hubs_are_not_indexed(): void
     {
         $this->get('/sme-ipo')->assertOk()->assertSee('<meta name="robots" content="index, follow, max-image-preview:large', false);

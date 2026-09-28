@@ -23,7 +23,7 @@
                 <b>LIVE</b>
                 {{ $stats['open'] }} {{ $stats['open'] === 1 ? 'IPO' : 'IPOs' }} open today · {{ $stats['upcoming'] }} upcoming
             </span>
-            <h1 class="hero-h1">IPO GMP Today, Upcoming IPOs &amp; Allotment Status</h1>
+            <h1 class="hero-h1">IPO Darbaar: IPO GMP Today, Upcoming IPOs &amp; Allotment Status</h1>
             <p class="hero-display">Every IPO. Every GMP.<br><em>One Darbaar.</em></p>
             <p class="hero-lead">Track mainboard & SME IPOs in India with live grey market premium, subscription dates, listing calendar, market news shorts and powerful calculators, all in one place.</p>
 

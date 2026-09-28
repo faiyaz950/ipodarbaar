@@ -7,7 +7,7 @@
     @php
         // Section content is already escaped by @section, so it must not be escaped again.
         $pageTitle = trim($__env->yieldContent('title_full'))
-            ?: (trim($__env->yieldContent('title')) ? trim($__env->yieldContent('title')).' | IPO Darbaar' : e('IPO GMP Today, Upcoming IPO & Allotment Status | IPO Darbaar'));
+            ?: (trim($__env->yieldContent('title')) ? trim($__env->yieldContent('title')).' | IPO Darbaar' : e('IPO Darbaar: IPO GMP Today, Upcoming IPO & Allotment Status'));
         $pageDescription = trim($__env->yieldContent('description')) ?: e('Live IPO GMP today, upcoming and current IPO list, allotment status, listing gains, IPO news and 28 free calculators for mainboard and SME IPOs in India.');
         $currentPage = request()->integer('page');
         $canonical = trim($__env->yieldContent('canonical')) ?: url()->current().($currentPage > 1 ? '?page='.$currentPage : '');
@@ -64,6 +64,7 @@
                 '@type' => 'Organization',
                 '@id' => route('home').'#org',
                 'name' => 'IPO Darbaar',
+                'alternateName' => ['IPO Darbar', 'IPODarbaar', 'ipodarbaar.in'],
                 'url' => route('home'),
                 'logo' => ['@type' => 'ImageObject', 'url' => asset('icons/icon-512.png'), 'width' => 512, 'height' => 512],
                 'description' => 'IPO Darbaar tracks every mainboard and SME IPO in India: live GMP, subscription, allotment and listing dates, IPO news and investment calculators.',
@@ -76,7 +77,7 @@
             '@graph' => [
                 $organization,
                 [
-                    '@type' => 'WebSite', '@id' => route('home').'#website', 'name' => 'IPO Darbaar', 'alternateName' => 'IPO Darbar', 'url' => route('home'), 'inLanguage' => 'en-IN', 'publisher' => ['@id' => route('home').'#org'],
+                    '@type' => 'WebSite', '@id' => route('home').'#website', 'name' => 'IPO Darbaar', 'alternateName' => ['IPO Darbar', 'IPODarbaar', 'ipodarbaar.in'], 'url' => route('home'), 'inLanguage' => 'en-IN', 'publisher' => ['@id' => route('home').'#org'],
                     'potentialAction' => ['@type' => 'SearchAction', 'target' => ['@type' => 'EntryPoint', 'urlTemplate' => route('ipos.index').'?q={search_term_string}'], 'query-input' => 'required name=search_term_string'],
                 ],
             ],
