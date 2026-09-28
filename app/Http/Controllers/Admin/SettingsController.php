@@ -28,6 +28,7 @@ class SettingsController extends Controller
 
     public const SOCIAL_NETWORKS = [
         'telegram' => 'Telegram channel',
+        'whatsapp' => 'WhatsApp channel',
         'x' => 'X (Twitter)',
         'youtube' => 'YouTube',
         'instagram' => 'Instagram',

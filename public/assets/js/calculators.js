@@ -404,6 +404,82 @@
       }
     },
 
+    'hni-funding-cost': {
+      inputs: [
+        { id: 'amount', label: 'Application amount', prefix: '₹', min: 200000, max: 50000000, step: 10000, value: 1000000 },
+        { id: 'price', label: 'Issue price (upper band)', prefix: '₹', min: 1, max: 3000, step: 1, value: 250 },
+        { id: 'rate', label: 'Funding interest rate (p.a.)', suffix: '%', min: 5, max: 20, step: 0.25, value: 10 },
+        { id: 'days', label: 'Days the money is borrowed', suffix: 'days', min: 1, max: 30, step: 1, value: 7 },
+        { id: 'fee', label: 'Processing and other charges', prefix: '₹', min: 0, max: 100000, step: 100, value: 1000 },
+        { id: 'allot', label: 'Expected allotment (of amount applied)', suffix: '%', min: 0.5, max: 100, step: 0.5, value: 10 },
+        { id: 'gmp', label: 'GMP per share', prefix: '₹', min: -200, max: 500, step: 0.5, value: 20 }
+      ],
+      compute: function (v) {
+        var interest = v.amount * v.rate / 100 * v.days / 365, cost = interest + v.fee;
+        var allotted = v.amount * v.allot / 100, shares = v.price ? allotted / v.price : 0;
+        var breakEvenGain = shares ? cost / shares : 0, profit = shares * v.gmp - cost;
+        return {
+          hero: { label: 'Break-even listing price', value: F.inr2(v.price + breakEvenGain), sub: 'Listing must beat the issue price by ' + F.pct(allotted ? cost / allotted * 100 : 0) + ' to cover funding costs' },
+          rows: [
+            ['Interest cost', F.inr(interest)],
+            ['Total funding cost', F.inr(cost)],
+            ['Expected allotment value', F.inr(allotted)],
+            ['Shares allotted (approx.)', F.num(shares)],
+            ['Profit at current GMP', F.inr(profit)],
+            ['Return on money borrowed', F.pct(v.amount ? profit / v.amount * 100 : 0)]
+          ]
+        };
+      }
+    },
+
+    'pe-ratio': {
+      inputs: [
+        { id: 'price', label: 'Share price or IPO price', prefix: '₹', min: 1, max: 10000, step: 0.5, value: 250 },
+        { id: 'eps', label: 'Earnings per share (EPS)', prefix: '₹', min: -500, max: 1000, step: 0.1, value: 12.5 },
+        { id: 'peer', label: 'Industry / peer P/E', suffix: 'x', min: 1, max: 150, step: 0.5, value: 30 }
+      ],
+      compute: function (v) {
+        if (v.eps <= 0) {
+          return {
+            hero: { label: 'P/E ratio', value: 'Not meaningful', tone: 'down', sub: 'The company is loss-making (EPS is zero or negative), so P/E cannot be used.' },
+            rows: [['Price', F.inr2(v.price)], ['EPS', F.inr2(v.eps)]]
+          };
+        }
+        var pe = v.price / v.eps, diff = (pe / v.peer - 1) * 100;
+        return {
+          hero: { label: 'P/E ratio', value: F.num(pe, 1) + 'x', tone: diff > 0 ? 'down' : 'up', sub: (diff >= 0 ? F.pct(diff, 1) + ' premium to' : F.pct(-diff, 1) + ' discount to') + ' the peer P/E of ' + F.num(v.peer, 1) + 'x' },
+          rows: [
+            ['Earnings yield', F.pct(v.eps / v.price * 100)],
+            ['Price at peer P/E', F.inr2(v.eps * v.peer)],
+            ['Years of earnings to recover price', F.num(pe, 1)]
+          ]
+        };
+      }
+    },
+
+    'buyback-acceptance-ratio': {
+      inputs: [
+        { id: 'buy', label: 'Buyback price', prefix: '₹', min: 1, max: 20000, step: 1, value: 1500 },
+        { id: 'market', label: 'Current market price', prefix: '₹', min: 1, max: 20000, step: 1, value: 1300 },
+        { id: 'shares', label: 'Shares you tender', min: 1, max: 5000, step: 1, value: 100 },
+        { id: 'ratio', label: 'Expected acceptance ratio', suffix: '%', min: 1, max: 100, step: 0.5, value: 25 }
+      ],
+      compute: function (v) {
+        var accepted = Math.floor(v.shares * v.ratio / 100), returned = v.shares - accepted;
+        var premium = v.buy - v.market, gross = accepted * premium, capital = v.shares * v.market;
+        return {
+          hero: { label: 'Gain on accepted shares (before tax)', value: F.inr(gross), tone: tone(gross), sub: F.pct(capital ? gross / capital * 100 : 0) + ' on the ' + F.inr(capital) + ' you put in' },
+          rows: [
+            ['Shares accepted', F.num(accepted)],
+            ['Shares returned to you', F.num(returned)],
+            ['Buyback amount received', F.inr(accepted * v.buy)],
+            ['Premium per share', F.inr2(premium)],
+            ['Buyback price vs market', F.pct(v.market ? premium / v.market * 100 : 0)]
+          ]
+        };
+      }
+    },
+
     'capital-gains': {
       inputs: [
         { id: 'buy', label: 'Buy price per share', prefix: '₹', min: 1, max: 100000, step: 0.5, value: 200 },

@@ -44,7 +44,7 @@ class SubmitIndexNow extends Command
             ->all();
 
         $hubUrls = $ipoUrls === [] ? [] : array_merge(
-            [route('home'), route('ipos.gmp'), route('ipos.calendar')],
+            [route('home'), route('ipos.gmp'), route('ipos.gmp.mainboard'), route('ipos.gmp.sme'), route('ipos.listing-today'), route('ipos.calendar')],
             array_map(fn (string $hub): string => route('ipos.'.$hub), array_keys(IpoHubs::all()))
         );
 

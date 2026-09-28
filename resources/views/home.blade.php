@@ -94,9 +94,9 @@
                 <span class="ico ico-amber"><x-icon name="hourglass" :size="22" /></span>
                 <span><span class="kpi">{{ $stats['closed'] }}</span><span class="lbl" style="display:block">Allotment / listing soon</span></span>
             </a>
-            <a class="stat" href="{{ route('ipos.index') }}">
-                <span class="ico ico-gold"><x-icon name="layers" :size="22" /></span>
-                <span><span class="kpi">{{ number_format($stats['total']) }}</span><span class="lbl" style="display:block">IPOs tracked</span></span>
+            <a class="stat" href="{{ route('ipos.listing-today') }}">
+                <span class="ico ico-gold"><x-icon name="rocket" :size="22" /></span>
+                <span><span class="kpi">{{ $stats['listing_week'] }}</span><span class="lbl" style="display:block">Listing this week</span></span>
             </a>
         </div>
     </div>
@@ -157,6 +157,25 @@
                 @endif
                 <a href="{{ route('news.shorts') }}" class="btn btn-gold btn-block"><x-icon name="play" :size="15" /> Start swiping</a>
             </div>
+
+            @if ($topGmp->isNotEmpty())
+                <div class="card widget">
+                    <div class="card-head">
+                        <h2 class="card-title"><span class="ico"><x-icon name="trending-up" :size="16" /></span> Top GMP Today</h2>
+                        <a href="{{ route('ipos.gmp') }}" class="link-gold">All <x-icon name="chevron-right" :size="14" /></a>
+                    </div>
+                    @foreach ($topGmp as $ipo)
+                        <a class="list-link top-gmp" href="{{ $ipo->url() }}#gmp">
+                            <span class="rank">{{ $loop->iteration }}</span>
+                            <span>
+                                <span class="t">{{ $ipo->name }}</span>
+                                <span class="m">{{ $ipo->typeLabel() }} · GMP ₹{{ Ipo::num($ipo->gmp) }} · Est. ₹{{ Ipo::num($ipo->estListingPrice()) }}</span>
+                            </span>
+                            <span class="gmp-pill up">▲ {{ number_format($ipo->gmpPercent(), 1) }}%</span>
+                        </a>
+                    @endforeach
+                </div>
+            @endif
 
             <div class="card widget">
                 <div class="card-head">

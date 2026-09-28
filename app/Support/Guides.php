@@ -110,6 +110,23 @@ class Guides
                 ],
                 'related' => ['what-is-ipo-gmp', 'how-to-apply-for-ipo', 'ipo-glossary'],
             ],
+            'nri-ipo-investment' => [
+                'title' => 'How NRIs Can Apply for IPOs in India: Accounts, Rules & Tax',
+                'h1' => 'How NRIs Can Apply for IPOs in India',
+                'description' => 'Can NRIs invest in Indian IPOs? Yes: NRE and NRO accounts, NRI demat, PIS, how to apply through ASBA, allotment categories, tax, TDS and repatriation.',
+                'summary' => 'The accounts an NRI needs, how to apply through ASBA, which category to bid in, and how tax and repatriation work.',
+                'icon' => 'users',
+                'published' => '2026-09-28',
+                'updated' => '2026-09-28',
+                'minutes' => 7,
+                'faqs' => [
+                    ['Can NRIs apply for IPOs in India?', 'Yes. NRIs can apply for Indian IPOs using an NRE or NRO bank account and an NRI demat and trading account, and they bid in the same retail and NII categories as resident investors.'],
+                    ['Do NRIs need a PIS account to apply for an IPO?', 'Usually not to apply, but a PIS permission is generally needed to sell shares on the stock exchange on a repatriable basis. Requirements differ between banks and brokers, so check with yours before applying.'],
+                    ['Can NRIs use UPI to apply for an IPO?', 'Some Indian banks let NRIs use UPI on NRE or NRO accounts, including with certain international mobile numbers. If your bank does not, apply through ASBA in net banking.'],
+                    ['Is tax deducted when an NRI sells IPO shares?', 'Yes. Tax on capital gains is deducted at source (TDS) when an NRI sells shares. The rates are the same as for residents, and a lower rate may apply under a tax treaty (DTAA) if you have a Tax Residency Certificate.'],
+                ],
+                'related' => ['how-to-apply-for-ipo', 'ipo-listing-gains-tax', 'how-ipo-allotment-works'],
+            ],
             'ipo-glossary' => [
                 'title' => 'IPO Glossary: 35+ IPO Terms Explained in Simple Words',
                 'h1' => 'IPO Glossary',

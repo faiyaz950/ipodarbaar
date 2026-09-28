@@ -58,10 +58,10 @@ class IpoController extends Controller
 
         // Board hubs can be narrowed by status and status hubs by board; those variants are not indexed.
         $filter = null;
-        if ($type !== null && array_key_exists((string) $request->query('status'), Ipo::STATUSES)) {
+        if ($type !== null && $status === null && array_key_exists((string) $request->query('status'), Ipo::STATUSES)) {
             $filter = $status = $request->query('status');
         }
-        if ($type === null && in_array($request->query('type'), ['mainboard', 'sme'], true)) {
+        if ($type === null && $status !== null && in_array($request->query('type'), ['mainboard', 'sme'], true)) {
             $filter = $type = $request->query('type');
         }
 
@@ -131,21 +131,44 @@ class IpoController extends Controller
         ]);
     }
 
-    public function gmp(IpoDigestBuilder $digest)
+    /**
+     * Live GMP for every active IPO, or for one board on /mainboard-ipo-gmp and /sme-ipo-gmp.
+     */
+    public function gmp(IpoDigestBuilder $digest, ?string $type = null)
     {
-        $active = Ipo::active()->get()->sortBy(fn (Ipo $i) => [
+        $active = Ipo::active()->ofType($type)->get()->sortBy(fn (Ipo $i) => [
             $i->hasGmp() ? 0 : 1,
             ['open' => 0, 'upcoming' => 1, 'closed' => 2][$i->status()] ?? 3,
             $i->close_date?->timestamp ?? PHP_INT_MAX,
         ])->values();
 
-        $recent = Ipo::listed()->whereNotNull('listing_date')
+        $recent = Ipo::listed()->ofType($type)->whereNotNull('listing_date')
             ->whereDate('listing_date', '>=', now()->subDays(30)->toDateString())
             ->orderByDesc('listing_date')->get();
 
         $allotmentDates = $active->mapWithKeys(fn (Ipo $ipo): array => [$ipo->id => $digest->allotmentDate($ipo)]);
 
-        return view('ipos.gmp', compact('active', 'recent', 'allotmentDates'));
+        return view('ipos.gmp', compact('active', 'recent', 'allotmentDates', 'type'));
+    }
+
+    /**
+     * IPOs listing today, the rest of this week's listings and the last ten days of listings.
+     */
+    public function listingToday()
+    {
+        $today = today()->toDateString();
+
+        return view('ipos.listing-today', [
+            'today' => Ipo::query()->whereDate('listing_date', $today)->orderBy('name')->get(),
+            'thisWeek' => Ipo::query()
+                ->whereDate('listing_date', '>', $today)
+                ->whereDate('listing_date', '<=', today()->addDays(7)->toDateString())
+                ->orderBy('listing_date')->orderBy('name')->get(),
+            'recent' => Ipo::query()
+                ->whereDate('listing_date', '<', $today)
+                ->whereDate('listing_date', '>=', today()->subDays(10)->toDateString())
+                ->orderByDesc('listing_date')->orderBy('name')->get(),
+        ]);
     }
 
     public function calendar(Request $request)

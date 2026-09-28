@@ -87,7 +87,12 @@
         <div class="card">
             <div class="filterbar">
                 <div class="chips">
-                    @if ($config['type'])
+                    @if ($config['type'] && $config['status'])
+                        {{-- A fixed list (status and board): link to the wider lists instead of filtering. --}}
+                        <a class="chip active" href="{{ $hubUrl }}">{{ $config['label'] }}</a>
+                        <a class="chip" href="{{ route(IpoHubs::routeForStatus($config['status'])) }}">All {{ strtolower(Ipo::STATUSES[$config['status']] ?? '') }} IPOs</a>
+                        <a class="chip" href="{{ route('ipos.'.$config['type']) }}">All {{ $config['type'] === 'sme' ? 'SME' : 'mainboard' }} IPOs</a>
+                    @elseif ($config['type'])
                         <a class="chip {{ ! $filter ? 'active' : '' }}" href="{{ $hubUrl }}">All</a>
                         @foreach (Ipo::STATUSES as $key => $label)
                             <a class="chip {{ $filter === $key ? 'active' : '' }}" href="{{ $hubUrl.'?status='.$key }}">{{ $label }}</a>
@@ -98,7 +103,11 @@
                         <a class="chip {{ $filter === 'sme' ? 'active' : '' }}" href="{{ $hubUrl.'?type=sme' }}">SME</a>
                     @endif
                 </div>
-                <a class="link-gold" href="{{ route('ipos.gmp') }}"><x-icon name="trending-up" :size="14" /> Live GMP of all IPOs</a>
+                @if ($config['type'] === 'sme')
+                    <a class="link-gold" href="{{ route('ipos.gmp.sme') }}"><x-icon name="trending-up" :size="14" /> Live SME IPO GMP</a>
+                @else
+                    <a class="link-gold" href="{{ route('ipos.gmp') }}"><x-icon name="trending-up" :size="14" /> Live GMP of all IPOs</a>
+                @endif
             </div>
 
             @if ($hub === 'allotment')

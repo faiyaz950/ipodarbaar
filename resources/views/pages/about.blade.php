@@ -46,9 +46,10 @@
                 <li><strong>Independence:</strong> no company pays to be listed or to change what we publish. Sponsored or affiliate links are always labelled "Sponsored".</li>
                 <li><strong>Clarity:</strong> guides are written in plain language, dated, and reviewed when rules change.</li>
             </ul>
+            <p>Read the full <a href="{{ route('editorial-policy') }}">editorial policy</a>.</p>
 
             <h2 id="corrections">Corrections</h2>
-            <p>If you spot an error, tell us and we will correct it promptly and update the page's date. Significant corrections to guides are noted on the page.</p>
+            <p>If you spot an error, <a href="{{ route('contact') }}">tell us</a> and we will correct it promptly and update the page's date. Significant corrections to guides are noted on the page.</p>
 
             <h2 id="contact">Contact</h2>
             @if (config('mail.from.address'))

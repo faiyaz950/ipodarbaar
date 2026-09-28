@@ -97,7 +97,9 @@
         </div>
         <div class="right">
             <a href="{{ route('ipos.gmp') }}">Live GMP</a>
+            <a href="{{ route('ipos.listing-today') }}">Listing Today</a>
             <a href="{{ route('ipos.calendar') }}">IPO Calendar</a>
+            <a href="{{ route('alerts') }}">IPO Alerts</a>
             <a href="{{ route('about') }}">About</a>
             <a href="{{ route('disclaimer') }}">Disclaimer</a>
         </div>
@@ -116,12 +118,13 @@
 
         <nav class="nav" aria-label="Main">
             <a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'active' : '' }}">Home</a>
-            <div class="dd {{ request()->routeIs('ipos.index', 'ipos.current', 'ipos.upcoming', 'ipos.allotment', 'ipos.listed', 'ipos.sme', 'ipos.mainboard', 'ipos.show', 'ipos.calendar', 'ipos.year', 'ipos.report-card', 'compare') ? 'active' : '' }}">
+            <div class="dd {{ request()->routeIs('ipos.index', 'ipos.current', 'ipos.upcoming', 'ipos.upcoming-sme', 'ipos.allotment', 'ipos.listing-today', 'ipos.listed', 'ipos.sme', 'ipos.mainboard', 'ipos.show', 'ipos.calendar', 'ipos.year', 'ipos.report-card', 'compare') ? 'active' : '' }}">
                 <button type="button" aria-haspopup="true">IPOs <x-icon name="chevron-down" :size="15" /></button>
                 <div class="dd-menu">
                     <a href="{{ route('ipos.current') }}"><span class="ico"><x-icon name="zap" /></span><span>Current IPOs<small>Open for subscription today</small></span></a>
                     <a href="{{ route('ipos.upcoming') }}"><span class="ico"><x-icon name="calendar" /></span><span>Upcoming IPOs<small>Opening in the coming days</small></span></a>
                     <a href="{{ route('ipos.allotment') }}"><span class="ico"><x-icon name="ticket" /></span><span>Allotment Status<small>Check by PAN, registrar links</small></span></a>
+                    <a href="{{ route('ipos.listing-today') }}"><span class="ico"><x-icon name="rocket" /></span><span>Listing Today<small>Expected listing price & GMP</small></span></a>
                     <a href="{{ route('ipos.index') }}"><span class="ico"><x-icon name="layers" /></span><span>All IPOs<small>Complete IPO list</small></span></a>
                     <a href="{{ route('ipos.mainboard') }}"><span class="ico"><x-icon name="building" /></span><span>Mainboard IPOs<small>NSE & BSE main board issues</small></span></a>
                     <a href="{{ route('ipos.sme') }}"><span class="ico"><x-icon name="briefcase" /></span><span>SME IPOs<small>NSE Emerge & BSE SME</small></span></a>
@@ -130,7 +133,7 @@
                     <a href="{{ route('compare') }}"><span class="ico"><x-icon name="columns" /></span><span>Compare IPOs<small>Up to 3 side by side</small></span></a>
                 </div>
             </div>
-            <a href="{{ route('ipos.gmp') }}" class="{{ request()->routeIs('ipos.gmp') ? 'active' : '' }}"><span class="live"></span> Live GMP</a>
+            <a href="{{ route('ipos.gmp') }}" class="{{ request()->routeIs('ipos.gmp', 'ipos.gmp.*') ? 'active' : '' }}"><span class="live"></span> Live GMP</a>
             <a href="{{ route('news.index') }}" class="{{ request()->routeIs('news.index', 'news.show') ? 'active' : '' }}">News</a>
             <a href="{{ route('calculators.index') }}" class="{{ request()->routeIs('calculators.*') ? 'active' : '' }}">Calculators</a>
             <a href="{{ route('guides.index') }}" class="{{ request()->routeIs('guides.*') ? 'active' : '' }}">IPO Guide</a>
@@ -175,9 +178,12 @@
         <a href="{{ route('ipos.current') }}" class="sub">Current IPOs</a>
         <a href="{{ route('ipos.upcoming') }}" class="sub">Upcoming IPOs</a>
         <a href="{{ route('ipos.allotment') }}" class="sub">Allotment Status</a>
+        <a href="{{ route('ipos.listing-today') }}" class="sub">Listing Today</a>
         <a href="{{ route('ipos.mainboard') }}" class="sub">Mainboard IPOs</a>
         <a href="{{ route('ipos.sme') }}" class="sub">SME IPOs</a>
         <a href="{{ route('ipos.gmp') }}"><x-icon name="trending-up" /> Live GMP</a>
+        <a href="{{ route('ipos.gmp.sme') }}" class="sub">SME IPO GMP</a>
+        <a href="{{ route('ipos.gmp.mainboard') }}" class="sub">Mainboard IPO GMP</a>
         <a href="{{ route('ipos.calendar') }}"><x-icon name="calendar" /> IPO Calendar</a>
         <a href="{{ route('ipos.report-card') }}"><x-icon name="trophy" /> IPO Report Card</a>
         <a href="{{ route('compare') }}"><x-icon name="columns" /> Compare IPOs</a>
@@ -185,6 +191,7 @@
         <a href="{{ route('calculators.index') }}"><x-icon name="calculator" /> Calculators</a>
         <a href="{{ route('guides.index') }}"><x-icon name="file-text" /> IPO Guide</a>
         <a href="{{ route('watchlist') }}"><x-icon name="star" /> My Watchlist</a>
+        <a href="{{ route('alerts') }}"><x-icon name="bell" /> IPO Alerts</a>
         <a href="{{ route('about') }}"><x-icon name="info" /> About</a>
     </nav>
     <button type="button" class="btn btn-gold btn-block" data-install-app hidden style="margin-top:18px"><x-icon name="download" :size="16" /> Install IPO Darbaar app</button>
@@ -239,11 +246,15 @@
                     <li><a href="{{ route('ipos.current') }}">Current IPOs</a></li>
                     <li><a href="{{ route('ipos.upcoming') }}">Upcoming IPOs</a></li>
                     <li><a href="{{ route('ipos.allotment') }}">IPO Allotment Status</a></li>
+                    <li><a href="{{ route('ipos.listing-today') }}">IPO Listing Today</a></li>
                     <li><a href="{{ route('ipos.listed') }}">Recently Listed IPOs</a></li>
                     <li><a href="{{ route('ipos.year', now()->year) }}">IPO List {{ now()->year }}</a></li>
                     <li><a href="{{ route('ipos.mainboard') }}">Mainboard IPOs</a></li>
                     <li><a href="{{ route('ipos.sme') }}">SME IPOs</a></li>
+                    <li><a href="{{ route('ipos.upcoming-sme') }}">Upcoming SME IPOs</a></li>
                     <li><a href="{{ route('ipos.gmp') }}">IPO GMP Today</a></li>
+                    <li><a href="{{ route('ipos.gmp.mainboard') }}">Mainboard IPO GMP</a></li>
+                    <li><a href="{{ route('ipos.gmp.sme') }}">SME IPO GMP</a></li>
                     <li><a href="{{ route('ipos.calendar') }}">IPO Calendar</a></li>
                     <li><a href="{{ route('ipos.report-card') }}">IPO Report Card</a></li>
                     <li><a href="{{ route('compare') }}">Compare IPOs</a></li>
@@ -281,7 +292,7 @@
         </p>
         <div class="footer-bottom">
             <span>© {{ now()->year }} IPO Darbaar. All rights reserved.</span>
-            <span><a href="{{ route('about') }}">About</a> · <a href="{{ route('disclaimer') }}">Disclaimer</a> · <a href="{{ route('privacy') }}">Privacy</a> · <a href="{{ route('sitemap') }}">Sitemap</a></span>
+            <span><a href="{{ route('about') }}">About</a> · <a href="{{ route('contact') }}">Contact</a> · <a href="{{ route('editorial-policy') }}">Editorial Policy</a> · <a href="{{ route('alerts') }}">IPO Alerts</a> · <a href="{{ route('disclaimer') }}">Disclaimer</a> · <a href="{{ route('privacy') }}">Privacy</a> · <a href="{{ route('sitemap') }}">Sitemap</a></span>
         </div>
     </div>
 </footer>

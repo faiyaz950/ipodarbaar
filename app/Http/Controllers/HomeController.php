@@ -23,8 +23,17 @@ class HomeController extends Controller
             'open' => Ipo::open()->count(),
             'upcoming' => Ipo::upcoming()->count(),
             'closed' => Ipo::closed()->count(),
-            'total' => Ipo::count(),
+            'listing_week' => Ipo::query()
+                ->whereDate('listing_date', '>=', today()->toDateString())
+                ->whereDate('listing_date', '<=', today()->addDays(6)->toDateString())
+                ->count(),
         ];
+
+        $topGmp = Ipo::active()->where('gmp', '>', 0)->get()
+            ->filter(fn (Ipo $ipo): bool => $ipo->gmpPercent() !== null)
+            ->sortByDesc(fn (Ipo $ipo): float => $ipo->gmpPercent())
+            ->take(5)
+            ->values();
 
         $latest = $news->latest(13);
         $ipoNews = $news->latest(5, 1, 9);
@@ -32,6 +41,7 @@ class HomeController extends Controller
         return view('home', [
             'boards' => $boards,
             'stats' => $stats,
+            'topGmp' => $topGmp,
             'week' => $this->week(),
             'news' => $latest['items'],
             'ipoNews' => $ipoNews['items'],

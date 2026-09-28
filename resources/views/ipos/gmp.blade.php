@@ -10,6 +10,16 @@
     // The feed has no subscription figures; the column appears once an editor adds them.
     $showSubscription = $active->contains(fn (Ipo $ipo): bool => $ipo->subscription_total !== null);
     $today = now()->format('j M Y');
+
+    // The same page serves all IPOs (/ipo-gmp) and one board (/mainboard-ipo-gmp, /sme-ipo-gmp).
+    $board = match ($type) {
+        'sme' => ['label' => 'SME IPO GMP', 'noun' => 'SME IPOs', 'route' => route('ipos.gmp.sme'),
+            'lead' => 'Live grey market premium (GMP) of every open, upcoming and closed SME IPO on NSE Emerge and BSE SME, with the expected listing price and listing gain.'],
+        'mainboard' => ['label' => 'Mainboard IPO GMP', 'noun' => 'mainboard IPOs', 'route' => route('ipos.gmp.mainboard'),
+            'lead' => 'Live grey market premium (GMP) of every open, upcoming and closed mainboard IPO on NSE and BSE, with the expected listing price and listing gain.'],
+        default => ['label' => 'IPO GMP', 'noun' => 'mainboard & SME IPOs', 'route' => route('ipos.gmp'),
+            'lead' => 'Live grey market premium (GMP) of every open, upcoming and closed IPO, with the expected listing price and listing gain for mainboard and SME issues.'],
+    };
     $gmpFaqs = [
         ['What is IPO GMP?', 'IPO GMP (grey market premium) is the premium over the issue price at which IPO shares are traded unofficially before listing. A GMP of ₹40 on an issue price of ₹200 means grey-market dealers expect the shares to list around ₹240.'],
         ['How is the expected listing price calculated from GMP?', 'Expected listing price = upper price band + GMP. Expected listing gain % = GMP ÷ upper price band × 100. Both are indicative only.'],
@@ -17,18 +27,24 @@
         ['What is Kostak and Subject to Sauda?', 'Kostak is a fixed amount a grey-market dealer pays for an IPO application regardless of allotment. Subject to Sauda is paid only if the application gets an allotment. Both are unofficial arrangements with no legal protection.'],
         ['How often is the GMP on this page updated?', 'IPO Darbaar refreshes the grey market premium of every open, upcoming and closed IPO through the day. Each IPO page also shows its day-by-day GMP trend.'],
     ];
+    if ($type === 'sme') {
+        array_splice($gmpFaqs, 1, 0, [
+            ['Why do SME IPO GMPs swing so much?', 'SME issues are small, so a few large orders can move demand sharply. Grey-market quotes for SME IPOs are thinner and change faster than for mainboard IPOs, and SME stocks trade in lots after listing, which limits liquidity.'],
+            ['How much money do I need for an SME IPO?', 'Individual investors must apply for at least two lots in an SME IPO, which usually works out to more than ₹2 lakh. Each SME IPO page shows the exact lot size and amount.'],
+        ]);
+    }
 @endphp
 
-@section('title', 'Live IPO GMP Today ('.$today.'): Grey Market Premium')
-@section('description', 'Live IPO GMP today ('.$today.') for '.$active->count().' mainboard & SME IPOs: grey market premium, expected listing price and gain %.'.($top ? ' Highest now: '.$top->name.' '.number_format($top->gmpPercent(), 1).'%.' : ''))
+@section('title', ($type ? $board['label'].' Today ('.$today.'): Live Grey Market Premium' : 'Live IPO GMP Today ('.$today.'): Grey Market Premium'))
+@section('description', 'Live '.$board['label'].' today ('.$today.') for '.$active->count().' '.$board['noun'].': grey market premium, expected listing price and gain %.'.($top ? ' Highest now: '.$top->name.' '.number_format($top->gmpPercent(), 1).'%.' : ''))
 
 @push('head')
-<x-jsonld :breadcrumbs="[['Home', route('home')], ['IPO GMP Today', route('ipos.gmp')]]" />
+<x-jsonld :breadcrumbs="$type ? [['Home', route('home')], ['IPO GMP Today', route('ipos.gmp')], [$board['label'], $board['route']]] : [['Home', route('home')], ['IPO GMP Today', route('ipos.gmp')]]" />
 <x-jsonld :data="[
     '@context' => 'https://schema.org',
     '@type' => 'CollectionPage',
-    'name' => 'Live IPO GMP Today',
-    'url' => route('ipos.gmp'),
+    'name' => $type ? $board['label'].' Today' : 'Live IPO GMP Today',
+    'url' => $board['route'],
     'dateModified' => (\App\Services\IpoSyncService::lastSyncedAt() ?? now())->toIso8601String(),
     'mainEntity' => [
         '@type' => 'ItemList',
@@ -46,9 +62,21 @@
 @section('content')
 <section class="page-head">
     <div class="container">
-        <nav class="crumbs"><a href="{{ route('home') }}">Home</a> <x-icon name="chevron-right" :size="13" /> <span>IPO GMP</span></nav>
-        <h1>Live IPO GMP Today</h1>
-        <p class="lead">Live grey market premium (GMP) of every open, upcoming and closed IPO, with the expected listing price and listing gain for mainboard and SME issues.</p>
+        <nav class="crumbs">
+            <a href="{{ route('home') }}">Home</a> <x-icon name="chevron-right" :size="13" />
+            @if ($type)
+                <a href="{{ route('ipos.gmp') }}">IPO GMP</a> <x-icon name="chevron-right" :size="13" /> <span>{{ $board['label'] }}</span>
+            @else
+                <span>IPO GMP</span>
+            @endif
+        </nav>
+        <h1>{{ $type ? $board['label'].' Today' : 'Live IPO GMP Today' }}</h1>
+        <p class="lead">{{ $board['lead'] }}</p>
+        <div class="hub-links" style="margin-top:12px">
+            <a class="chip {{ $type === null ? 'active' : '' }}" href="{{ route('ipos.gmp') }}">All IPO GMP</a>
+            <a class="chip {{ $type === 'mainboard' ? 'active' : '' }}" href="{{ route('ipos.gmp.mainboard') }}">Mainboard IPO GMP</a>
+            <a class="chip {{ $type === 'sme' ? 'active' : '' }}" href="{{ route('ipos.gmp.sme') }}">SME IPO GMP</a>
+        </div>
         <span class="updated-line"><x-icon name="refresh" :size="14" /> Updated {{ (\App\Services\IpoSyncService::lastSyncedAt() ?? now())->timezone(config('app.timezone'))->format('j M Y, g:i A') }} IST · {{ $withGmp->count() }} IPOs with GMP</span>
     </div>
 </section>
@@ -72,7 +100,7 @@
 
         @if ($highest->isNotEmpty())
             <div class="card card-pad">
-                <h2 class="card-title" id="highest-gmp" style="margin-bottom:10px"><span class="ico"><x-icon name="trending-up" :size="16" /></span> Highest IPO GMP Today</h2>
+                <h2 class="card-title" id="highest-gmp" style="margin-bottom:10px"><span class="ico"><x-icon name="trending-up" :size="16" /></span> Highest {{ $board['label'] }} Today</h2>
                 <ol class="rank-list">
                     @foreach ($highest->take(5) as $ipo)
                         <li>
@@ -88,14 +116,16 @@
         <div class="card">
             <div class="card-head">
                 <div>
-                    <h2 class="card-title" id="live-gmp"><span class="ico"><x-icon name="activity" :size="16" /></span> Live IPO GMP Today: Mainboard &amp; SME</h2>
-                    <div class="card-sub">{{ $active->count() }} active IPOs · open, upcoming & awaiting listing</div>
+                    <h2 class="card-title" id="live-gmp"><span class="ico"><x-icon name="activity" :size="16" /></span> {{ $type ? 'Live '.$board['label'].' Today' : 'Live IPO GMP Today: Mainboard & SME' }}</h2>
+                    <div class="card-sub">{{ $active->count() }} active {{ $board['noun'] }} · open, upcoming & awaiting listing</div>
                 </div>
-                <div class="seg" data-type-filter="gmp-active">
-                    <button type="button" class="active" data-value="all">All</button>
-                    <button type="button" data-value="mainboard">Mainboard</button>
-                    <button type="button" data-value="sme">SME</button>
-                </div>
+                @unless ($type)
+                    <div class="seg" data-type-filter="gmp-active">
+                        <button type="button" class="active" data-value="all">All</button>
+                        <button type="button" data-value="mainboard">Mainboard</button>
+                        <button type="button" data-value="sme">SME</button>
+                    </div>
+                @endunless
             </div>
             <div class="table-wrap" id="gmp-active">
                 <table class="table">
@@ -179,7 +209,7 @@
             </div>
         </div>
 
-        <x-faq :faqs="$gmpFaqs" title="IPO GMP: FAQs" />
+        <x-faq :faqs="$gmpFaqs" :title="$board['label'].': FAQs'" />
     </div>
 </div>
 @endsection

@@ -437,6 +437,21 @@ body.drawer-open .menu-btn .i-close { display: block; }
 .group-title { font-size: 16px; font-weight: 700; padding: 18px 20px 10px; border-top: 1px solid var(--border); }
 .group-title .muted { font-weight: 500; }
 .page-head .hub-summary { margin-top: 10px; color: var(--muted); max-width: 760px; }
+/* Home: top GMP widget */
+.list-link.top-gmp { align-items: center; }
+.list-link.top-gmp > span:nth-child(2) { flex: 1; min-width: 0; }
+.list-link.top-gmp .rank { flex: none; width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; font-weight: 700; font-size: 13px; background: var(--surface-3); color: var(--gold-ink); }
+.list-link.top-gmp .gmp-pill { flex: none; }
+/* IPO alerts page */
+.alert-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.alert-card { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+.alert-card h2 { font-size: 18px; font-weight: 700; }
+.alert-card .subscribe-form { width: 100%; }
+.checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; color: var(--muted); font-size: 14.5px; }
+.checklist li { position: relative; padding-left: 24px; line-height: 1.45; }
+.checklist li::before { content: ""; position: absolute; left: 2px; top: 5px; width: 12px; height: 7px; border-left: 2px solid var(--green); border-bottom: 2px solid var(--green); transform: rotate(-45deg); }
+.btn-row { display: flex; flex-wrap: wrap; gap: 10px; }
+@media (max-width: 760px) { .alert-grid { grid-template-columns: 1fr; } }
 .countdown { font-size: 12px; font-weight: 600; color: var(--muted); }
 .countdown.hot { color: var(--red); }
 .table-empty { padding: 48px 20px; text-align: center; color: var(--muted); }
@@ -1088,6 +1103,7 @@ button.poll-btn:hover { border-color: var(--gold); }
   .poll-bar { grid-column: 1 / -1; grid-row: 2; }
   .footer-subscribe { grid-template-columns: 1fr; gap: 16px; }
   .subscribe-row { flex-direction: column; }
+  .subscribe-row .input { flex: none; height: 44px; }
 }
 
 /* ---------- Company details & financials ---------- */

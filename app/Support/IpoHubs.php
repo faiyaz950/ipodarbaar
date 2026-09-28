@@ -91,6 +91,25 @@ class IpoHubs
                     ['Is the listing gain taxable?', 'Yes. Shares sold within 12 months are taxed as short-term capital gains at 20% (plus cess). See the capital gains calculator for your exact tax.'],
                 ],
             ],
+            'upcoming-sme' => [
+                'path' => 'upcoming-sme-ipo',
+                'status' => 'upcoming',
+                'type' => 'sme',
+                'label' => 'Upcoming SME IPOs',
+                'title' => 'Upcoming SME IPO List {month} {year}: Dates, Price & GMP',
+                'h1' => 'Upcoming SME IPOs in {month} {year}',
+                'description' => 'Upcoming SME IPO list for {month} {year}: {count} SME IPOs on NSE Emerge and BSE SME with open and close dates, price band, lot size, issue size and GMP.',
+                'lead' => 'Every upcoming SME IPO on NSE Emerge and BSE SME, sorted by opening date, with the price band, issue size and grey market premium.',
+                'about' => [
+                    ['How SME IPOs are different', 'SME IPOs are smaller issues from small and medium enterprises. Their offer documents are reviewed by the stock exchange rather than SEBI, individual investors must apply for at least two lots, and after listing the shares trade in lots with a market maker for three years.'],
+                    ['Before you apply', 'Check the lot size and minimum investment, the company\'s financials and the objects of the issue on each IPO page. SME grey market premiums can move sharply, and trading after listing is often thin.'],
+                ],
+                'faqs' => [
+                    ['Which SME IPOs are opening this week?', 'The list above is sorted by opening date, so the SME IPOs opening soonest are at the top. The IPO calendar shows every opening, closing and listing date for the month.'],
+                    ['What is the minimum investment in an SME IPO?', 'Individual investors must apply for at least two lots, which usually works out to more than ₹2 lakh. Each IPO page shows the exact lot size and amount.'],
+                    ['Where do SME IPOs list?', 'SME IPOs list on NSE Emerge or BSE SME, the stock exchanges\' platforms for small and medium enterprises.'],
+                ],
+            ],
             'sme' => [
                 'path' => 'sme-ipo',
                 'status' => null,

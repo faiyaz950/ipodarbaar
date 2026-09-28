@@ -76,7 +76,7 @@ class SeoPagesTest extends TestCase
             ->assertDontSee('Small Shop IPO</a>', false);
 
         // A filtered view keeps the plain single table.
-        $this->get('/upcoming-ipo?type=sme')->assertOk()->assertDontSee('Upcoming SME IPOs');
+        $this->get('/upcoming-ipo?type=sme')->assertOk()->assertDontSee('<h2 class="group-title" id="sme">', false);
     }
 
     public function test_current_hub_lists_ipos_closing_today(): void

@@ -30,6 +30,9 @@ foreach (array_keys(IpoHubs::all()) as $hub) {
 }
 Route::get('/ipo/type/{type}', [IpoController::class, 'index'])->whereIn('type', ['mainboard', 'sme'])->name('ipos.type');
 Route::get('/ipo-gmp', [IpoController::class, 'gmp'])->name('ipos.gmp');
+Route::get('/mainboard-ipo-gmp', [IpoController::class, 'gmp'])->defaults('type', 'mainboard')->name('ipos.gmp.mainboard');
+Route::get('/sme-ipo-gmp', [IpoController::class, 'gmp'])->defaults('type', 'sme')->name('ipos.gmp.sme');
+Route::get('/ipo-listing-today', [IpoController::class, 'listingToday'])->name('ipos.listing-today');
 Route::get('/ipo-calendar', [IpoController::class, 'calendar'])->name('ipos.calendar');
 Route::get('/ipo/search/suggest', [IpoController::class, 'suggest'])->name('ipos.suggest');
 Route::get('/ipo-compare', [CompareController::class, 'index'])->name('compare');
@@ -68,6 +71,9 @@ Route::get('/calculators/{slug}', [CalculatorController::class, 'show'])->name('
 
 // Pages
 Route::get('/about', [PageController::class, 'about'])->name('about');
+Route::get('/contact', [PageController::class, 'contact'])->name('contact');
+Route::get('/editorial-policy', [PageController::class, 'editorialPolicy'])->name('editorial-policy');
+Route::get('/ipo-alerts', [PageController::class, 'alerts'])->name('alerts');
 Route::get('/disclaimer', [PageController::class, 'disclaimer'])->name('disclaimer');
 Route::get('/privacy', [PageController::class, 'privacy'])->name('privacy');
 Route::get('/og/ipo/{file}', OgImageController::class)->where('file', '[a-z0-9-]+\.png')->withoutMiddleware(RefreshIpoData::class)->name('og.ipo');

@@ -143,6 +143,7 @@ return [
         ],
         'social' => [
             'telegram' => env('SOCIAL_TELEGRAM_URL'),
+            'whatsapp' => env('SOCIAL_WHATSAPP_URL'),
             'x' => null,
             'youtube' => null,
             'instagram' => null,

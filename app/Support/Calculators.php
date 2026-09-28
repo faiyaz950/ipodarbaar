@@ -42,6 +42,21 @@ class Calculators
             'Enter how many separate PAN applications your family made.',
             'See the chance of each application and of at least one allotment.',
         ]],
+        'hni-funding-cost' => ['HNI IPO Funding Cost Calculator: Break-Even Listing Price', [
+            'Enter the application amount, the upper price band and the interest rate on the borrowed money.',
+            'Add the number of days the money is blocked, any processing charges and the allotment you expect.',
+            'See the funding cost, the listing price needed to break even and your profit at the current GMP.',
+        ]],
+        'buyback-acceptance-ratio' => ['Buyback Acceptance Ratio Calculator: Profit from Share Buyback', [
+            'Enter the buyback price and the current market price of the share.',
+            'Enter how many shares you will tender and the acceptance ratio you expect.',
+            'See how many shares will be accepted, how many come back and your gain before tax.',
+        ]],
+        'pe-ratio' => ['P/E Ratio Calculator: Price to Earnings for IPOs & Stocks', [
+            'Enter the share price, or the upper price band for an IPO.',
+            'Enter the earnings per share (EPS) from the results or the RHP.',
+            'Add the P/E of listed peers to see whether the price is at a premium or a discount.',
+        ]],
         'sip' => ['SIP Calculator: Calculate SIP Returns Online (with Step-up)', [
             'Enter your monthly SIP amount and the expected annual return.',
             'Choose the investment period and, optionally, a yearly step-up percentage.',
@@ -212,6 +227,30 @@ class Calculators
                     ['Does applying for more lots help retail investors?', 'In an oversubscribed mainboard IPO, no — each retail application is treated as one entry in the lottery for a single lot.'],
                 ],
             ],
+            'hni-funding-cost' => [
+                'name' => 'HNI IPO Funding Cost Calculator',
+                'short' => 'Funding cost and break-even listing price for borrowed IPO applications.',
+                'icon' => 'hand-coins',
+                'group' => 'ipo',
+                'about' => 'HNIs often borrow to apply for large amounts in oversubscribed IPOs. Interest is charged for every day the money is used, while usually only a small part of the application is allotted. This calculator shows the total funding cost, the listing price needed to break even and the profit or loss at the current GMP.',
+                'formula' => 'Funding cost = Amount × Rate × Days ÷ 365 + Charges · Break-even listing price = Issue price + Funding cost ÷ Shares allotted',
+                'faqs' => [
+                    ['How are NII (HNI) shares allotted?', 'Under SEBI rules, each successful NII applicant gets at least the minimum NII application size, subject to availability. When the category is heavily oversubscribed, the successful applicants are picked by a draw of lots.'],
+                    ['Why is IPO funding risky?', 'Interest and charges are payable whatever happens. If the IPO lists below the break-even price, the funding cost adds to the loss.'],
+                ],
+            ],
+            'buyback-acceptance-ratio' => [
+                'name' => 'Buyback Acceptance Ratio Calculator',
+                'short' => 'Shares accepted and gain from a tender-offer buyback.',
+                'icon' => 'repeat',
+                'group' => 'ipo',
+                'about' => 'In a tender-offer buyback the company buys back shares at a fixed price, usually above the market price. Only part of the shares you tender is accepted (the acceptance ratio); the rest are returned to your demat account. 15% of the buyback is reserved for small shareholders, whose holding is worth up to ₹2 lakh on the record date.',
+                'formula' => 'Shares accepted = Shares tendered × Acceptance ratio · Gain = Shares accepted × (Buyback price − Market price)',
+                'faqs' => [
+                    ['How is buyback income taxed?', 'For buybacks from 1 October 2024, the entire amount you receive is taxed as dividend income at your slab rate, and the cost of the shares bought back becomes a capital loss you can set off against capital gains. This calculator shows the gain before tax.'],
+                    ['Who is a small shareholder in a buyback?', 'A shareholder whose shares in the company are worth ₹2 lakh or less at the closing price on the record date. As 15% of the buyback is reserved for them, their acceptance ratio is often higher.'],
+                ],
+            ],
             'sip' => [
                 'name' => 'SIP Calculator',
                 'short' => 'See how monthly investments grow, with optional yearly step-up.',
@@ -258,6 +297,18 @@ class Calculators
                 'about' => 'When you buy more of a stock you already hold, your average cost changes. Enter both purchases to see the new average price and total investment.',
                 'formula' => 'Average = (Q₁ × P₁ + Q₂ × P₂) ÷ (Q₁ + Q₂)',
                 'faqs' => [],
+            ],
+            'pe-ratio' => [
+                'name' => 'P/E Ratio Calculator',
+                'short' => 'Price-to-earnings ratio and premium or discount to peers.',
+                'icon' => 'scale',
+                'group' => 'invest',
+                'about' => 'The price-to-earnings (P/E) ratio shows how many rupees investors pay for each rupee of a company\'s yearly earnings. For an IPO, use the upper price band and the post-issue EPS from the RHP, then compare the result with listed peers in the same industry.',
+                'formula' => 'P/E = Price ÷ Earnings per share (EPS) · Earnings yield = EPS ÷ Price × 100',
+                'faqs' => [
+                    ['Is a lower P/E always better?', 'Not always. A low P/E can mean a stock is cheap, or that its earnings are expected to fall. Compare P/E with growth, return ratios and peers in the same industry.'],
+                    ['Where do I find the EPS for an IPO?', 'The RHP shows EPS and the P/E of listed peers in its "Basis for Offer Price" section. Use the diluted, post-issue EPS for a fair comparison.'],
+                ],
             ],
             'return' => [
                 'name' => 'Investment Return Calculator',

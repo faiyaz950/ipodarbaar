@@ -23,4 +23,19 @@ class PageController extends Controller
     {
         return view('pages.offline');
     }
+
+    public function alerts()
+    {
+        return view('pages.alerts');
+    }
+
+    public function contact()
+    {
+        return view('pages.contact');
+    }
+
+    public function editorialPolicy()
+    {
+        return view('pages.editorial-policy');
+    }
 }

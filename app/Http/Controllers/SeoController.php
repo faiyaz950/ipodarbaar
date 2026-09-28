@@ -151,9 +151,10 @@ class SeoController extends Controller
     private function pageUrls(IpoStatsService $stats): array
     {
         $urls = [
-            route('home'), route('ipos.index'), route('ipos.gmp'), route('ipos.calendar'), route('ipos.report-card'),
-            route('news.index'), route('news.shorts'), route('calculators.index'), route('guides.index'),
-            route('about'), route('disclaimer'), route('privacy'),
+            route('home'), route('ipos.index'), route('ipos.gmp'), route('ipos.gmp.mainboard'), route('ipos.gmp.sme'),
+            route('ipos.listing-today'), route('ipos.calendar'), route('ipos.report-card'),
+            route('news.index'), route('news.shorts'), route('calculators.index'), route('guides.index'), route('alerts'),
+            route('about'), route('contact'), route('editorial-policy'), route('disclaimer'), route('privacy'),
         ];
 
         foreach (array_keys(IpoHubs::all()) as $hub) {
