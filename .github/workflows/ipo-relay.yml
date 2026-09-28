@@ -89,4 +89,4 @@ jobs:
             rm -f "$page"
           }
           export -f relay_one
-          jq -r '.[] | "\(.api_id) \(.url)"' registrars.json | xargs -P 6 -L 1 bash -c 'relay_one "$0" "$1"'
+          jq -r '.[] | "\(.api_id) \(.url)"' registrars.json | xargs -P 3 -L 1 bash -c 'relay_one "$0" "$1"'
