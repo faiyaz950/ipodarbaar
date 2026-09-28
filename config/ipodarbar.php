@@ -28,6 +28,12 @@ return [
     ],
 
     /*
+    | Old or alternate hostnames (comma separated) that 301-redirect to APP_URL,
+    | e.g. "www.example.in,old.example.com".
+    */
+    'redirect_hosts' => array_filter(array_map('trim', explode(',', (string) env('REDIRECT_HOSTS', '')))),
+
+    /*
     |--------------------------------------------------------------------------
     | Market news source
     |--------------------------------------------------------------------------
@@ -105,6 +111,18 @@ return [
         ],
         'email' => [
             'digest' => true,
+        ],
+        'seo' => [
+            'google_verification' => env('GOOGLE_SITE_VERIFICATION'),
+            'bing_verification' => env('BING_SITE_VERIFICATION'),
+        ],
+        'social' => [
+            'telegram' => env('SOCIAL_TELEGRAM_URL'),
+            'x' => null,
+            'youtube' => null,
+            'instagram' => null,
+            'facebook' => null,
+            'linkedin' => null,
         ],
     ],
 

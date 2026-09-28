@@ -24,8 +24,8 @@ jobs:
     timeout-minutes: 10
     env:
       IPO_API_URL: https://www.finowings.com/ipo-sync.php
-      SITE_URL: https://ipodarbaar.brolyticstechnologies.com
-      PUSH_URL: https://ipodarbaar.brolyticstechnologies.com/internal/ipo-push
+      SITE_URL: https://ipodarbaar.in
+      PUSH_URL: https://ipodarbaar.in/internal/ipo-push
       IPO_API_KEY: ${{ secrets.IPO_API_KEY }}
       PUSH_TOKEN: ${{ secrets.IPO_PUSH_TOKEN }}
       FULL: ${{ github.event.schedule == '0 22 * * *' || inputs.full == true }}

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\RedirectToCanonicalHost;
 use App\Http\Middleware\RefreshIpoData;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
@@ -14,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->prepend(RedirectToCanonicalHost::class);
         $middleware->web(append: [
             SecurityHeaders::class,
             RefreshIpoData::class,
