@@ -76,7 +76,10 @@ class SeoController extends Controller
         $urls = match ($part) {
             'pages' => $this->pageUrls($stats),
             'ipos' => $this->ipoUrls(),
-            'news-archive' => Cache::remember('sitemap:news-archive', now()->addHours(6), fn (): array => $this->newsArchiveUrls($news)),
+            'news-archive' => array_map(
+                fn (array $url): array => ['loc' => $url['loc'], 'lastmod' => $url['lastmod'] ? Carbon::parse($url['lastmod']) : null],
+                Cache::remember('sitemap:news-archive:v2', now()->addHours(6), fn (): array => $this->newsArchiveUrls($news))
+            ),
         };
 
         return response()->view('sitemap', ['urls' => $urls])->header('Content-Type', 'application/xml');
@@ -122,7 +125,9 @@ class SeoController extends Controller
     }
 
     /**
-     * @return array<int, array{loc: string, lastmod: Carbon|null}>
+     * Dates are ISO strings: the cache does not unserialize objects (cache.serializable_classes).
+     *
+     * @return array<int, array{loc: string, lastmod: string|null}>
      */
     private function newsArchiveUrls(NewsService $news): array
     {
@@ -130,7 +135,7 @@ class SeoController extends Controller
         for ($page = 1; $page <= self::NEWS_ARCHIVE_PAGES; $page++) {
             $result = $news->latest(100, $page);
             foreach ($result['items'] as $item) {
-                $urls[] = ['loc' => $item['url'], 'lastmod' => $item['updated'] ?? $item['date']];
+                $urls[] = ['loc' => $item['url'], 'lastmod' => ($item['updated'] ?? $item['date'])?->toAtomString()];
             }
             if (! $result['has_more']) {
                 break;

@@ -9,6 +9,7 @@ use App\Support\IpoLinker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -192,6 +193,20 @@ class SeoPagesTest extends TestCase
         $this->get('/sitemaps/news.xml')->assertOk()
             ->assertSee('<news:name>IPO Darbaar</news:name>', false)
             ->assertSee('<news:title>Alpha Tech IPO subscribed 12 times</news:title>', false);
+    }
+
+    public function test_news_archive_sitemap_survives_a_cache_that_does_not_unserialize_objects(): void
+    {
+        // Production's file cache refuses to unserialize objects (cache.serializable_classes = false).
+        config(['cache.stores.array.serialize' => true, 'cache.serializable_classes' => false]);
+        Cache::forgetDriver('array');
+
+        // The first request fills the cache; the second reads it back.
+        for ($request = 1; $request <= 2; $request++) {
+            $this->get('/sitemaps/news-archive.xml')->assertOk()
+                ->assertSee(route('news.show', ['id' => 77, 'slug' => 'alpha-tech-ipo-subscribed-12-times']))
+                ->assertSee('<lastmod>2026-09-23T11:35:20+05:30</lastmod>', false);
+        }
     }
 
     public function test_indexnow_key_file_is_served_only_when_configured(): void
