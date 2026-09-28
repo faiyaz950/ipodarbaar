@@ -35,6 +35,15 @@ class RegistrarExtractorTest extends TestCase
     {
         $html = '<table><tr><td>Registrar</td><td>Mas Services Private Limited</td></tr></table>';
 
-        $this->assertSame('Mas Services', (new RegistrarExtractor)->fromHtml($html));
+        $this->assertSame('Spread X Securities', (new RegistrarExtractor)->fromHtml(str_replace('Mas Services', 'Spread X Securities', $html)));
+        $this->assertSame('Satellite Corporate Services', (new RegistrarExtractor)->normalize('Satellite Corporate Services (P) Ltd.'));
+    }
+
+    public function test_spelling_variants_of_a_registrar_share_one_name(): void
+    {
+        $extractor = new RegistrarExtractor;
+
+        $this->assertSame('MAS Services', $extractor->normalize('Mas Services Limited'));
+        $this->assertSame('MAS Services', $extractor->normalize('MAS SERVICES LTD'));
     }
 }

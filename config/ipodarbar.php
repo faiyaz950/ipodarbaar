@@ -39,6 +39,13 @@ return [
     | and updated pages within minutes. Set INDEXNOW_KEY to any 8–128 character
     | hex/alphanumeric string to enable it.
     */
+    // Full-page cache for anonymous visitors (App\Support\PageCache).
+    'page_cache' => [
+        'enabled' => (bool) env('PAGE_CACHE_ENABLED', env('APP_ENV') === 'production'),
+        'store' => env('PAGE_CACHE_STORE', 'pages'),
+        'ttl' => (int) env('PAGE_CACHE_TTL', 300),
+    ],
+
     'indexnow' => [
         'key' => env('INDEXNOW_KEY'),
         'endpoint' => 'https://api.indexnow.org/indexnow',

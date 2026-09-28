@@ -18,6 +18,7 @@ use App\Http\Controllers\SeoController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\WatchlistController;
 use App\Http\Middleware\EnsureAdmin;
+use App\Http\Middleware\FlushPageCacheAfterWrites;
 use App\Http\Middleware\RefreshIpoData;
 use App\Support\IpoHubs;
 use Illuminate\Support\Facades\Route;
@@ -108,7 +109,7 @@ Route::prefix('admin')->name('admin.')->withoutMiddleware(RefreshIpoData::class)
     Route::get('/login', [Admin\AuthController::class, 'show'])->name('login');
     Route::post('/login', [Admin\AuthController::class, 'login'])->middleware('throttle:5,1')->name('login.attempt');
 
-    Route::middleware(['auth', EnsureAdmin::class])->group(function () {
+    Route::middleware(['auth', EnsureAdmin::class, FlushPageCacheAfterWrites::class])->group(function () {
         Route::post('/logout', [Admin\AuthController::class, 'logout'])->name('logout');
         Route::get('/', [Admin\DashboardController::class, 'index'])->name('dashboard');
         Route::post('/sync', [Admin\DashboardController::class, 'sync'])->middleware('throttle:6,1')->name('sync');

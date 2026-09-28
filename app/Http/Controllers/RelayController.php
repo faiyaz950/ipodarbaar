@@ -6,6 +6,7 @@ use App\Models\Ipo;
 use App\Services\IpoSyncService;
 use App\Services\LogoService;
 use App\Services\RegistrarExtractor;
+use App\Support\PageCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -89,6 +90,7 @@ class RelayController extends Controller
             Cache::put($this->registrarMissKey($ipo), true, now()->addDays(7));
         } elseif ($ipo->registrar === null) {
             $ipo->update(['registrar' => $registrar]);
+            PageCache::flush();
         }
 
         return response()->json(['registrar' => $ipo->registrar]);

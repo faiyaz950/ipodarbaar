@@ -25,6 +25,8 @@ class RegistrarExtractor
         'purva' => 'Purva Sharegistry',
         'cameo' => 'Cameo Corporate Services',
         'integrated registry' => 'Integrated Registry Management',
+        'mas services' => 'MAS Services',
+        'beetal' => 'Beetal Financial & Computer Services',
     ];
 
     public function fromHtml(string $html): ?string
@@ -48,7 +50,7 @@ class RegistrarExtractor
             }
         }
 
-        $name = trim(preg_replace('/\s*\b(private|pvt\.?)?\s*(limited|ltd\.?)$/i', '', $name), ' .,');
+        $name = trim(preg_replace('/\s*(?:\((?:p|pvt\.?)\)|\bprivate\b|\bpvt\.?)?\s*(?:\b(?:limited|ltd)\.?)?$/i', '', $name), ' .,');
 
         return $name === '' ? null : Str::limit($name, 60, '');
     }

@@ -343,7 +343,18 @@
     poll.classList.add('voted');
   }
 
+  // Pages are cached for everyone, so the visitor's own vote is remembered in this browser.
+  var VOTES_KEY = 'darbaar:votes';
+  function myVotes() {
+    try { var v = JSON.parse(store.get(VOTES_KEY) || '{}'); return v && typeof v === 'object' ? v : {}; } catch (e) { return {}; }
+  }
+
   $$('[data-poll]').forEach(function (poll) {
+    var mine = myVotes()[poll.getAttribute('data-ipo')];
+    if (mine && $('[data-poll-choice="' + mine + '"]', poll)) {
+      $('[data-poll-choice="' + mine + '"]', poll).classList.add('mine');
+      poll.classList.add('voted');
+    }
     poll.addEventListener('click', function (e) {
       var btn = e.target.closest('[data-poll-vote]');
       if (!btn || poll.classList.contains('busy')) return;
@@ -352,6 +363,9 @@
         .then(function (res) {
           if (res.ok) {
             renderPoll(poll, res.body);
+            var votes = myVotes();
+            votes[poll.getAttribute('data-ipo')] = res.body.mine;
+            store.set(VOTES_KEY, JSON.stringify(votes));
             toast('Thanks for voting!');
             track('poll_vote', { ipo: poll.getAttribute('data-ipo'), choice: btn.getAttribute('data-poll-vote') });
           } else {

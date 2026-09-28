@@ -51,13 +51,18 @@ class IpoVoteControllerTest extends TestCase
         $this->assertDatabaseCount('ipo_votes', 0);
     }
 
-    public function test_vote_without_the_voter_cookie_is_rejected(): void
+    public function test_first_vote_issues_the_voter_cookie(): void
     {
         $ipo = Ipo::factory()->open()->create();
 
-        $this->postJson(route('ipos.vote', $ipo), ['choice' => 'apply'])->assertStatus(422);
+        // IPO pages come from the page cache and set no cookies, so the first vote issues it.
+        $response = $this->postJson(route('ipos.vote', $ipo), ['choice' => 'apply'])
+            ->assertOk()
+            ->assertJson(['total' => 1, 'mine' => 'apply'])
+            ->assertCookie(IpoVote::COOKIE);
 
-        $this->assertDatabaseCount('ipo_votes', 0);
+        $this->assertTrue(Str::isUuid($response->getCookie(IpoVote::COOKIE)->getValue()));
+        $this->assertDatabaseCount('ipo_votes', 1);
     }
 
     public function test_vote_rejects_an_unknown_choice(): void

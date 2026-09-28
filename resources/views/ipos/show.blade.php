@@ -194,7 +194,7 @@
 
             <x-ad-slot name="ipo_after_gmp" />
 
-            <x-ipo-poll :ipo="$ipo" :results="$poll" :mine="$myVote" />
+            <x-ipo-poll :ipo="$ipo" :results="$poll" />
 
             {{-- GMP trend --}}
             @if ($gmpTrend->count() >= 2)

@@ -4,14 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\Ipo;
 use App\Models\IpoVote;
+use App\Support\PageCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 /**
  * Records a visitor's "Will you apply?" vote. Visitors may change their answer until
- * the IPO lists; the random voter cookie is issued when the IPO page is viewed.
+ * the IPO lists. A random voter cookie identifies the visitor; it is issued with the
+ * first vote, because IPO pages are served from the page cache and set no cookies.
  */
 class IpoVoteController extends Controller
 {
@@ -27,7 +30,8 @@ class IpoVoteController extends Controller
 
         $voterId = (string) $request->cookie(IpoVote::COOKIE);
         if (! Str::isUuid($voterId)) {
-            return response()->json(['message' => 'Please reload the page and vote again.'], 422);
+            $voterId = (string) Str::uuid();
+            Cookie::queue(IpoVote::COOKIE, $voterId, 60 * 24 * 365);
         }
 
         $voterHash = IpoVote::hash($voterId);
@@ -46,6 +50,7 @@ class IpoVoteController extends Controller
         ]], ['ipo_id', 'voter_hash'], ['choice', 'ip_hash']);
 
         IpoVote::forgetResults($ipo);
+        PageCache::forget($ipo->url());
 
         return response()->json(IpoVote::results($ipo) + ['mine' => $data['choice']]);
     }

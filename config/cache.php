@@ -39,6 +39,13 @@ return [
             'serialize' => false,
         ],
 
+        // Rendered public pages (App\Support\PageCache); flushed after every data change.
+        'pages' => [
+            'driver' => 'file',
+            'path' => storage_path('framework/cache/pages'),
+            'lock_path' => storage_path('framework/cache/pages'),
+        ],
+
         'database' => [
             'driver' => 'database',
             'connection' => env('DB_CACHE_CONNECTION'),

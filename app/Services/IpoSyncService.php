@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Ipo;
 use App\Models\IpoGmpHistory;
+use App\Support\PageCache;
 use App\Support\SchedulerHeartbeat;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -76,6 +77,7 @@ class IpoSyncService
         Cache::forever(self::SYNCED_AT_KEY, now()->toIso8601String());
         $this->stats->flush();
         Cache::forget('layout:ticker');
+        PageCache::flush();
     }
 
     /** Quick refresh of the most recent IPOs (GMP/dates change most there). */

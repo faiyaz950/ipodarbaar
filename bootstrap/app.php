@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CachePublicPages;
 use App\Http\Middleware\RedirectToCanonicalHost;
 use App\Http\Middleware\RefreshIpoData;
 use App\Http\Middleware\SecurityHeaders;
@@ -19,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             SecurityHeaders::class,
             RefreshIpoData::class,
+            CachePublicPages::class,
         ]);
         $middleware->redirectGuestsTo(fn () => route('admin.login'));
         // Mail providers' one-click unsubscribe posts without a token; the URL is signed instead.

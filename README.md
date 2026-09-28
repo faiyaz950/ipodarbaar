@@ -72,6 +72,10 @@ Tunable values live in `config/ipodarbar.php` (page size, refresh interval, news
 - **Search Console / Bing Webmaster**: paste the verification meta tag in Admin → Settings → Search engines. Add your social profile URLs there too; they appear in the Organization schema.
 - Fonts are self-hosted WOFF2 files (`public/fonts`) for faster first paint.
 
+## Page cache
+
+Public pages are served from a full-page cache for anonymous visitors (`App\Http\Middleware\CachePublicPages`, on by default when `APP_ENV=production`, 5-minute TTL). Only plain URLs are cached (no query string except `?page=N`), signed-in admins and requests carrying flash messages always get a fresh page, and each visitor's CSRF token is put back into the cached HTML. The cache is flushed after every IPO sync, every successful admin change and a registrar update, and the page of an IPO is dropped when someone votes in its poll. Responses carry `X-Page-Cache: HIT` or `MISS`. Turn it off with `PAGE_CACHE_ENABLED=false`, or clear it with `php artisan cache:clear pages`.
+
 ## Code map
 
 ```

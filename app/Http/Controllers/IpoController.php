@@ -9,8 +9,6 @@ use App\Services\NewsService;
 use App\Support\IpoHubs;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Cookie;
-use Illuminate\Support\Str;
 
 class IpoController extends Controller
 {
@@ -97,14 +95,12 @@ class IpoController extends Controller
         ]);
     }
 
-    public function show(Request $request, Ipo $ipo, NewsService $news)
+    /**
+     * The page is identical for every visitor so it can be served from the page cache; the
+     * visitor's own poll vote is remembered in their browser.
+     */
+    public function show(Ipo $ipo, NewsService $news)
     {
-        $voterId = (string) $request->cookie(IpoVote::COOKIE);
-        if (! Str::isUuid($voterId)) {
-            $voterId = (string) Str::uuid();
-            Cookie::queue(IpoVote::COOKIE, $voterId, 60 * 24 * 365);
-        }
-
         $related = Ipo::query()
             ->whereKeyNot($ipo->getKey())
             ->inStatus(in_array($ipo->status(), ['open', 'upcoming', 'closed'], true) ? $ipo->status() : 'listed')
@@ -124,7 +120,6 @@ class IpoController extends Controller
             'ipo' => $ipo,
             'gmpTrend' => $ipo->gmpHistory()->get(['date', 'gmp']),
             'poll' => IpoVote::results($ipo),
-            'myVote' => $ipo->votes()->where('voter_hash', IpoVote::hash($voterId))->value('choice'),
             'related' => $related,
             'ipoNews' => $companyNews ?: $news->latest(5, 1, 9)['items'],
             'companyNews' => $companyNews !== [],
