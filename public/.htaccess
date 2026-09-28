@@ -44,6 +44,7 @@
     ExpiresByType image/webp "access plus 1 year"
     ExpiresByType font/woff2 "access plus 1 year"
     ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/x-icon "access plus 1 month"
     ExpiresByType image/svg+xml "access plus 1 month"
     ExpiresByType application/manifest+json "access plus 1 day"
 </IfModule>
@@ -59,4 +60,5 @@
     AddType application/manifest+json .webmanifest
     AddType image/webp .webp
     AddType font/woff2 .woff2
+    AddType image/x-icon .ico
 </IfModule>

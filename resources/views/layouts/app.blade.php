@@ -35,8 +35,12 @@
     <meta property="og:url" content="{{ $canonical }}">
     <meta property="og:image" content="{{ trim($__env->yieldContent('og_image')) ?: asset('images/brand/og-logo.png') }}">
     <meta name="twitter:card" content="{{ trim($__env->yieldContent('og_image')) ? 'summary_large_image' : 'summary' }}">
-    <link rel="icon" href="{{ asset('favicon-32.png') }}" sizes="32x32" type="image/png">
+    {{-- Google Search shows favicons in multiples of 48px, so the larger sizes come first. --}}
     <link rel="icon" href="{{ asset('favicon-192.png') }}" sizes="192x192" type="image/png">
+    <link rel="icon" href="{{ asset('favicon-96.png') }}" sizes="96x96" type="image/png">
+    <link rel="icon" href="{{ asset('favicon-48.png') }}" sizes="48x48" type="image/png">
+    <link rel="icon" href="{{ asset('favicon-32.png') }}" sizes="32x32" type="image/png">
+    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="16x16 32x32 48x48">
     <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
     <link rel="preload" href="{{ asset('fonts/inter-normal-latin.woff2') }}" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="{{ asset('fonts/fraunces-normal-latin.woff2') }}" as="font" type="font/woff2" crossorigin>
