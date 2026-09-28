@@ -1,25 +1,37 @@
 @extends('layouts.app')
 
-@section('title', $calc['name'])
-@section('description', $calc['short'].' '.\Illuminate\Support\Str::limit($calc['about'], 100))
+@php
+    [$seoTitle, $howSteps] = \App\Support\Calculators::SEO[$calc['slug']] ?? [$calc['name'], []];
+    $calcUrl = route('calculators.show', $calc['slug']);
+    $calcFaqs = array_merge($calc['faqs'] ?? [], [
+        ['Is the '.$calc['name'].' free to use?', 'Yes. The '.$calc['name'].' on IPO Darbaar is free, needs no sign-up and works on mobile and desktop.'],
+        ['Is my data saved anywhere?', 'No. All calculations run in your browser; the numbers you enter are not sent to or stored on our servers.'],
+    ]);
+@endphp
+
+@section('title_full', $seoTitle)
+@section('description', \Illuminate\Support\Str::limit($calc['short'].' Free online '.$calc['name'].' with formula, step-by-step guide and FAQs. No sign-up.', 158))
 
 @push('head')
 <x-jsonld :breadcrumbs="[
     ['Home', route('home')],
     ['Calculators', route('calculators.index')],
-    [$calc['name'], route('calculators.show', $calc['slug'])],
+    [$calc['name'], $calcUrl],
 ]" />
-@if (! empty($calc['faqs']))
 <x-jsonld :data="[
     '@context' => 'https://schema.org',
-    '@type' => 'FAQPage',
-    'mainEntity' => array_map(fn (array $faq): array => [
-        '@type' => 'Question',
-        'name' => $faq[0],
-        'acceptedAnswer' => ['@type' => 'Answer', 'text' => strip_tags($faq[1])],
-    ], $calc['faqs']),
+    '@type' => 'WebApplication',
+    'name' => $calc['name'],
+    'url' => $calcUrl,
+    'description' => $calc['short'],
+    'applicationCategory' => 'FinanceApplication',
+    'operatingSystem' => 'Any (web browser)',
+    'browserRequirements' => 'Requires JavaScript',
+    'inLanguage' => 'en-IN',
+    'isAccessibleForFree' => true,
+    'offers' => ['@type' => 'Offer', 'price' => '0', 'priceCurrency' => 'INR'],
+    'publisher' => ['@type' => 'Organization', 'name' => 'IPO Darbaar', 'url' => route('home')],
 ]" />
-@endif
 @endpush
 
 @section('content')
@@ -50,11 +62,11 @@
 
         <div class="grid-2">
             <div class="card card-pad">
-                <div class="card-title" style="margin-bottom:12px"><span class="ico"><x-icon name="info" :size="16" /></span> How it works</div>
+                <h2 class="card-title" style="margin-bottom:12px" id="how-it-works"><span class="ico"><x-icon name="info" :size="16" /></span> How the {{ $calc['name'] }} works</h2>
                 <p class="prose" style="font-size:15px">{{ $calc['about'] }}</p>
             </div>
             <div class="card card-pad">
-                <div class="card-title" style="margin-bottom:12px"><span class="ico"><x-icon name="calculator" :size="16" /></span> Formula</div>
+                <h2 class="card-title" style="margin-bottom:12px" id="formula"><span class="ico"><x-icon name="calculator" :size="16" /></span> {{ $calc['name'] }} formula</h2>
                 <div class="formula">{{ $calc['formula'] }}</div>
                 <div class="note" style="margin-top:14px">
                     <x-icon name="alert" />
@@ -63,19 +75,21 @@
             </div>
         </div>
 
-        @if (! empty($calc['faqs']))
-            <div class="card">
-                <div class="card-head"><div class="card-title"><span class="ico"><x-icon name="message" :size="16" /></span> Frequently asked questions</div></div>
-                <div class="faq" style="border-top:0">
-                    @foreach ($calc['faqs'] as [$q, $a])
-                        <details @if($loop->first) open @endif>
-                            <summary>{{ $q }} <x-icon name="chevron-down" :size="18" /></summary>
-                            <p>{{ $a }}</p>
-                        </details>
+        @if ($howSteps)
+            <div class="card card-pad">
+                <h2 class="card-title" style="margin-bottom:12px" id="how-to-use"><span class="ico"><x-icon name="check-circle" :size="16" /></span> How to use the {{ $calc['name'] }}</h2>
+                <ol class="prose" style="font-size:15px;margin:0">
+                    @foreach ($howSteps as $step)
+                        <li>{{ $step }}</li>
                     @endforeach
-                </div>
+                </ol>
+                @if ($calc['group'] === 'ipo')
+                    <p class="muted" style="font-size:14px;margin-top:12px">Need live numbers? Check <a class="link" href="{{ route('ipos.gmp') }}">IPO GMP today</a>, <a class="link" href="{{ route('ipos.current') }}">current IPOs</a> or the <a class="link" href="{{ route('guides.show', 'how-ipo-allotment-works') }}">IPO allotment guide</a>.</p>
+                @endif
             </div>
         @endif
+
+        <x-faq :faqs="$calcFaqs" :title="$calc['name'].': FAQs'" />
 
         @if ($related->isNotEmpty())
             <div>

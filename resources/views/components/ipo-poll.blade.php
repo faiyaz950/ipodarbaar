@@ -8,7 +8,7 @@
      data-poll data-url="{{ route('ipos.vote', $ipo) }}" data-ipo="{{ $ipo->slug }}">
     <div class="card-head">
         <div>
-            <div class="card-title"><span class="ico"><x-icon name="users" :size="16" /></span> {{ $open ? 'Will you apply for '.$ipo->name.' IPO?' : 'Final visitor sentiment' }}</div>
+            <h2 class="card-title"><span class="ico"><x-icon name="users" :size="16" /></span> {{ $open ? 'Will you apply for '.$ipo->name.' IPO?' : 'Final visitor sentiment' }}</h2>
             <div class="card-sub">Visitor opinion poll, not investment advice.</div>
         </div>
         <span class="muted poll-total" data-poll-total>{{ number_format($total) }} {{ $total === 1 ? 'vote' : 'votes' }}</span>

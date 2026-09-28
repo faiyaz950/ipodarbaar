@@ -112,6 +112,30 @@
     </div>
 
     <div class="card card-pad">
+        <div class="card-title af-section">Search engines & social profiles</div>
+        <p class="af-hint" style="margin-bottom:12px">Paste the verification code from Google Search Console / Bing Webmaster Tools (the whole &lt;meta&gt; tag also works). Social profile links are added to Google's knowledge of the brand (Organization schema) and the footer.</p>
+        <div class="af-grid">
+            <label class="af">
+                <span class="af-label">Google Search Console verification</span>
+                <input class="input" type="text" name="google_verification" value="{{ old('google_verification', $settings->get('seo.google_verification')) }}" placeholder="e.g. 3kZ…">
+                @error('google_verification')<span class="af-error">{{ $message }}</span>@enderror
+            </label>
+            <label class="af">
+                <span class="af-label">Bing Webmaster verification</span>
+                <input class="input" type="text" name="bing_verification" value="{{ old('bing_verification', $settings->get('seo.bing_verification')) }}" placeholder="32-character code">
+                @error('bing_verification')<span class="af-error">{{ $message }}</span>@enderror
+            </label>
+            @foreach (\App\Http\Controllers\Admin\SettingsController::SOCIAL_NETWORKS as $network => $label)
+                <label class="af">
+                    <span class="af-label">{{ $label }} URL</span>
+                    <input class="input" type="url" name="social[{{ $network }}]" value="{{ old('social.'.$network, $settings->get('social.'.$network)) }}" placeholder="https://…">
+                    @error('social.'.$network)<span class="af-error">{{ $message }}</span>@enderror
+                </label>
+            @endforeach
+        </div>
+    </div>
+
+    <div class="card card-pad">
         <div class="card-title af-section">Notifications</div>
         <div class="af-grid">
             <label class="af-check"><input type="checkbox" name="telegram_digest" value="1" @checked(old('telegram_digest', $settings->enabled('telegram.digest')))> Telegram: 9:00 AM daily IPO digest</label>

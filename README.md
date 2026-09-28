@@ -1,6 +1,6 @@
 # IPO Darbaar
 
-A Laravel + Blade site covering every Indian IPO: live GMP, open, upcoming, listing-soon and listed IPOs, an IPO calendar, market news with an Inshorts-style **Shorts** feed (English / Hinglish), and 16 calculators.
+A Laravel + Blade site covering every Indian IPO: live GMP, open, upcoming, listing-soon and listed IPOs, an IPO calendar, market news with an Inshorts-style **Shorts** feed (English / Hinglish), IPO guides and 28 calculators.
 
 Plain HTML, CSS and vanilla JS. **No npm build step**, so it can be deployed on any PHP host.
 
@@ -9,12 +9,13 @@ Plain HTML, CSS and vanilla JS. **No npm build step**, so it can be deployed on 
 | Area | Pages |
 | --- | --- |
 | Home | Live GMP ticker, hero with IPOs closing soon, stats, IPO dashboard tabs (Open / Upcoming / Listing Soon / Recently Listed, filter Mainboard or SME), this week's IPO calendar, latest news, calculators |
-| IPOs | `/ipo` (filter by status, type, search), `/ipo/type/mainboard`, `/ipo/type/sme`, `/ipo/{slug}` detail (key facts, T+3 timeline, GMP panel and trend, sentiment poll, lot size table, issue structure, financials, KPIs, anchor lock-ins, documents), `/ipo-gmp`, `/ipo-calendar` |
+| IPOs | `/ipo` (all IPOs + search), keyword hubs `/current-ipo`, `/upcoming-ipo`, `/ipo-allotment-status`, `/recently-listed-ipo`, `/mainboard-ipo`, `/sme-ipo` (old `?status=` / `/ipo/type/*` URLs 301 here), `/ipo/{slug}` detail (key facts, T+3 timeline, GMP panel and trend, sentiment poll, lot size table, issue structure, financials, KPIs, anchor lock-ins, documents), `/ipo-gmp`, `/ipo-calendar` |
 | IPO data | `/ipo-compare?ipos=a,b,c` (up to 3 side by side), `/ipo-report-card` and `/ipo/{year}` (funds raised, listing gains, best/worst listings) |
 | Engagement | `/watchlist` (stored in the browser), installable PWA with offline page, email digest with double opt-in, Telegram channel auto-posts |
-| News | `/news` (category chips + pagination), `/news/{id}/{slug}` article with English/Hinglish toggle, `/shorts` swipeable feed with infinite scroll |
+| News | `/news` and `/{category}-news` (e.g. `/ipo-news`) with pagination, `/news/{id}/{slug}` article with English/Hinglish toggle, `/shorts` swipeable feed with infinite scroll |
 | Calculators | `/calculators`: IPO GMP, listing profit, application amount, allotment chance, SIP (with step-up), lumpsum, SWP, CAGR, stock average, inflation, FD, RD, PPF, EMI, brokerage, capital gains tax |
-| Growth | SEO meta + JSON-LD (breadcrumbs, FAQ, search box), `/robots.txt`, sitemap index, 1200×630 share cards, GA4 / Cloudflare analytics, AdSense slots with `/ads.txt`, sponsored broker links |
+| Guides | `/ipo-guide`: how to apply, GMP, allotment status, how allotment works, SME vs mainboard, tax on listing gains, glossary |
+| Growth | SEO (see below), 1200×630 share cards, GA4 / Cloudflare analytics, AdSense slots with `/ads.txt`, sponsored broker links |
 | Admin | `/admin`: IPO overrides that survive syncs, company & financials editor, Settings (ads, analytics, brokers, notification switches), System (health checks, test email/Telegram) |
 
 ## Setup
@@ -60,6 +61,17 @@ Production runs on BigRock shared cPanel hosting with MySQL and a single cron en
 
 Tunable values live in `config/ipodarbar.php` (page size, refresh interval, news categories and colours, SEBI limits).
 
+## SEO
+
+- **Titles follow the IPO's stage** (`App\Support\IpoSeo`): "GMP, Date, Price Band" before it opens, "GMP Today & Subscription Status" while open, "Allotment Status" after it closes, "Listing Price" once listed. Each IPO page has a visible FAQ with matching `FAQPage` schema.
+- **Keyword hubs** (`App\Support\IpoHubs`) target searches such as "upcoming IPO", "current IPO", "IPO allotment status" and "SME IPO". Filtered views are `noindex`.
+- **Structured data**: Organization + WebSite search box, BreadcrumbList, WebPage, CollectionPage/ItemList, FAQPage, NewsArticle, Article, WebApplication (calculators), DefinedTermSet (glossary).
+- **Internal links**: news articles link the IPOs they mention (`App\Support\IpoLinker`); IPO pages show that company's news.
+- **Sitemaps**: `/sitemap.xml` indexes pages, IPOs (with share-card images), a Google News sitemap (last 48 hours) and a news archive. `/robots.txt` points to it.
+- **IndexNow**: set `INDEXNOW_KEY` (8–128 letters, digits or dashes). The key is served at `/indexnow-key.txt`, and `seo:indexnow` runs every 30 minutes to tell Bing and others about changed pages. Google ignores IndexNow and reads the sitemaps.
+- **Search Console / Bing Webmaster**: paste the verification meta tag in Admin → Settings → Search engines. Add your social profile URLs there too; they appear in the Organization schema.
+- Fonts are self-hosted WOFF2 files (`public/fonts`) for faster first paint.
+
 ## Code map
 
 ```
@@ -70,7 +82,11 @@ app/Services/IpoStatsService.php    year-wise report card numbers (cached)
 app/Services/IpoDigestBuilder.php   content for the email digest and Telegram posts
 app/Services/TelegramService.php    Telegram Bot API client
 app/Services/ShareCardService.php   GD-rendered social share cards
-app/Support/Calculators.php         calculator registry (copy, formulas, FAQs)
+app/Support/Calculators.php         calculator registry (copy, formulas, FAQs, SEO titles)
+app/Support/IpoSeo.php              stage-aware IPO titles, descriptions and FAQs
+app/Support/IpoHubs.php             keyword hub pages (current, upcoming, allotment, …)
+app/Support/Guides.php              IPO guide articles registry
+app/Services/IndexNowService.php    IndexNow submissions
 app/Support/Settings.php            admin-editable settings with config fallbacks
 app/Http/Controllers/*              Home, Ipo, Compare, IpoYear, Watchlist, Vote, Subscription, News, Calculator, Seo, Page
 resources/views/                    Blade layouts, components and pages

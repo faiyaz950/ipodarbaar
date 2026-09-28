@@ -108,8 +108,8 @@ class IpoDarbaarTest extends TestCase
             ->assertSee(route('ipos.report-card'))
             ->assertSee('IPO Report Card 2026');
         $this->get('/ipo')->assertOk()->assertSee('Delta Old');
-        $this->get('/ipo?status=open')->assertOk()->assertSee('Alpha Tech')->assertDontSee('delta-old-ipo" class="co-name"', false);
-        $this->get('/ipo/type/sme')->assertOk()->assertSee('Beta Foods')->assertDontSee('alpha-tech-ipo" class="co-name"', false);
+        $this->get('/current-ipo')->assertOk()->assertSee('Alpha Tech')->assertDontSee('delta-old-ipo" class="co-name"', false);
+        $this->get('/sme-ipo')->assertOk()->assertSee('Beta Foods')->assertDontSee('alpha-tech-ipo" class="co-name"', false);
         $this->get('/ipo?q=gamma')->assertOk()->assertSee('Gamma Steel');
         $this->get('/ipo/alpha-tech-ipo')->assertOk()->assertSee('Alpha Tech IPO')->assertSee('₹110 – 120')->assertSee('Basis of Allotment');
         $this->get('/ipo/unknown-ipo')->assertNotFound();

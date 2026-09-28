@@ -111,6 +111,55 @@ class NewsService
     }
 
     /** @return array<int, array{id:int, name:string, slug:string, color:string}> */
+    /**
+     * Recent stories whose headline or summary mentions the company, newest first.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function mentioning(string $company, int $limit = 4): array
+    {
+        $pattern = self::companyPattern($company);
+        if ($pattern === null) {
+            return [];
+        }
+
+        return collect($this->latest(100)['items'])
+            ->filter(fn (array $item): bool => (bool) preg_match($pattern, self::normalizeName($item['headline'].' '.$item['summary'])))
+            ->take($limit)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Regex matching how news usually names a company: its first two distinctive words,
+     * without legal suffixes or generic words ("Orient Cables India Ltd" → "Orient Cables").
+     * Returns null when the name is too short or generic to match safely.
+     */
+    public static function companyPattern(string $company, bool $loose = false): ?string
+    {
+        $generic = ['limited', 'ltd', 'india', 'private', 'pvt', 'the', 'and', 'company', 'co', 'corporation', 'industries',
+            'technologies', 'technology', 'enterprises', 'services', 'solutions', 'international', 'global', 'group', 'ventures'];
+        $words = array_values(array_filter(
+            preg_split('/\s+/u', self::normalizeName($company)) ?: [],
+            fn (string $word): bool => $word !== '' && ! in_array(mb_strtolower($word), $generic, true)
+        ));
+
+        $phrase = implode(' ', array_slice($words, 0, 2));
+
+        // Loose patterns run on raw article text, where words may be joined by hyphens or dots ("A-One").
+        $joiner = $loose ? '[\s\-.\'’]+' : '\s+';
+
+        return mb_strlen($phrase) >= 4 ? '/\b'.str_replace(' ', $joiner, preg_quote($phrase, '/')).'\b/iu' : null;
+    }
+
+    /**
+     * Company names and news text compared on the same footing: "A-One" → "A One", "Investor's" → "Investors".
+     */
+    public static function normalizeName(string $text): string
+    {
+        return trim((string) preg_replace('/[^\p{L}\p{N}\s]/u', '', str_replace(['&', '-', '–'], ' ', $text)));
+    }
+
     public function categories(): array
     {
         return config('ipodarbar.news_categories', []);
@@ -189,6 +238,18 @@ class NewsService
             $date = null;
         }
 
+        $updated = $date;
+        try {
+            if (! empty($n['updated_at'])) {
+                $updated = Carbon::parse($n['updated_at']);
+            }
+        } catch (Throwable) {
+            // Keep the publish date when the API sends an unreadable timestamp.
+        }
+        if ($override?->updated_at && ($updated === null || $override->updated_at->gt($updated))) {
+            $updated = $override->updated_at;
+        }
+
         $words = str_word_count(strip_tags($html));
 
         return [
@@ -204,6 +265,7 @@ class NewsService
             'points' => self::points($html),
             'points_hi' => self::points($htmlHi),
             'date' => $date,
+            'updated' => $updated,
             'date_label' => $date ? self::dateLabel($date) : '',
             'image' => ($n['image'] ?? null) ?: ($n['image_banner'] ?? null),
             'banner' => ($n['image_banner'] ?? null) ?: ($n['image'] ?? null),

@@ -1,7 +1,7 @@
 <article class="short" data-id="{{ $item['id'] }}">
     <div class="short-card">
         <div class="short-media">
-            @if ($item['image'])<img src="{{ $item['image'] }}" alt="" loading="{{ $loop->index < 2 ? 'eager' : 'lazy' }}" decoding="async">@endif
+            @if ($item['image'])<img src="{{ $item['image'] }}" alt="{{ $item['headline'] }}" loading="{{ $loop->index < 2 ? 'eager' : 'lazy' }}" decoding="async">@endif
             <span class="cat-chip" style="--c: {{ $item['category']['color'] }}"><i></i>{{ $item['category']['name'] }}</span>
         </div>
         <div class="short-body">

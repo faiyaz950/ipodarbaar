@@ -1,13 +1,18 @@
 @extends('layouts.app')
 
-@section('title', 'IPO Calendar '.$month->format('F Y'))
-@section('description', 'IPO calendar for '.$month->format('F Y').': opening, closing and listing dates of all mainboard and SME IPOs in India.')
+@section('title', 'IPO Calendar '.$month->format('F Y').': Open, Close & Listing Dates')
+@section('description', 'IPO calendar for '.$month->format('F Y').': '.$ipoCount.' mainboard and SME IPOs with opening, closing, allotment and listing dates, day by day.')
+@section('canonical', $month->isSameMonth(now()) ? route('ipos.calendar') : route('ipos.calendar', ['month' => $month->format('Y-m')]))
+
+@push('head')
+<x-jsonld :breadcrumbs="[['Home', route('home')], ['IPO Calendar', route('ipos.calendar')]]" />
+@endpush
 
 @section('content')
 <section class="page-head">
     <div class="container">
         <nav class="crumbs"><a href="{{ route('home') }}">Home</a> <x-icon name="chevron-right" :size="13" /> <span>IPO Calendar</span></nav>
-        <h1>IPO Calendar · {{ $month->format('F Y') }}</h1>
+        <h1>IPO Calendar {{ $month->format('F Y') }}</h1>
         <p class="lead">{{ $ipoCount }} IPOs with opening, closing or listing dates this month. Click any IPO to see full details.</p>
     </div>
 </section>
@@ -58,7 +63,7 @@
 
         <div class="card">
             <div class="card-head">
-                <div class="card-title"><span class="ico"><x-icon name="calendar" :size="16" /></span> Day-by-day agenda</div>
+                <h2 class="card-title" id="agenda"><span class="ico"><x-icon name="calendar" :size="16" /></span> IPO dates this month, day by day</h2>
             </div>
             @forelse ($agenda as $date => $events)
                 @php $d = \Illuminate\Support\Carbon::parse($date); @endphp

@@ -27,7 +27,7 @@ self.addEventListener('activate', (event) => {
 
 function isStatic(url) {
   if (url.origin === 'https://fonts.googleapis.com' || url.origin === 'https://fonts.gstatic.com') return true;
-  return url.origin === self.location.origin && /^\/(assets|logos|icons|images|og)\//.test(url.pathname);
+  return url.origin === self.location.origin && /^\/(assets|fonts|logos|icons|images|og)\//.test(url.pathname);
 }
 
 function isPrivate(url) {

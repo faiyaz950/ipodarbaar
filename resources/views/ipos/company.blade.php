@@ -15,7 +15,7 @@
         $quotas = array_filter(['Retail' => $detail->retail_quota, 'NII / HNI' => $detail->nii_quota, 'QIB' => $detail->qib_quota], fn ($v) => $v !== null);
     @endphp
     <div class="card">
-        <div class="card-head"><div class="card-title"><span class="ico"><x-icon name="pie" :size="16" /></span> Issue Structure</div></div>
+        <div class="card-head"><h2 class="card-title" id="issue-structure"><span class="ico"><x-icon name="pie" :size="16" /></span> {{ $ipo->name }} IPO Issue Structure</h2></div>
         @if ($freshShare !== null)
             <div class="split">
                 <div class="split-bar" role="img" aria-label="Fresh issue {{ $freshShare }}%, offer for sale {{ 100 - $freshShare }}%">
@@ -49,7 +49,7 @@
 
 @if ($detail && $detail->objectsList())
     <div class="card card-pad">
-        <div class="card-title" style="margin-bottom:12px"><span class="ico"><x-icon name="target" :size="16" /></span> Objects of the Issue</div>
+        <h2 class="card-title" style="margin-bottom:12px" id="objects"><span class="ico"><x-icon name="target" :size="16" /></span> Objects of the {{ $ipo->name }} IPO</h2>
         <ol class="objects">
             @foreach ($detail->objectsList() as $object)
                 <li>{{ $object }}</li>
@@ -65,7 +65,7 @@
     @endphp
     <div class="card">
         <div class="card-head">
-            <div class="card-title"><span class="ico"><x-icon name="bar-chart" :size="16" /></span> Company Financials</div>
+            <h2 class="card-title" id="financials"><span class="ico"><x-icon name="bar-chart" :size="16" /></span> {{ $ipo->name }} Financials</h2>
             <span class="card-sub">Restated, ₹ crore</span>
         </div>
         <div class="fin-chart" role="img" aria-label="Revenue and profit after tax by period">
@@ -108,7 +108,7 @@
 
 @if ($detail?->hasKpis())
     <div class="card">
-        <div class="card-head"><div class="card-title"><span class="ico"><x-icon name="gauge" :size="16" /></span> Key Performance Indicators</div></div>
+        <div class="card-head"><h2 class="card-title" id="kpis"><span class="ico"><x-icon name="gauge" :size="16" /></span> {{ $ipo->name }} Key Performance Indicators (KPIs)</h2></div>
         <div class="facts-grid">
             @foreach (['pe_pre' => 'P/E (pre issue)', 'pe_post' => 'P/E (post issue)', 'eps' => 'EPS', 'roe' => 'ROE', 'roce' => 'ROCE', 'ronw' => 'RoNW', 'debt_equity' => 'Debt / Equity'] as $field => $label)
                 @continue($detail->{$field} === null)
@@ -125,7 +125,7 @@
 @if ($detail && ($detail->anchor_amount_cr !== null || $detail->anchor_date))
     @php $lockins = $detail->anchorLockinDates($allotment); @endphp
     <div class="card">
-        <div class="card-head"><div class="card-title"><span class="ico"><x-icon name="landmark" :size="16" /></span> Anchor Investors</div></div>
+        <div class="card-head"><h2 class="card-title" id="anchor"><span class="ico"><x-icon name="landmark" :size="16" /></span> {{ $ipo->name }} IPO Anchor Investors</h2></div>
         <div class="facts-grid">
             <div class="fact"><span>Anchor amount</span><b>{{ $cr($detail->anchor_amount_cr) }}</b></div>
             <div class="fact"><span>Anchor bid date</span><b>{{ $detail->anchor_date?->format('D, j M Y') ?? '—' }}</b></div>
@@ -140,7 +140,7 @@
 
 @if ($detail?->hasDocuments())
     <div class="card card-pad">
-        <div class="card-title" style="margin-bottom:12px"><span class="ico"><x-icon name="file-text" :size="16" /></span> Documents & Links</div>
+        <h2 class="card-title" style="margin-bottom:12px" id="documents"><span class="ico"><x-icon name="file-text" :size="16" /></span> {{ $ipo->name }} IPO RHP &amp; Documents</h2>
         <div class="allot-links">
             @foreach (['rhp_url' => 'Red Herring Prospectus (RHP)', 'drhp_url' => 'Draft RHP (DRHP)', 'website_url' => 'Company website'] as $field => $label)
                 @if (filled($detail->{$field}))

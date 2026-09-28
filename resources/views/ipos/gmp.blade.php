@@ -1,16 +1,51 @@
 @extends('layouts.app')
 
-@php use App\Models\Ipo; @endphp
+@php
+    use App\Models\Ipo;
 
-@section('title', 'IPO GMP Today: Live Grey Market Premium')
-@section('description', 'Live IPO GMP (grey market premium) today for all open, upcoming and closed mainboard and SME IPOs, with estimated listing price and gain.')
+    $withGmp = $active->filter(fn (Ipo $ipo): bool => $ipo->hasGmp());
+    $top = $withGmp->sortByDesc(fn (Ipo $ipo): float => $ipo->gmpPercent() ?? 0)->first();
+    $today = now()->format('j M Y');
+    $gmpFaqs = [
+        ['What is IPO GMP?', 'IPO GMP (grey market premium) is the premium over the issue price at which IPO shares are traded unofficially before listing. A GMP of ₹40 on an issue price of ₹200 means grey-market dealers expect the shares to list around ₹240.'],
+        ['How is the expected listing price calculated from GMP?', 'Expected listing price = upper price band + GMP. Expected listing gain % = GMP ÷ upper price band × 100. Both are indicative only.'],
+        ['Is IPO GMP reliable?', 'GMP reflects grey-market sentiment and often moves with overall market mood and subscription numbers. It is unofficial and unregulated, can change sharply until listing day, and has frequently been wrong. Use it as one signal among many, not as a guarantee.'],
+        ['What is Kostak and Subject to Sauda?', 'Kostak is a fixed amount a grey-market dealer pays for an IPO application regardless of allotment. Subject to Sauda is paid only if the application gets an allotment. Both are unofficial arrangements with no legal protection.'],
+        ['How often is the GMP on this page updated?', 'IPO Darbaar refreshes the grey market premium of every open, upcoming and closed IPO through the day. Each IPO page also shows its day-by-day GMP trend.'],
+    ];
+@endphp
+
+@section('title', 'IPO GMP Today ('.$today.'): Live Grey Market Premium')
+@section('description', 'Live IPO GMP today ('.$today.') for '.$active->count().' mainboard & SME IPOs: grey market premium, expected listing price and gain %.'.($top ? ' Highest now: '.$top->name.' '.number_format($top->gmpPercent(), 1).'%.' : ''))
+
+@push('head')
+<x-jsonld :breadcrumbs="[['Home', route('home')], ['IPO GMP Today', route('ipos.gmp')]]" />
+<x-jsonld :data="[
+    '@context' => 'https://schema.org',
+    '@type' => 'CollectionPage',
+    'name' => 'IPO GMP Today',
+    'url' => route('ipos.gmp'),
+    'dateModified' => (\App\Services\IpoSyncService::lastSyncedAt() ?? now())->toIso8601String(),
+    'mainEntity' => [
+        '@type' => 'ItemList',
+        'numberOfItems' => $withGmp->count(),
+        'itemListElement' => $withGmp->values()->map(fn (Ipo $ipo, int $i): array => [
+            '@type' => 'ListItem',
+            'position' => $i + 1,
+            'url' => $ipo->url().'#gmp',
+            'name' => $ipo->name.' IPO GMP',
+        ])->all(),
+    ],
+]" />
+@endpush
 
 @section('content')
 <section class="page-head">
     <div class="container">
         <nav class="crumbs"><a href="{{ route('home') }}">Home</a> <x-icon name="chevron-right" :size="13" /> <span>IPO GMP</span></nav>
         <h1>IPO GMP Today</h1>
-        <p class="lead">Live grey market premium for every active IPO, with estimated listing price and expected gain. Updated {{ \App\Services\IpoSyncService::lastSyncedAt()?->diffForHumans() ?? 'regularly' }}.</p>
+        <p class="lead">Live grey market premium (GMP) of every open, upcoming and closed IPO, with the expected listing price and listing gain for mainboard and SME issues.</p>
+        <span class="updated-line"><x-icon name="refresh" :size="14" /> Updated {{ (\App\Services\IpoSyncService::lastSyncedAt() ?? now())->timezone(config('app.timezone'))->format('j M Y, g:i A') }} IST · {{ $withGmp->count() }} IPOs with GMP</span>
     </div>
 </section>
 
@@ -34,7 +69,7 @@
         <div class="card">
             <div class="card-head">
                 <div>
-                    <div class="card-title"><span class="ico"><x-icon name="activity" :size="16" /></span> Live IPO GMP</div>
+                    <h2 class="card-title" id="live-gmp"><span class="ico"><x-icon name="activity" :size="16" /></span> Live IPO GMP Today: Mainboard &amp; SME</h2>
                     <div class="card-sub">{{ $active->count() }} active IPOs · open, upcoming & awaiting listing</div>
                 </div>
                 <div class="seg" data-type-filter="gmp-active">
@@ -98,13 +133,26 @@
         <div class="card">
             <div class="card-head">
                 <div>
-                    <div class="card-title"><span class="ico"><x-icon name="check-circle" :size="16" /></span> Recently Listed: Last GMP</div>
+                    <h2 class="card-title" id="recently-listed"><span class="ico"><x-icon name="check-circle" :size="16" /></span> Recently Listed IPOs: Last GMP vs Listing</h2>
                     <div class="card-sub">IPOs listed in the last 30 days with their final grey market premium</div>
                 </div>
             </div>
             <x-ipo-table :ipos="$recent" status="listed" />
         </div>
         @endif
+
+        <div class="card card-pad seo-copy">
+            <div>
+                <h2>How to read IPO GMP</h2>
+                <p>The grey market premium is what unofficial dealers are willing to pay over the IPO's upper price band before the shares list. Add the GMP to the issue price to get the expected listing price; divide it by the issue price for the expected listing gain. A rising GMP usually tracks strong subscription, while a falling or negative GMP signals weak demand.</p>
+            </div>
+            <div>
+                <h2>GMP is a signal, not a promise</h2>
+                <p>The grey market is unregulated and GMP can swing sharply with overall market mood, especially in the last two days before listing. Compare it with subscription numbers, the company's financials and valuation before deciding. Read our guide on <a class="link" href="{{ route('guides.show', 'what-is-ipo-gmp') }}">what IPO GMP is and how reliable it is</a>, or estimate your profit with the <a class="link" href="{{ route('calculators.show', 'ipo-gmp') }}">IPO GMP calculator</a>.</p>
+            </div>
+        </div>
+
+        <x-faq :faqs="$gmpFaqs" title="IPO GMP: FAQs" />
     </div>
 </div>
 @endsection

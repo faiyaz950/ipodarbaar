@@ -1,24 +1,41 @@
 @extends('layouts.app')
 
+@php
+    $categoryUrl = in_array($item['category']['slug'], array_column(config('ipodarbar.news_categories'), 'slug'), true)
+        ? route('news.category', $item['category']['slug'])
+        : route('news.index');
+@endphp
+
 @section('title', $item['headline'])
 @section('description', \Illuminate\Support\Str::limit($item['summary'], 158))
 @section('og_type', 'article')
 @section('og_image', $item['banner'] ?? '')
 
 @push('head')
-<x-jsonld :data="[
+@if ($item['date'])<meta property="article:published_time" content="{{ $item['date']->toIso8601String() }}">@endif
+@if ($item['updated'])<meta property="article:modified_time" content="{{ $item['updated']->toIso8601String() }}">@endif
+<meta property="article:section" content="{{ $item['category']['name'] }}">
+<x-jsonld :data="array_filter([
     '@context' => 'https://schema.org',
     '@type' => 'NewsArticle',
+    'mainEntityOfPage' => ['@type' => 'WebPage', '@id' => $item['url']],
+    'url' => $item['url'],
     'headline' => \Illuminate\Support\Str::limit($item['headline'], 110, ''),
-    'image' => array_values(array_filter([$item['banner']])),
+    'description' => \Illuminate\Support\Str::limit($item['summary'], 250),
+    'image' => array_values(array_filter([$item['banner'], $item['image']])) ?: [asset('images/brand/og-logo.png')],
     'datePublished' => $item['date']?->toIso8601String(),
+    'dateModified' => ($item['updated'] ?? $item['date'])?->toIso8601String(),
     'articleSection' => $item['category']['name'],
-    'publisher' => ['@type' => 'Organization', 'name' => 'IPO Darbaar'],
-]" />
+    'inLanguage' => 'en-IN',
+    'isAccessibleForFree' => true,
+    'author' => ['@type' => 'Organization', 'name' => 'IPO Darbaar News Desk', 'url' => route('about')],
+    'publisher' => ['@type' => 'Organization', 'name' => 'IPO Darbaar', 'url' => route('home'), 'logo' => ['@type' => 'ImageObject', 'url' => asset('icons/icon-512.png'), 'width' => 512, 'height' => 512]],
+    'about' => $mentionedIpos->isNotEmpty() ? $mentionedIpos->map(fn ($ipo) => ['@type' => 'Corporation', 'name' => $ipo->name])->values()->all() : null,
+])" />
 <x-jsonld :breadcrumbs="[
     ['Home', route('home')],
     ['News', route('news.index')],
-    [$item['category']['name'], route('news.index', ['category' => $item['category']['slug']])],
+    [$item['category']['name'].' News', $categoryUrl],
     [\Illuminate\Support\Str::limit($item['headline'], 110, ''), url()->current()],
 ]" />
 @endpush
@@ -30,12 +47,10 @@
         <nav class="crumbs">
             <a href="{{ route('home') }}">Home</a> <x-icon name="chevron-right" :size="13" />
             <a href="{{ route('news.index') }}">News</a> <x-icon name="chevron-right" :size="13" />
-            <a href="{{ route('news.index', ['category' => $item['category']['slug']]) }}">{{ $item['category']['name'] }}</a>
+            <a href="{{ $categoryUrl }}">{{ $item['category']['name'] }}</a>
         </nav>
-        <h1>
-            <span data-lang-en>{{ $item['headline'] }}</span>
-            <span data-lang-hi>{{ $item['headline_hi'] }}</span>
-        </h1>
+        <h1 data-lang-en>{{ $item['headline'] }}</h1>
+        <p class="h1-alt" data-lang-hi aria-hidden="true">{{ $item['headline_hi'] }}</p>
         <div class="article-meta">
             <span class="cat" style="--c: {{ $item['category']['color'] }}; filter: brightness(1.4)">{{ $item['category']['name'] }}</span>
             <span><x-icon name="calendar" :size="15" /> {{ $item['date']?->format('j F Y, g:i A') }}</span>
@@ -64,7 +79,9 @@
             @endif
 
             <div class="prose" data-lang-en>{!! $item['html'] !!}</div>
-            <div class="prose" data-lang-hi>{!! $item['html_hi'] !!}</div>
+            {{-- The Hinglish version loads only when chosen, so search engines index one clean article. --}}
+            <div class="prose" data-lang-hi id="article-hi"></div>
+            <template data-hi-template data-target="article-hi">{!! $item['html_hi'] !!}</template>
 
             <x-ad-slot name="article" style="margin-top:24px" />
 
@@ -80,6 +97,23 @@
         </article>
 
         <aside class="sidebar">
+            @if ($mentionedIpos->isNotEmpty())
+            <div class="card widget">
+                <div class="card-head">
+                    <div class="card-title"><span class="ico"><x-icon name="layers" :size="16" /></span> IPOs in this story</div>
+                </div>
+                @foreach ($mentionedIpos as $ipo)
+                    <a class="list-link" href="{{ $ipo->url() }}">
+                        <x-logo-tile :ipo="$ipo" />
+                        <span style="min-width:0">
+                            <span class="t" style="-webkit-line-clamp:1">{{ $ipo->name }} IPO</span>
+                            <span class="m"><span class="badge b-{{ $ipo->status() }}" style="height:18px;font-size:10.5px">{{ $ipo->statusLabel() }}</span> GMP, dates &amp; allotment</span>
+                        </span>
+                    </a>
+                @endforeach
+            </div>
+            @endif
+
             @if ($related->isNotEmpty())
             <div class="card widget">
                 <div class="card-head">
@@ -87,7 +121,7 @@
                 </div>
                 @foreach ($related as $n)
                     <a class="list-link" href="{{ $n['url'] }}">
-                        @if ($n['image'])<img class="thumb" src="{{ $n['image'] }}" alt="" loading="lazy">@endif
+                        @if ($n['image'])<img class="thumb" src="{{ $n['image'] }}" alt="{{ $n['headline'] }}" loading="lazy">@endif
                         <span><span class="t">{{ $n['headline'] }}</span><span class="m">{{ $n['date_label'] }}</span></span>
                     </a>
                 @endforeach

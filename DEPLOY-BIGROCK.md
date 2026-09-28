@@ -77,6 +77,13 @@ Log in at `/admin` and open **System**. It should show:
 
 Use the buttons there to send a test email and a test Telegram message. Then set up ads, analytics and broker links in **Settings**.
 
+## 7. Search engines
+
+1. **Google Search Console**: add the domain property, choose the *HTML tag* method and paste the tag in Admin → Settings → Search engines. Then submit `https://<your-domain>/sitemap.xml`.
+2. **Bing Webmaster Tools**: import from Search Console, or verify with the meta tag in the same Settings card.
+3. **IndexNow**: put a random key in `.env` as `INDEXNOW_KEY=` (for example the output of `openssl rand -hex 16`), then run `$PHP_BIN artisan optimize`. Check that `/indexnow-key.txt` shows the key. The scheduler submits changed pages every 30 minutes.
+4. Add the site's Telegram, X, YouTube and other profile links in Settings so they appear in the Organization schema.
+
 ## Updating
 
 ```bash

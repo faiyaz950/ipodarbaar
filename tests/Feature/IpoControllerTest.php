@@ -31,8 +31,8 @@ class IpoControllerTest extends TestCase
         $this->get($ipo->url())->assertOk()
             ->assertSeeInOrder(['Issue Structure', 'Fresh issue', '₹150 Cr', '(60%)', 'Offer for sale', '₹100 Cr'])
             ->assertSee('Axis Capital, ICICI Securities')
-            ->assertSeeInOrder(['Objects of the Issue', 'Repayment of borrowings', 'General corporate purposes'])
-            ->assertSeeInOrder(['Company Financials', 'FY25', 'FY26', 'PAT margin', '-2%', '8%'])
+            ->assertSeeInOrder(['Objects of the '.$ipo->name.' IPO', 'Repayment of borrowings', 'General corporate purposes'])
+            ->assertSeeInOrder([$ipo->name.' Financials', 'FY25', 'FY26', 'PAT margin', '-2%', '8%'])
             ->assertSee('class="pat neg"', false)
             ->assertSeeInOrder(['Key Performance Indicators', 'P/E (post issue)', '31.2x'])
             // Allotment is one working day after the 25 Sep close (Fri) → Mon 28 Sep; lock-ins +30 / +90 days.
@@ -46,7 +46,7 @@ class IpoControllerTest extends TestCase
 
         $this->get($ipo->url())->assertOk()
             ->assertDontSee('Issue Structure')
-            ->assertDontSee('Company Financials')
+            ->assertDontSee('id="financials"', false)
             ->assertDontSee('Anchor Investors');
     }
 
@@ -64,7 +64,7 @@ class IpoControllerTest extends TestCase
     public function test_search_results_are_not_indexed(): void
     {
         $this->get('/ipo?q=alpha')->assertOk()->assertSee('<meta name="robots" content="noindex, follow">', false);
-        $this->get('/ipo')->assertOk()->assertSee('<meta name="robots" content="index, follow">', false);
+        $this->get('/ipo')->assertOk()->assertSee('<meta name="robots" content="index, follow, max-image-preview:large', false);
     }
 
     public function test_search_suggestions_include_the_slug_for_the_compare_picker(): void

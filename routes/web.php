@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\CalculatorController;
 use App\Http\Controllers\CompareController;
+use App\Http\Controllers\GuideController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IpoController;
 use App\Http\Controllers\IpoVoteController;
@@ -17,12 +18,16 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\WatchlistController;
 use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\RefreshIpoData;
+use App\Support\IpoHubs;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
 
 // IPOs
 Route::get('/ipo', [IpoController::class, 'index'])->name('ipos.index');
+foreach (array_keys(IpoHubs::all()) as $hub) {
+    Route::get('/'.IpoHubs::find($hub)['path'], [IpoController::class, 'hub'])->defaults('hub', $hub)->name('ipos.'.$hub);
+}
 Route::get('/ipo/type/{type}', [IpoController::class, 'index'])->whereIn('type', ['mainboard', 'sme'])->name('ipos.type');
 Route::get('/ipo-gmp', [IpoController::class, 'gmp'])->name('ipos.gmp');
 Route::get('/ipo-calendar', [IpoController::class, 'calendar'])->name('ipos.calendar');
@@ -46,9 +51,16 @@ Route::post('/unsubscribe/{subscriber}', [SubscriptionController::class, 'unsubs
 
 // News
 Route::get('/news', [NewsController::class, 'index'])->name('news.index');
+Route::get('/{categorySlug}-news', [NewsController::class, 'index'])
+    ->whereIn('categorySlug', array_column(config('ipodarbar.news_categories'), 'slug'))
+    ->name('news.category');
 Route::get('/shorts', [NewsController::class, 'shorts'])->name('news.shorts');
 Route::get('/shorts/feed', [NewsController::class, 'feed'])->name('news.feed');
 Route::get('/news/{id}/{slug?}', [NewsController::class, 'show'])->whereNumber('id')->name('news.show');
+
+// IPO Academy guides
+Route::get('/ipo-guide', [GuideController::class, 'index'])->name('guides.index');
+Route::get('/ipo-guide/{slug}', [GuideController::class, 'show'])->where('slug', '[a-z0-9-]+')->name('guides.show');
 
 // Calculators
 Route::get('/calculators', [CalculatorController::class, 'index'])->name('calculators.index');
@@ -65,8 +77,9 @@ Route::get('/logos/{file}', LogoController::class)->where('file', '[a-z0-9-]+\.w
 Route::withoutMiddleware(RefreshIpoData::class)->group(function () {
     Route::get('/robots.txt', [SeoController::class, 'robots'])->name('robots');
     Route::get('/ads.txt', [SeoController::class, 'adsTxt'])->name('ads-txt');
+    Route::get('/indexnow-key.txt', [SeoController::class, 'indexNowKey'])->name('indexnow.key');
     Route::get('/sitemap.xml', [SeoController::class, 'sitemapIndex'])->name('sitemap');
-    Route::get('/sitemaps/{part}.xml', [SeoController::class, 'sitemap'])->whereIn('part', ['pages', 'ipos', 'news'])->name('sitemaps.show');
+    Route::get('/sitemaps/{part}.xml', [SeoController::class, 'sitemap'])->whereIn('part', SeoController::SITEMAPS)->name('sitemaps.show');
 });
 
 // IPO relay (see RelayController)

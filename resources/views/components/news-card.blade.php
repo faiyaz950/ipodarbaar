@@ -2,7 +2,7 @@
 <a href="{{ $item['url'] }}" {{ $attributes->merge(['class' => 'news-card'.($feature ? ' feature' : '')]) }}>
     <div class="media">
         @if ($item['image'])
-            <img src="{{ $item['image'] }}" alt="" loading="lazy" decoding="async">
+            <img src="{{ $item['image'] }}" alt="{{ $item['headline'] }}" loading="lazy" decoding="async">
         @endif
     </div>
     <div class="body">

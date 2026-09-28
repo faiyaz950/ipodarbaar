@@ -3,12 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\Ipo;
+use App\Services\IndexNowService;
 use App\Services\IpoStatsService;
 use App\Services\NewsService;
 use App\Support\Calculators;
+use App\Support\Guides;
+use App\Support\IpoHubs;
 use App\Support\Settings;
 use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Crawler-facing files: robots.txt, ads.txt and the XML sitemaps.
@@ -17,6 +21,12 @@ class SeoController extends Controller
 {
     /** Google's certification authority ID for AdSense sellers. */
     private const ADSENSE_CERT_ID = 'f08c47fec0942fa0';
+
+    /** Child sitemaps listed in /sitemap.xml. */
+    public const SITEMAPS = ['pages', 'ipos', 'news', 'news-archive'];
+
+    /** Pages of 100 stories included in the news archive sitemap. */
+    private const NEWS_ARCHIVE_PAGES = 10;
 
     private const DISALLOWED_PATHS = ['/admin', '/ipo/search/suggest', '/shorts/feed', '/watchlist/items', '/subscribe', '/unsubscribe'];
 
@@ -32,6 +42,16 @@ class SeoController extends Controller
         return $this->text(implode("\n", $lines)."\n");
     }
 
+    /**
+     * IndexNow key file (its location is sent with every submission).
+     */
+    public function indexNowKey(IndexNowService $indexNow): Response
+    {
+        abort_unless($indexNow->enabled(), 404);
+
+        return $this->text((string) $indexNow->key());
+    }
+
     public function adsTxt(Settings $settings): Response
     {
         $client = (string) $settings->get('ads.client');
@@ -42,22 +62,82 @@ class SeoController extends Controller
 
     public function sitemapIndex(): Response
     {
-        $sitemaps = array_map(fn (string $part): string => route('sitemaps.show', $part), ['pages', 'ipos', 'news']);
+        $sitemaps = array_map(fn (string $part): string => route('sitemaps.show', $part), self::SITEMAPS);
 
         return response()->view('sitemap-index', ['sitemaps' => $sitemaps])->header('Content-Type', 'application/xml');
     }
 
     public function sitemap(string $part, IpoStatsService $stats, NewsService $news): Response
     {
+        if ($part === 'news') {
+            return $this->googleNewsSitemap($news);
+        }
+
         $urls = match ($part) {
             'pages' => $this->pageUrls($stats),
-            'ipos' => Ipo::query()->orderByDesc('api_id')->limit(5000)->get(['slug', 'updated_at'])
-                ->map(fn (Ipo $ipo): array => ['loc' => route('ipos.show', $ipo->slug), 'lastmod' => $ipo->updated_at])
-                ->all(),
-            'news' => array_map(fn (array $item): array => ['loc' => $item['url'], 'lastmod' => $item['date']], $news->latest(100)['items']),
+            'ipos' => $this->ipoUrls(),
+            'news-archive' => Cache::remember('sitemap:news-archive', now()->addHours(6), fn (): array => $this->newsArchiveUrls($news)),
         };
 
         return response()->view('sitemap', ['urls' => $urls])->header('Content-Type', 'application/xml');
+    }
+
+    /**
+     * IPO pages with the date their content last changed (the sync touches every row, so
+     * updated_at alone would make every lastmod "now" and Google would learn to ignore it).
+     * Recent IPOs also list their share card for image search.
+     *
+     * @return array<int, array{loc: string, lastmod: Carbon|null, image?: string|null}>
+     */
+    private function ipoUrls(): array
+    {
+        $recent = now()->subDays(120);
+
+        return Ipo::query()
+            ->with('detail:id,ipo_id,updated_at')
+            ->orderByDesc('api_id')
+            ->limit(5000)
+            ->get()
+            ->map(fn (Ipo $ipo): array => [
+                'loc' => route('ipos.show', $ipo->slug),
+                'lastmod' => collect([$ipo->source_updated_at, $ipo->subscription_updated_at, $ipo->detail?->updated_at])->filter()->max()
+                    ?? $ipo->source_created_at,
+                'image' => ($ipo->open_date === null || $ipo->open_date->gte($recent)) ? $ipo->shareImageUrl() : null,
+                'image_title' => $ipo->name.' IPO',
+            ])
+            ->all();
+    }
+
+    /**
+     * Stories from the last 48 hours in Google News sitemap format.
+     */
+    private function googleNewsSitemap(NewsService $news): Response
+    {
+        $cutoff = now()->subHours(48);
+        $items = collect($news->latest(100)['items'])
+            ->filter(fn (array $item): bool => $item['date'] !== null && $item['date']->gte($cutoff))
+            ->values();
+
+        return response()->view('sitemap-news', ['items' => $items])->header('Content-Type', 'application/xml');
+    }
+
+    /**
+     * @return array<int, array{loc: string, lastmod: Carbon|null}>
+     */
+    private function newsArchiveUrls(NewsService $news): array
+    {
+        $urls = [];
+        for ($page = 1; $page <= self::NEWS_ARCHIVE_PAGES; $page++) {
+            $result = $news->latest(100, $page);
+            foreach ($result['items'] as $item) {
+                $urls[] = ['loc' => $item['url'], 'lastmod' => $item['updated'] ?? $item['date']];
+            }
+            if (! $result['has_more']) {
+                break;
+            }
+        }
+
+        return $urls;
     }
 
     /**
@@ -66,10 +146,20 @@ class SeoController extends Controller
     private function pageUrls(IpoStatsService $stats): array
     {
         $urls = [
-            route('home'), route('ipos.index'), route('ipos.type', 'mainboard'), route('ipos.type', 'sme'),
-            route('ipos.gmp'), route('ipos.calendar'), route('ipos.report-card'), route('news.index'), route('news.shorts'),
-            route('calculators.index'), route('about'), route('disclaimer'), route('privacy'),
+            route('home'), route('ipos.index'), route('ipos.gmp'), route('ipos.calendar'), route('ipos.report-card'),
+            route('news.index'), route('news.shorts'), route('calculators.index'), route('guides.index'),
+            route('about'), route('disclaimer'), route('privacy'),
         ];
+
+        foreach (array_keys(IpoHubs::all()) as $hub) {
+            $urls[] = route('ipos.'.$hub);
+        }
+        foreach (array_keys(Guides::all()) as $slug) {
+            $urls[] = route('guides.show', $slug);
+        }
+        foreach (config('ipodarbar.news_categories') as $category) {
+            $urls[] = route('news.category', $category['slug']);
+        }
 
         foreach ($stats->years() as $year) {
             $urls[] = route('ipos.year', $year);

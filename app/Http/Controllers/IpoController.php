@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Ipo;
 use App\Models\IpoVote;
+use App\Services\IpoDigestBuilder;
 use App\Services\NewsService;
+use App\Support\IpoHubs;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cookie;
@@ -19,26 +21,79 @@ class IpoController extends Controller
         $status = array_key_exists((string) $request->query('status'), Ipo::STATUSES) ? $request->query('status') : null;
         $q = trim((string) $request->query('q', ''));
 
+        // Filtered list URLs moved to keyword hubs (/upcoming-ipo, /sme-ipo, ...): send links and rankings there.
+        if ($q === '' && ($type !== null || $status !== null)) {
+            $hub = $type ?? IpoHubs::keyForStatus($status);
+            $query = array_filter([
+                'status' => $type !== null ? $status : null,
+                'page' => $request->integer('page') > 1 ? $request->integer('page') : null,
+            ]);
+
+            return redirect()->route('ipos.'.$hub, $query, 301);
+        }
+
         $ipos = Ipo::query()
-            ->ofType($type)
             ->search($q)
-            ->inStatus($status)
+            ->inStatus(null)
             ->paginate(25)
             ->withQueryString();
 
-        $counts = [];
+        $counts = ['all' => Ipo::query()->search($q)->count()];
         foreach (array_keys(Ipo::STATUSES) as $s) {
-            $counts[$s] = Ipo::query()->ofType($type)->search($q)->{$s}()->count();
+            $counts[$s] = Ipo::query()->search($q)->{$s}()->count();
         }
-        $counts['all'] = Ipo::query()->ofType($type)->search($q)->count();
 
-        $title = match ($type) {
-            'mainboard' => 'Mainboard IPOs',
-            'sme' => 'SME IPOs',
-            default => 'All IPOs',
-        };
+        return view('ipos.index', compact('ipos', 'q', 'counts'));
+    }
 
-        return view('ipos.index', compact('ipos', 'type', 'status', 'q', 'counts', 'title'));
+    /**
+     * Keyword landing pages: /upcoming-ipo, /current-ipo, /ipo-allotment-status,
+     * /recently-listed-ipo, /sme-ipo and /mainboard-ipo.
+     */
+    public function hub(Request $request, string $hub, IpoDigestBuilder $digest)
+    {
+        $config = IpoHubs::find($hub);
+        $status = $config['status'];
+        $type = $config['type'];
+
+        // Board hubs can be narrowed by status and status hubs by board; those variants are not indexed.
+        $filter = null;
+        if ($type !== null && array_key_exists((string) $request->query('status'), Ipo::STATUSES)) {
+            $filter = $status = $request->query('status');
+        }
+        if ($type === null && in_array($request->query('type'), ['mainboard', 'sme'], true)) {
+            $filter = $type = $request->query('type');
+        }
+
+        $query = Ipo::query()->ofType($type);
+        if ($hub === 'allotment') {
+            // Awaiting allotment/listing, plus IPOs listed in the last 10 days (people still check allotment then).
+            $window = now()->subDays(10)->toDateString();
+            $query->where(fn ($w) => $w->closed()
+                ->orWhere(fn ($l) => $l->listed()->whereDate('listing_date', '>=', $window)))
+                ->orderByDesc('close_date')->orderBy('name');
+        } elseif ($status === null) {
+            // Board hubs: live issues first (open, closing soon, upcoming), then the latest listings.
+            $query->orderByRaw('case when listing_date is null or listing_date >= ? then 0 else 1 end', [now()->toDateString()])
+                ->orderByRaw('open_date is null')->orderByDesc('open_date')->orderByDesc('api_id');
+        } else {
+            $query->inStatus($status);
+        }
+
+        $ipos = $query->paginate(25)->withQueryString();
+
+        return view('ipos.hub', [
+            'hub' => $hub,
+            'config' => $config,
+            'ipos' => $ipos,
+            'status' => $status,
+            'type' => $type,
+            'filter' => $filter,
+            'fill' => ['count' => $ipos->total()],
+            'allotmentDates' => $hub === 'allotment'
+                ? $ipos->getCollection()->mapWithKeys(fn (Ipo $ipo): array => [$ipo->id => $digest->allotmentDate($ipo)])
+                : collect(),
+        ]);
     }
 
     public function show(Request $request, Ipo $ipo, NewsService $news)
@@ -62,13 +117,16 @@ class IpoController extends Controller
 
         $ipo->load(['detail', 'financials']);
 
+        $companyNews = $news->mentioning($ipo->name);
+
         return view('ipos.show', [
             'ipo' => $ipo,
             'gmpTrend' => $ipo->gmpHistory()->get(['date', 'gmp']),
             'poll' => IpoVote::results($ipo),
             'myVote' => $ipo->votes()->where('voter_hash', IpoVote::hash($voterId))->value('choice'),
             'related' => $related,
-            'ipoNews' => $news->latest(5, 1, 9)['items'],
+            'ipoNews' => $companyNews ?: $news->latest(5, 1, 9)['items'],
+            'companyNews' => $companyNews !== [],
         ]);
     }
 

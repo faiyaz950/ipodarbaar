@@ -180,6 +180,12 @@
 
   /* ---------- Language toggle (English / Hinglish) ---------- */
   function applyLang(lang) {
+    if (lang === 'hi') {
+      $$('template[data-hi-template]').forEach(function (tpl) {
+        var target = document.getElementById(tpl.getAttribute('data-target'));
+        if (target && !target.childNodes.length) target.appendChild(tpl.content.cloneNode(true));
+      });
+    }
     $$('[data-lang-root]').forEach(function (root) { root.classList.toggle('lang-hi', lang === 'hi'); });
     $$('[data-lang-btn]').forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-lang-btn') === lang); });
   }

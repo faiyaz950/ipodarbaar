@@ -13,8 +13,8 @@
     ];
 @endphp
 
-@section('title', "IPOs in {$year}: List, Listing Gains & Report Card")
-@section('description', "All {$stats['count']} IPOs of {$year} in India: funds raised, average listing gain, best and worst listings, largest issues and month-wise count.")
+@section('title', "IPO List {$year}: All {$stats['count']} IPOs in India with Listing Gains")
+@section('description', "IPO list {$year}: all {$stats['count']} mainboard and SME IPOs in India with dates, price band, funds raised, listing gains, best and worst listings and month-wise count.")
 
 @push('head')
 <x-jsonld :breadcrumbs="[
@@ -28,7 +28,7 @@
 <section class="page-head">
     <div class="container">
         <nav class="crumbs"><a href="{{ route('home') }}">Home</a> <x-icon name="chevron-right" :size="13" /> <a href="{{ route('ipos.report-card') }}">IPO Report Card</a> <x-icon name="chevron-right" :size="13" /> <span>{{ $year }}</span></nav>
-        <h1>IPOs in {{ $year }}</h1>
+        <h1>IPO List {{ $year }}: All IPOs in {{ $year }}</h1>
         <p class="lead">{{ $stats['count'] }} IPOs ({{ $stats['mainboard'] }} mainboard, {{ $stats['sme'] }} SME) raised {{ $stats['raised'] ? '₹'.Ipo::num($stats['raised'], 0).' crore' : 'an undisclosed amount' }}.</p>
         @if (count($years) > 1)
             <div class="chips year-chips">
@@ -57,7 +57,7 @@
 
         <div class="card">
             <div class="card-head">
-                <div class="card-title"><span class="ico"><x-icon name="bar-chart" :size="16" /></span> IPOs by month</div>
+                <h2 class="card-title" id="by-month"><span class="ico"><x-icon name="bar-chart" :size="16" /></span> IPOs by month in {{ $year }}</h2>
                 <span class="card-sub">By issue open date</span>
             </div>
             <div class="fin-chart month-chart" role="img" aria-label="Number of IPOs opening each month of {{ $year }}">
@@ -81,7 +81,7 @@
             @foreach ($lists as $list)
                 @continue(empty($list['rows']))
                 <div class="card">
-                    <div class="card-head"><div class="card-title"><span class="ico"><x-icon :name="$list['icon']" :size="16" /></span> {{ $list['title'] }}</div></div>
+                    <div class="card-head"><h2 class="card-title"><span class="ico"><x-icon :name="$list['icon']" :size="16" /></span> {{ $list['title'] }}</h2></div>
                     <div class="table-wrap">
                         <table class="table">
                             <tbody>
@@ -105,7 +105,7 @@
         </div>
 
         <div class="card">
-            <div class="card-head"><div class="card-title"><span class="ico"><x-icon name="layers" :size="16" /></span> All IPOs of {{ $year }}</div></div>
+            <div class="card-head"><h2 class="card-title" id="ipo-list"><span class="ico"><x-icon name="layers" :size="16" /></span> IPO List {{ $year }}: All IPOs</h2></div>
             <x-ipo-table :ipos="$ipos" />
             @if ($ipos->hasPages())
                 <div style="border-top: 1px solid var(--border)">{{ $ipos->links() }}</div>

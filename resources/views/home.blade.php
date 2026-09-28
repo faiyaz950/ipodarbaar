@@ -23,7 +23,8 @@
                 <b>LIVE</b>
                 {{ $stats['open'] }} {{ $stats['open'] === 1 ? 'IPO' : 'IPOs' }} open today · {{ $stats['upcoming'] }} upcoming
             </span>
-            <h1>Every IPO. Every GMP.<br><em>One Darbaar.</em></h1>
+            <h1 class="hero-h1">IPO GMP Today, Upcoming IPOs &amp; Allotment Status</h1>
+            <p class="hero-display">Every IPO. Every GMP.<br><em>One Darbaar.</em></p>
             <p class="hero-lead">Track mainboard & SME IPOs in India with live grey market premium, subscription dates, listing calendar, market news shorts and powerful calculators, all in one place.</p>
 
             <form class="hero-search" action="{{ route('ipos.index') }}" method="get" role="search">
@@ -36,8 +37,8 @@
 
             <div class="hero-links">
                 <a href="{{ route('ipos.gmp') }}"><x-icon name="trending-up" :size="15" /> IPO GMP Today</a>
-                <a href="{{ route('ipos.type', 'mainboard') }}"><x-icon name="building" :size="15" /> Mainboard</a>
-                <a href="{{ route('ipos.type', 'sme') }}"><x-icon name="briefcase" :size="15" /> SME</a>
+                <a href="{{ route('ipos.mainboard') }}"><x-icon name="building" :size="15" /> Mainboard</a>
+                <a href="{{ route('ipos.sme') }}"><x-icon name="briefcase" :size="15" /> SME</a>
                 <a href="{{ route('ipos.calendar') }}"><x-icon name="calendar" :size="15" /> Calendar</a>
                 <a href="{{ route('ipos.report-card') }}"><x-icon name="trophy" :size="15" /> Report Card</a>
             </div>
@@ -46,7 +47,7 @@
         <div class="hero-panel">
             <div class="hero-panel-head">
                 <h3><x-icon name="flame" :size="17" style="color:#F2A93B" /> Closing Soon</h3>
-                <a href="{{ route('ipos.index', ['status' => 'open']) }}">View all open →</a>
+                <a href="{{ route('ipos.current') }}">View all open →</a>
             </div>
             @forelse ($closingSoon as $ipo)
                 <a class="hp-row" href="{{ $ipo->url() }}">
@@ -71,7 +72,7 @@
                     </div>
                 </a>
             @empty
-                <div class="hp-empty">No IPO is open right now.<br><a href="{{ route('ipos.index', ['status' => 'upcoming']) }}" style="color:var(--gold-2)">See upcoming IPOs →</a></div>
+                <div class="hp-empty">No IPO is open right now.<br><a href="{{ route('ipos.upcoming') }}" style="color:var(--gold-2)">See upcoming IPOs →</a></div>
             @endforelse
         </div>
     </div>
@@ -81,15 +82,15 @@
 <section class="stats">
     <div class="container">
         <div class="stats-grid">
-            <a class="stat" href="{{ route('ipos.index', ['status' => 'open']) }}">
+            <a class="stat" href="{{ route('ipos.current') }}">
                 <span class="ico ico-green"><x-icon name="zap" :size="22" /></span>
                 <span><span class="kpi">{{ $stats['open'] }}</span><span class="lbl" style="display:block">Open for subscription</span></span>
             </a>
-            <a class="stat" href="{{ route('ipos.index', ['status' => 'upcoming']) }}">
+            <a class="stat" href="{{ route('ipos.upcoming') }}">
                 <span class="ico ico-blue"><x-icon name="calendar" :size="22" /></span>
                 <span><span class="kpi">{{ $stats['upcoming'] }}</span><span class="lbl" style="display:block">Upcoming IPOs</span></span>
             </a>
-            <a class="stat" href="{{ route('ipos.index', ['status' => 'closed']) }}">
+            <a class="stat" href="{{ route('ipos.allotment') }}">
                 <span class="ico ico-amber"><x-icon name="hourglass" :size="22" /></span>
                 <span><span class="kpi">{{ $stats['closed'] }}</span><span class="lbl" style="display:block">Allotment / listing soon</span></span>
             </a>
@@ -109,7 +110,7 @@
         <div class="card" data-tabs>
             <div class="card-head">
                 <div>
-                    <div class="card-title"><span class="ico"><x-icon name="crown" /></span> IPO Dashboard</div>
+                    <h2 class="card-title"><span class="ico"><x-icon name="crown" /></span> IPO Dashboard</h2>
                     <div class="card-sub">Live status of mainboard and SME issues</div>
                 </div>
                 <div class="seg" data-type-filter="board">
@@ -122,7 +123,7 @@
                 <div class="tabs" role="tablist">
                     @foreach ($tabs as $key => $tab)
                         <button type="button" role="tab" class="tab {{ $key === $defaultTab ? 'active' : '' }}" data-tab="{{ $key }}"
-                                data-more="{{ route('ipos.index', ['status' => $key]) }}" aria-selected="{{ $key === $defaultTab ? 'true' : 'false' }}">
+                                data-more="{{ \App\Support\IpoHubs::urlForStatus($key) }}" aria-selected="{{ $key === $defaultTab ? 'true' : 'false' }}">
                             <x-icon :name="$tab['icon']" :size="15" /> {{ $tab['label'] }}
                             @if ($key !== 'listed')<span class="count">{{ $stats[$key] }}</span>@endif
                         </button>
@@ -138,7 +139,7 @@
             </div>
             <div class="table-foot">
                 <span class="updated"><x-icon name="refresh" :size="14" /> GMP is indicative and updated through the day</span>
-                <a class="link-gold" data-tab-more href="{{ route('ipos.index', ['status' => $defaultTab]) }}">View full list <x-icon name="arrow-right" :size="15" /></a>
+                <a class="link-gold" data-tab-more href="{{ \App\Support\IpoHubs::urlForStatus($defaultTab) }}">View full list <x-icon name="arrow-right" :size="15" /></a>
             </div>
         </div>
 
@@ -150,7 +151,7 @@
                 <p>Swipe through bite-sized market stories in English or Hinglish.</p>
                 @if ($lead)
                     <div class="phone-peek">
-                        @if ($lead['image'])<img src="{{ $lead['image'] }}" alt="" loading="lazy">@endif
+                        @if ($lead['image'])<img src="{{ $lead['image'] }}" alt="{{ $lead['headline'] }}" loading="lazy">@endif
                         <span class="t">{{ $lead['headline'] }}</span>
                     </div>
                 @endif
@@ -160,11 +161,11 @@
             <div class="card widget">
                 <div class="card-head">
                     <div class="card-title"><span class="ico"><x-icon name="newspaper" :size="16" /></span> IPO News</div>
-                    <a href="{{ route('news.index', ['category' => 'ipo']) }}" class="link-gold">All <x-icon name="chevron-right" :size="14" /></a>
+                    <a href="{{ route('news.category', 'ipo') }}" class="link-gold">All <x-icon name="chevron-right" :size="14" /></a>
                 </div>
                 @forelse (array_slice($ipoNews, 0, 5) as $n)
                     <a class="list-link" href="{{ $n['url'] }}">
-                        @if ($n['image'])<img class="thumb" src="{{ $n['image'] }}" alt="" loading="lazy">@endif
+                        @if ($n['image'])<img class="thumb" src="{{ $n['image'] }}" alt="{{ $n['headline'] }}" loading="lazy">@endif
                         <span>
                             <span class="t">{{ $n['headline'] }}</span>
                             <span class="m">{{ $n['date_label'] }}</span>
@@ -183,8 +184,8 @@
     $explore = [
         ['route' => route('ipos.gmp'), 'icon' => 'trending-up', 'title' => 'Live GMP', 'text' => 'Grey market premium & expected listing price'],
         ['route' => route('ipos.index'), 'icon' => 'layers', 'title' => 'All IPOs', 'text' => 'Open, upcoming, listing soon & listed'],
-        ['route' => route('ipos.type', 'mainboard'), 'icon' => 'building', 'title' => 'Mainboard IPOs', 'text' => 'NSE & BSE main board issues'],
-        ['route' => route('ipos.type', 'sme'), 'icon' => 'briefcase', 'title' => 'SME IPOs', 'text' => 'NSE Emerge & BSE SME issues'],
+        ['route' => route('ipos.mainboard'), 'icon' => 'building', 'title' => 'Mainboard IPOs', 'text' => 'NSE & BSE main board issues'],
+        ['route' => route('ipos.sme'), 'icon' => 'briefcase', 'title' => 'SME IPOs', 'text' => 'NSE Emerge & BSE SME issues'],
         ['route' => route('ipos.calendar'), 'icon' => 'calendar', 'title' => 'IPO Calendar', 'text' => 'Open, close, allotment & listing dates'],
         ['route' => route('ipos.report-card'), 'icon' => 'trophy', 'title' => 'IPO Report Card', 'text' => 'Year-wise listing gains & funds raised'],
         ['route' => route('compare'), 'icon' => 'columns', 'title' => 'Compare IPOs', 'text' => 'Up to 3 IPOs side by side'],
@@ -267,7 +268,7 @@
         <div class="card">
             <div class="card-head">
                 <div>
-                    <div class="card-title"><span class="ico"><x-icon name="trophy" :size="16" /></span> IPO Report Card {{ $report['year'] }}</div>
+                    <h2 class="card-title"><span class="ico"><x-icon name="trophy" :size="16" /></span> IPO Report Card {{ $report['year'] }}</h2>
                     <div class="card-sub">How this year's IPOs have performed so far</div>
                 </div>
                 <a class="link-gold" href="{{ route('ipos.year', $report['year']) }}">Full {{ $report['year'] }} report <x-icon name="arrow-right" :size="15" /></a>
@@ -337,7 +338,7 @@
             </div>
             <div class="chips">
                 @foreach (array_slice($categories, 0, 5) as $c)
-                    <a class="chip" href="{{ route('news.index', ['category' => $c['slug']]) }}"><span class="cdot" style="background:{{ $c['color'] }}"></span>{{ $c['name'] }}</a>
+                    <a class="chip" href="{{ route('news.category', $c['slug']) }}"><span class="cdot" style="background:{{ $c['color'] }}"></span>{{ $c['name'] }}</a>
                 @endforeach
                 <a class="chip active" href="{{ route('news.index') }}">All news <x-icon name="arrow-right" :size="14" /></a>
             </div>

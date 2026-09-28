@@ -23,5 +23,8 @@ Schedule::command('darbaar:telegram gmp')->dailyAt('18:30');
 Schedule::command('darbaar:digest daily')->dailyAt('08:00');
 Schedule::command('darbaar:digest weekly')->weeklyOn(1, '08:05');
 
+// Tell IndexNow search engines (Bing, Yandex…) about changed pages soon after each sync.
+Schedule::command('seo:indexnow')->everyThirtyMinutes()->withoutOverlapping(10);
+
 // Sends queued mail (digests, confirmations) without a long-running worker process.
 Schedule::command('queue:work --stop-when-empty --max-time=50 --tries=3')->everyMinute()->withoutOverlapping(5);

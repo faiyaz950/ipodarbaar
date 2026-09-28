@@ -21,8 +21,8 @@
                 <h3>No IPOs in your watchlist yet</h3>
                 <p>Star the IPOs you're interested in to see their key dates in one place.</p>
                 <div style="display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap">
-                    <a href="{{ route('ipos.index', ['status' => 'open']) }}" class="btn btn-gold btn-sm">Browse open IPOs</a>
-                    <a href="{{ route('ipos.index', ['status' => 'upcoming']) }}" class="btn btn-outline btn-sm">Upcoming IPOs</a>
+                    <a href="{{ route('ipos.current') }}" class="btn btn-gold btn-sm">Browse open IPOs</a>
+                    <a href="{{ route('ipos.upcoming') }}" class="btn btn-outline btn-sm">Upcoming IPOs</a>
                 </div>
             </div>
         </div>

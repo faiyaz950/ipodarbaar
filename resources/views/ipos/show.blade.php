@@ -7,28 +7,48 @@
     $timeline = $ipo->timeline();
     $registrar = $ipo->registrarInfo();
     $listingGainCls = $ipo->listingGain() === null ? 'flat' : ($ipo->listingGain() > 0 ? 'up' : ($ipo->listingGain() < 0 ? 'down' : 'flat'));
+    $allotmentDate = collect($timeline)->firstWhere('label', 'Basis of Allotment')['date'] ?? null;
+    $faqs = \App\Support\IpoSeo::faqs($ipo, $allotmentDate);
+    $modified = collect([$ipo->source_updated_at, $ipo->subscription_updated_at, $ipo->detail?->updated_at])->filter()->max() ?? $ipo->updated_at;
+    $toc = array_filter([
+        'details' => 'Details',
+        'timeline' => $ipo->open_date ? 'Dates' : null,
+        'gmp' => 'GMP',
+        'subscription' => $ipo->hasSubscription() ? 'Subscription' : null,
+        'allotment' => ($registrar || in_array($ipo->status(), ['closed', 'listed'], true)) ? 'Allotment status' : null,
+        'listing' => $ipo->listingGainPercent() !== null ? 'Listing gain' : null,
+        'lot-size' => $lotTable ? 'Lot size' : null,
+        'financials' => $ipo->financials->isNotEmpty() ? 'Financials' : null,
+        'faq' => 'FAQs',
+    ]);
 @endphp
 
-@section('title', $ipo->name.' IPO: GMP, Price Band, Dates & Details')
-@section('description', $ipo->metaDescription())
+@section('title', \App\Support\IpoSeo::title($ipo))
+@section('description', \App\Support\IpoSeo::description($ipo, $allotmentDate))
 @section('og_image', $ipo->shareImageUrl() ?? '')
 
 @push('head')
-<x-jsonld :data="[
+<x-jsonld :data="array_filter([
     '@context' => 'https://schema.org',
-    '@type' => 'Event',
-    'name' => $ipo->name.' IPO',
-    'description' => $ipo->metaDescription(),
-    'startDate' => $ipo->open_date?->toDateString(),
-    'endDate' => ($ipo->close_date ?? $ipo->open_date)?->toDateString(),
-    'eventStatus' => 'https://schema.org/EventScheduled',
-    'eventAttendanceMode' => 'https://schema.org/OnlineEventAttendanceMode',
-    'location' => ['@type' => 'VirtualLocation', 'url' => $ipo->url()],
-    'image' => $ipo->shareImageUrl() ?? $ipo->logoUrl(),
-]" />
+    '@type' => 'WebPage',
+    '@id' => $ipo->url().'#webpage',
+    'url' => $ipo->url(),
+    'name' => \App\Support\IpoSeo::title($ipo),
+    'description' => \App\Support\IpoSeo::description($ipo, $allotmentDate),
+    'inLanguage' => 'en-IN',
+    'datePublished' => ($ipo->source_created_at ?? $ipo->created_at)?->toIso8601String(),
+    'dateModified' => $modified?->toIso8601String(),
+    'primaryImageOfPage' => $ipo->shareImageUrl() ?? $ipo->logoUrl(),
+    'isPartOf' => ['@type' => 'WebSite', 'name' => 'IPO Darbaar', 'url' => route('home')],
+    'about' => array_filter([
+        '@type' => 'Corporation',
+        'name' => $ipo->name,
+        'url' => $ipo->detail?->website_url,
+    ]),
+])" />
 <x-jsonld :breadcrumbs="[
     ['Home', route('home')],
-    [$ipo->typeLabel().' IPOs', route('ipos.type', $ipo->type)],
+    [$ipo->typeLabel().' IPOs', route('ipos.'.$ipo->type)],
     [$ipo->name.' IPO', $ipo->url()],
 ]" />
 @endpush
@@ -38,7 +58,7 @@
     <div class="container">
         <nav class="crumbs">
             <a href="{{ route('home') }}">Home</a> <x-icon name="chevron-right" :size="13" />
-            <a href="{{ route('ipos.type', $ipo->type) }}">{{ $ipo->typeLabel() }} IPOs</a> <x-icon name="chevron-right" :size="13" />
+            <a href="{{ route('ipos.'.$ipo->type) }}">{{ $ipo->typeLabel() }} IPOs</a> <x-icon name="chevron-right" :size="13" />
             <span>{{ $ipo->name }}</span>
         </nav>
 
@@ -91,9 +111,15 @@
     <div class="container layout">
         <div class="stack">
 
+            <nav class="card toc" aria-label="On this page">
+                @foreach ($toc as $anchor => $label)
+                    <a href="#{{ $anchor }}">{{ $label }}</a>
+                @endforeach
+            </nav>
+
             {{-- Key facts --}}
             <div class="card">
-                <div class="card-head"><div class="card-title"><span class="ico"><x-icon name="layers" :size="16" /></span> IPO Details</div></div>
+                <div class="card-head"><h2 class="card-title" id="details"><span class="ico"><x-icon name="layers" :size="16" /></span> {{ $ipo->name }} IPO Details</h2></div>
                 <div class="facts-grid">
                     <div class="fact"><span><x-icon name="calendar" :size="14" /> Open Date</span><b>{{ $ipo->open_date?->format('D, j M Y') ?? 'Awaited' }}</b></div>
                     <div class="fact"><span><x-icon name="calendar" :size="14" /> Close Date</span><b>{{ $ipo->close_date?->format('D, j M Y') ?? 'Awaited' }}</b></div>
@@ -110,7 +136,7 @@
             @if ($ipo->open_date)
             <div class="card">
                 <div class="card-head">
-                    <div class="card-title"><span class="ico"><x-icon name="clock" :size="16" /></span> IPO Timeline</div>
+                    <h2 class="card-title" id="timeline"><span class="ico"><x-icon name="clock" :size="16" /></span> {{ $ipo->name }} IPO Dates &amp; Timeline</h2>
                     <span class="card-sub">Tentative dates follow SEBI's T+3 listing timeline</span>
                 </div>
                 <div class="timeline">
@@ -133,7 +159,7 @@
             {{-- GMP --}}
             <div class="card">
                 <div class="card-head">
-                    <div class="card-title"><span class="ico"><x-icon name="trending-up" :size="16" /></span> {{ $ipo->name }} IPO GMP</div>
+                    <h2 class="card-title" id="gmp"><span class="ico"><x-icon name="trending-up" :size="16" /></span> {{ $ipo->name }} IPO GMP Today</h2>
                     <a class="link-gold" href="{{ route('ipos.gmp') }}">All IPO GMP <x-icon name="arrow-right" :size="14" /></a>
                 </div>
                 <div class="gmp-panel">
@@ -161,7 +187,7 @@
                     <div class="note">
                         <x-icon name="alert" />
                         <span>{{ $ipo->hasGmp() ? 'GMP is an unofficial grey-market indicator and can change quickly. It does not guarantee listing gains.' : 'GMP for this IPO is not available yet. It usually appears a few days before the issue opens.' }}
-                            <a class="link" href="{{ $ipo->calculatorUrl() }}">Try the GMP calculator</a></span>
+                            <a class="link" href="{{ $ipo->calculatorUrl() }}">Try the GMP calculator</a> · <a class="link" href="{{ route('guides.show', 'what-is-ipo-gmp') }}">What is GMP?</a> · <a class="link" href="{{ route('ipos.gmp') }}">GMP of all IPOs</a></span>
                     </div>
                 </div>
             </div>
@@ -185,7 +211,7 @@
                 @endphp
                 <div class="card">
                     <div class="card-head">
-                        <div class="card-title"><span class="ico"><x-icon name="activity" :size="16" /></span> GMP Trend</div>
+                        <h2 class="card-title" id="gmp-trend"><span class="ico"><x-icon name="activity" :size="16" /></span> {{ $ipo->name }} IPO GMP Trend</h2>
                         <span class="card-sub">
                             {{ $gmpTrend->first()->date->format('j M') }} – {{ $gmpTrend->last()->date->format('j M') }} ·
                             <b class="{{ $change > 0 ? 'up' : ($change < 0 ? 'down' : 'flat') }}">{{ $change > 0 ? '+' : '' }}₹{{ Ipo::num($change) }}</b>
@@ -219,7 +245,7 @@
                 @php $maxSub = max(1, collect($ipo->subscriptionRows())->max('value')); @endphp
                 <div class="card">
                     <div class="card-head">
-                        <div class="card-title"><span class="ico"><x-icon name="users" :size="16" /></span> Subscription Status</div>
+                        <h2 class="card-title" id="subscription"><span class="ico"><x-icon name="users" :size="16" /></span> {{ $ipo->name }} IPO Subscription Status</h2>
                         @if ($ipo->subscription_updated_at)<span class="card-sub">Updated {{ $ipo->subscription_updated_at->diffForHumans() }}</span>@endif
                     </div>
                     <div class="subs">
@@ -237,7 +263,7 @@
             {{-- Listing performance --}}
             @if ($ipo->listing_price)
                 <div class="card">
-                    <div class="card-head"><div class="card-title"><span class="ico"><x-icon name="rocket" :size="16" /></span> Listing Performance</div></div>
+                    <div class="card-head"><h2 class="card-title" id="listing"><span class="ico"><x-icon name="rocket" :size="16" /></span> {{ $ipo->name }} IPO Listing Price &amp; Gain</h2></div>
                     <div class="gmp-panel">
                         <div class="cell"><span>Issue price</span><b>{{ Ipo::money($ipo->price) }}</b></div>
                         <div class="cell"><span>Listing price</span><b>{{ Ipo::money($ipo->listing_price) }}</b></div>
@@ -250,7 +276,7 @@
             {{-- Allotment status --}}
             @if ($registrar || in_array($ipo->status(), ['closed', 'listed'], true))
                 <div class="card card-pad">
-                    <div class="card-title" style="margin-bottom:12px"><span class="ico"><x-icon name="ticket" :size="16" /></span> Check Allotment Status</div>
+                    <h2 class="card-title" style="margin-bottom:12px" id="allotment"><span class="ico"><x-icon name="ticket" :size="16" /></span> {{ $ipo->name }} IPO Allotment Status</h2>
                     <p class="muted" style="font-size:14px; margin-bottom:14px">
                         @if ($registrar)
                             The registrar for this IPO is <b style="color:var(--text)">{{ $registrar['name'] }}</b>. You can also check on the exchange websites using your PAN or application number.
@@ -266,6 +292,7 @@
                             <a class="btn btn-outline btn-sm" href="{{ $link['url'] }}" target="_blank" rel="noopener nofollow">{{ $link['name'] }} <x-icon name="external" :size="14" /></a>
                         @endforeach
                     </div>
+                    <p class="muted" style="font-size:13px;margin-top:12px">New to this? Read <a class="link" href="{{ route('guides.show', 'how-to-check-ipo-allotment-status') }}">how to check IPO allotment status</a> or see all <a class="link" href="{{ route('ipos.allotment') }}">IPOs awaiting allotment</a>.</p>
                 </div>
             @endif
 
@@ -273,7 +300,7 @@
             @if ($lotTable)
             <div class="card">
                 <div class="card-head">
-                    <div class="card-title"><span class="ico"><x-icon name="users" :size="16" /></span> Lot Size & Investment</div>
+                    <h2 class="card-title" id="lot-size"><span class="ico"><x-icon name="users" :size="16" /></span> {{ $ipo->name }} IPO Lot Size &amp; Minimum Investment</h2>
                     <span class="card-sub">At upper price band of ₹{{ Ipo::num($ipo->price) }}</span>
                 </div>
                 <div class="table-wrap">
@@ -298,7 +325,7 @@
 
             {{-- About --}}
             <div class="card card-pad">
-                <div class="card-title" style="margin-bottom:14px"><span class="ico"><x-icon name="building" :size="16" /></span> About {{ $ipo->name }} IPO</div>
+                <h2 class="card-title" style="margin-bottom:14px" id="about"><span class="ico"><x-icon name="building" :size="16" /></span> About {{ $ipo->name }} IPO</h2>
                 <div class="prose">
                     @php
                         $sentences = [];
@@ -322,6 +349,10 @@
                     @endif
                 </div>
             </div>
+
+            <x-faq :faqs="$faqs" :title="$ipo->name.' IPO: FAQs'" />
+
+            <p class="muted" style="font-size:12.5px">Last updated {{ $modified?->timezone(config('app.timezone'))->format('j M Y, g:i A') }} IST. GMP is unofficial and indicative; dates after the issue closes are tentative. Not investment advice.</p>
 
             <div class="card card-pad">
                 <div class="share-row">
@@ -363,7 +394,7 @@
             @if (count($ipoNews))
             <div class="card widget">
                 <div class="card-head">
-                    <div class="card-title"><span class="ico"><x-icon name="newspaper" :size="16" /></span> IPO News</div>
+                    <div class="card-title"><span class="ico"><x-icon name="newspaper" :size="16" /></span> {{ $companyNews ? $ipo->name.' IPO news' : 'IPO News' }}</div>
                 </div>
                 @foreach (array_slice($ipoNews, 0, 4) as $n)
                     <a class="list-link" href="{{ $n['url'] }}">

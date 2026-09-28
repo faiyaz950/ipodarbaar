@@ -336,8 +336,9 @@ body.drawer-open .menu-btn .i-close { display: block; }
 .hero .container { position: relative; display: grid; grid-template-columns: 1.1fr .9fr; gap: 48px; align-items: center; }
 .hero-kicker { display: inline-flex; align-items: center; gap: 10px; padding: 6px 14px 6px 8px; border-radius: 999px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12); font-size: 13px; color: #D5DCEE; }
 .hero-kicker b { background: #2FC28E; color: #04291C; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; letter-spacing: .04em; }
-.hero h1 { font-family: var(--font-display); font-size: clamp(34px, 4.6vw, 56px); font-weight: 700; line-height: 1.06; letter-spacing: -.025em; margin-top: 20px; }
-.hero h1 em { font-style: italic; color: transparent; background: linear-gradient(90deg, var(--gold-3), var(--gold-2) 50%, var(--gold)); -webkit-background-clip: text; background-clip: text; }
+.hero .hero-h1 { font-family: var(--font); font-size: 13.5px; font-weight: 700; line-height: 1.4; letter-spacing: .08em; text-transform: uppercase; color: var(--gold-2); margin-top: 20px; }
+.hero .hero-display { font-family: var(--font-display); font-size: clamp(34px, 4.6vw, 56px); font-weight: 700; line-height: 1.06; letter-spacing: -.025em; margin-top: 8px; }
+.hero .hero-display em { font-style: italic; color: transparent; background: linear-gradient(90deg, var(--gold-3), var(--gold-2) 50%, var(--gold)); -webkit-background-clip: text; background-clip: text; }
 .hero-lead { font-size: 17px; color: #B7C1DE; margin-top: 16px; max-width: 540px; }
 .hero-search { margin-top: 28px; display: flex; gap: 8px; padding: 7px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); border-radius: 16px; max-width: 560px; backdrop-filter: blur(6px); }
 .hero-search .field { flex: 1; display: flex; align-items: center; gap: 10px; padding: 0 12px; color: #93A0C4; }
@@ -1195,3 +1196,27 @@ button.poll-btn:hover { border-color: var(--gold); }
   .home-report-stats > div:nth-child(2) { border-right: 0; }
   .home-report-stats > div:nth-child(-n+2) { border-bottom: 1px solid var(--border); }
 }
+
+/* ---------- SEO content blocks ---------- */
+.faq-q { display: inline; font-size: inherit; font-weight: inherit; line-height: inherit; }
+.seo-copy { display: grid; gap: 18px; }
+.seo-copy h2 { font-size: 19px; font-weight: 700; margin-bottom: 6px; }
+.seo-copy p { color: var(--text-2); font-size: 15px; line-height: 1.7; }
+.hub-links { display: flex; flex-wrap: wrap; gap: 8px; }
+.updated-line { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 13px; color: #9AA6C7; }
+.toc { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 16px; }
+.toc a { font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-2); background: var(--surface); }
+.toc a:hover { border-color: var(--gold); color: var(--gold-ink); }
+[id] { scroll-margin-top: calc(var(--header-h) + 14px); }
+.guide .guide-summary { font-size: 17px; color: var(--text); font-weight: 500; border-left: 3px solid var(--gold); padding-left: 14px; margin-bottom: 18px; }
+.guide h2 { font-size: 22px; margin: 1.4em 0 .5em; }
+.guide h3 { font-size: 17px; margin: 1.2em 0 .4em; }
+.guide table { width: 100%; border-collapse: collapse; margin: 0 0 1.2em; font-size: 14.5px; }
+.guide th, .guide td { border: 1px solid var(--border); padding: 9px 12px; text-align: left; vertical-align: top; }
+.guide th { background: var(--surface-2); color: var(--text); }
+.guide dl { margin: 0; }
+.guide dt { font-weight: 700; color: var(--text); margin-top: 16px; }
+.guide dd { margin: 4px 0 0; }
+.guide .callout { padding: 14px 16px; border-radius: 12px; background: var(--gold-soft); color: var(--text-2); margin: 0 0 1.2em; }
+.article-head .h1-alt { font-family: var(--font-display); font-size: clamp(28px, 3.6vw, 44px); line-height: 1.12; margin-top: 14px; letter-spacing: -.02em; font-weight: 700; color: #fff; max-width: 920px; }
+.lang-hi .article-head .h1-alt { display: block !important; }

@@ -34,6 +34,16 @@ return [
     'redirect_hosts' => array_filter(array_map('trim', explode(',', (string) env('REDIRECT_HOSTS', '')))),
 
     /*
+    | IndexNow: tells Bing, Yandex and other participating search engines about new
+    | and updated pages within minutes. Set INDEXNOW_KEY to any 8–128 character
+    | hex/alphanumeric string to enable it.
+    */
+    'indexnow' => [
+        'key' => env('INDEXNOW_KEY'),
+        'endpoint' => 'https://api.indexnow.org/indexnow',
+    ],
+
+    /*
     |--------------------------------------------------------------------------
     | Market news source
     |--------------------------------------------------------------------------
@@ -44,14 +54,29 @@ return [
         'stale_for' => 3600,        // seconds a stale response may still be served
     ],
 
+    // "title"/"description" are the search copy for each category page (/{slug}-news).
     'news_categories' => [
-        ['id' => 6, 'name' => 'Trending', 'slug' => 'trending', 'color' => '#D93A3A'],
-        ['id' => 9, 'name' => 'IPO', 'slug' => 'ipo', 'color' => '#B8841F'],
-        ['id' => 1, 'name' => 'Stock Market', 'slug' => 'stock-market', 'color' => '#2F5BEA'],
-        ['id' => 2, 'name' => 'Trading', 'slug' => 'trading', 'color' => '#6D4AE0'],
-        ['id' => 4, 'name' => 'Investment', 'slug' => 'investment', 'color' => '#0B9B6A'],
-        ['id' => 3, 'name' => 'Commodity', 'slug' => 'commodity', 'color' => '#C06A12'],
-        ['id' => 5, 'name' => 'Crypto', 'slug' => 'crypto', 'color' => '#C2338A'],
+        ['id' => 6, 'name' => 'Trending', 'slug' => 'trending', 'color' => '#D93A3A',
+            'title' => 'Trending Business & Market News Today',
+            'description' => 'Trending business, economy and market news from India and the world, explained in short. Updated through the day in English and Hinglish.'],
+        ['id' => 9, 'name' => 'IPO', 'slug' => 'ipo', 'color' => '#B8841F',
+            'title' => 'IPO News Today: Latest IPO News & Updates in India',
+            'description' => 'Latest IPO news in India: new IPO announcements, subscription status, GMP, allotment and listing updates for mainboard and SME IPOs, updated daily.'],
+        ['id' => 1, 'name' => 'Stock Market', 'slug' => 'stock-market', 'color' => '#2F5BEA',
+            'title' => 'Stock Market News Today: Sensex, Nifty & Share Market Updates',
+            'description' => 'Share market news today: Sensex, Nifty, stocks in focus, results and market-moving updates from India, in short and simple language.'],
+        ['id' => 2, 'name' => 'Trading', 'slug' => 'trading', 'color' => '#6D4AE0',
+            'title' => 'Trading News Today: Market Moves & Trading Updates',
+            'description' => 'Trading news for Indian markets: F&O, stocks to watch, sector moves and key levels, explained in short.'],
+        ['id' => 4, 'name' => 'Investment', 'slug' => 'investment', 'color' => '#0B9B6A',
+            'title' => 'Investment News: Mutual Funds, SIP & Personal Finance',
+            'description' => 'Investment news for Indian investors: mutual funds, SIPs, fixed deposits, tax and personal finance updates, explained simply.'],
+        ['id' => 3, 'name' => 'Commodity', 'slug' => 'commodity', 'color' => '#C06A12',
+            'title' => 'Commodity News Today: Gold, Silver & Crude Oil Updates',
+            'description' => 'Commodity market news today: gold, silver, crude oil and base metal price moves and what is driving them.'],
+        ['id' => 5, 'name' => 'Crypto', 'slug' => 'crypto', 'color' => '#C2338A',
+            'title' => 'Crypto News Today: Bitcoin & Cryptocurrency Updates',
+            'description' => 'Crypto news today: Bitcoin, Ethereum and cryptocurrency market updates, regulation and tax news for Indian investors.'],
     ],
 
     /*

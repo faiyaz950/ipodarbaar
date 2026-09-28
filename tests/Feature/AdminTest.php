@@ -117,7 +117,7 @@ class AdminTest extends TestCase
             ->assertSee('GMP Trend')
             ->assertSee('Subscription Status')
             ->assertSee('12.25x')
-            ->assertSee('Listing Performance')
+            ->assertSee('Alpha Tech IPO Listing Price & Gain')
             ->assertSee('25.00%')
             ->assertSee('https://ipostatus.kfintech.com/', false)
             ->assertSee('Alpha Tech makes widgets.');

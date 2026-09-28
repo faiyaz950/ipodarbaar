@@ -16,6 +16,154 @@ class Calculators
         'trading' => 'Trading, Tax & Business',
     ];
 
+    /**
+     * Search titles and "how to use" steps for each calculator page.
+     *
+     * @var array<string, array{0: string, 1: array<int, string>}>
+     */
+    public const SEO = [
+        'ipo-gmp' => ['IPO GMP Calculator: Expected Listing Price & Profit per Lot', [
+            'Enter the IPO\'s upper price band and the latest GMP from the IPO GMP page.',
+            'Add the lot size and the number of lots you expect to get.',
+            'Read the expected listing price, gain per share and estimated profit per lot.',
+        ]],
+        'ipo-profit' => ['IPO Listing Gain Calculator: Profit on Listing Day', [
+            'Enter the issue price you paid and the price you sold at on listing day.',
+            'Add the lot size and the number of lots allotted to you.',
+            'See your profit or loss in rupees and as a percentage of your investment.',
+        ]],
+        'ipo-application' => ['IPO Application Amount Calculator: Lots, Amount & Category', [
+            'Choose mainboard or SME and enter the upper price band.',
+            'Enter the lot size and how many lots you plan to apply for.',
+            'See the amount that will be blocked and whether your bid falls in retail, small HNI or big HNI.',
+        ]],
+        'ipo-allotment-chance' => ['IPO Allotment Chance Calculator: Probability by Subscription', [
+            'Enter the retail subscription figure (for example 45 times) once bidding closes.',
+            'Enter how many separate PAN applications your family made.',
+            'See the chance of each application and of at least one allotment.',
+        ]],
+        'sip' => ['SIP Calculator: Calculate SIP Returns Online (with Step-up)', [
+            'Enter your monthly SIP amount and the expected annual return.',
+            'Choose the investment period and, optionally, a yearly step-up percentage.',
+            'See the total invested, estimated returns and final value, with a year-wise breakdown.',
+        ]],
+        'lumpsum' => ['Lumpsum Calculator: Mutual Fund Lumpsum Returns Online', [
+            'Enter the one-time investment amount.',
+            'Set the expected annual return and number of years.',
+            'See the future value and total gain of your lumpsum investment.',
+        ]],
+        'swp' => ['SWP Calculator: Systematic Withdrawal Plan Returns', [
+            'Enter your total investment and the amount you want to withdraw every month.',
+            'Set the expected return and the withdrawal period.',
+            'See the balance left at the end and how long your money lasts.',
+        ]],
+        'cagr' => ['CAGR Calculator: Compound Annual Growth Rate Online', [
+            'Enter the starting value of the investment.',
+            'Enter the ending value and the number of years held.',
+            'See the compound annual growth rate (CAGR) and total return.',
+        ]],
+        'stock-average' => ['Stock Average Calculator: Average Share Price After Buying More', [
+            'Enter the quantity and price of your existing holding.',
+            'Enter the quantity and price of your new purchase.',
+            'See your new average buy price and total investment.',
+        ]],
+        'return' => ['Investment Return Calculator: Absolute & Annualised Return', [
+            'Enter the amount invested and the current or final value.',
+            'Enter how long you held the investment.',
+            'See the absolute return and the annualised return.',
+        ]],
+        'compound-interest' => ['Compound Interest Calculator: Daily, Monthly & Yearly Compounding', [
+            'Enter the principal and the annual interest rate.',
+            'Choose the compounding frequency and the time period.',
+            'See the maturity amount and total interest earned.',
+        ]],
+        'retirement' => ['Retirement Calculator: Corpus Needed & Monthly SIP', [
+            'Enter your current age, retirement age and current monthly expenses.',
+            'Set expected inflation and returns before and after retirement.',
+            'See the corpus you need and the monthly investment required to build it.',
+        ]],
+        'inflation' => ['Inflation Calculator India: Future Cost & Value of Money', [
+            'Enter today\'s cost of an expense or goal.',
+            'Set the expected inflation rate and number of years.',
+            'See what it will cost in future and how much purchasing power money loses.',
+        ]],
+        'fd' => ['FD Calculator: Fixed Deposit Interest & Maturity Amount', [
+            'Enter the deposit amount and the interest rate offered by the bank.',
+            'Choose the tenure and compounding frequency (usually quarterly).',
+            'See the maturity amount and total interest earned.',
+        ]],
+        'rd' => ['RD Calculator: Recurring Deposit Maturity & Interest', [
+            'Enter your monthly deposit amount.',
+            'Enter the interest rate and the tenure.',
+            'See the maturity value and the interest earned on your recurring deposit.',
+        ]],
+        'ppf' => ['PPF Calculator: PPF Maturity Amount & Interest Online', [
+            'Enter your yearly PPF deposit (₹500 to ₹1.5 lakh).',
+            'Check the interest rate and choose the tenure (15 years, extendable in blocks of 5).',
+            'See the tax-free maturity value and total interest.',
+        ]],
+        'emi' => ['EMI Calculator: Loan EMI, Total Interest & Schedule', [
+            'Enter the loan amount and the annual interest rate.',
+            'Choose the loan tenure in years.',
+            'See the monthly EMI, total interest and a year-wise repayment schedule.',
+        ]],
+        'home-loan' => ['Home Loan Calculator: EMI, Total Interest & Repayment Schedule', [
+            'Enter the property loan amount and interest rate.',
+            'Choose the tenure of the home loan.',
+            'See your EMI, the total interest over the loan and how the balance falls each year.',
+        ]],
+        'loan-eligibility' => ['Loan Eligibility Calculator: How Much Loan Can I Get?', [
+            'Enter your monthly income and existing EMIs.',
+            'Set the interest rate and tenure you expect.',
+            'See the maximum loan and EMI you are likely to be eligible for.',
+        ]],
+        'fno-margin' => ['F&O Margin Calculator: Futures & Options Margin Required', [
+            'Choose the contract type and enter the lot size and price.',
+            'Enter the margin percentages for your position.',
+            'See the approximate margin blocked for the trade.',
+        ]],
+        'options-pnl' => ['F&O P&L Calculator: Options & Futures Profit and Loss', [
+            'Choose futures or options and whether you are buying or selling.',
+            'Enter the entry price, exit price, lot size and number of lots.',
+            'See your profit or loss for the trade.',
+        ]],
+        'option-premium' => ['Option Premium Calculator: Black-Scholes Price & Greeks', [
+            'Enter the spot price, strike price and days to expiry.',
+            'Enter the volatility and interest rate.',
+            'See the theoretical call and put premium along with delta, gamma, theta and vega.',
+        ]],
+        'hedging' => ['Portfolio Hedging Calculator: Hedge with Nifty Futures or Puts', [
+            'Enter your portfolio value and its beta.',
+            'Enter the index level and lot size of the hedging contract.',
+            'See how many lots you need to hedge the portfolio.',
+        ]],
+        'beta' => ['Stock Beta Calculator: Beta of a Stock vs the Index', [
+            'Enter the stock\'s returns for a series of periods.',
+            'Enter the index returns for the same periods.',
+            'See the stock\'s beta, which shows how much it moves relative to the market.',
+        ]],
+        'income-tax' => ['Income Tax Calculator FY 2025-26: Old vs New Regime', [
+            'Enter your annual income and choose your age group.',
+            'Add deductions such as 80C and 80D if you are comparing the old regime.',
+            'See your tax under the old and new regimes and which one is lower.',
+        ]],
+        'break-even' => ['Break-even Calculator: Break-even Point in Units & Sales', [
+            'Enter your fixed costs.',
+            'Enter the selling price and variable cost per unit.',
+            'See how many units you must sell, and the sales value needed, to break even.',
+        ]],
+        'brokerage' => ['Brokerage Calculator: Delivery & Intraday Charges, STT & Net P&L', [
+            'Choose delivery or intraday and the exchange.',
+            'Enter the buy price, sell price, quantity and your broker\'s charge per order.',
+            'See every charge (STT, exchange, SEBI, stamp duty, GST) and your net profit.',
+        ]],
+        'capital-gains' => ['Capital Gains Tax Calculator: STCG & LTCG on Shares', [
+            'Enter the buy price, sell price and quantity of shares.',
+            'Enter how many months you held them.',
+            'See whether the gain is short- or long-term and the tax payable with cess.',
+        ]],
+    ];
+
     public static function all(): array
     {
         return [

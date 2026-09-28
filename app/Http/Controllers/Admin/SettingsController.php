@@ -26,6 +26,15 @@ class SettingsController extends Controller
 
     public const MAX_BROKERS = 6;
 
+    public const SOCIAL_NETWORKS = [
+        'telegram' => 'Telegram channel',
+        'x' => 'X (Twitter)',
+        'youtube' => 'YouTube',
+        'instagram' => 'Instagram',
+        'facebook' => 'Facebook',
+        'linkedin' => 'LinkedIn',
+    ];
+
     public function edit(Settings $settings): View
     {
         return view('admin.settings', [
@@ -37,6 +46,13 @@ class SettingsController extends Controller
 
     public function update(Request $request, Settings $settings): RedirectResponse
     {
+        // Accept a pasted <meta ... content="CODE"> tag as well as the bare code.
+        foreach (['google_verification', 'bing_verification'] as $field) {
+            if (preg_match('/content=["\']([^"\']+)["\']/', (string) $request->input($field), $m)) {
+                $request->merge([$field => $m[1]]);
+            }
+        }
+
         $data = $request->validate([
             'ads_client' => ['nullable', 'string', 'regex:/^ca-pub-\d{10,20}$/'],
             'slots' => ['array'],
@@ -47,7 +63,13 @@ class SettingsController extends Controller
             'brokers.*.name' => ['nullable', 'string', 'max:40', 'required_with:brokers.*.url'],
             'brokers.*.url' => ['nullable', 'url:https', 'max:500', 'required_with:brokers.*.name'],
             'brokers.*.tagline' => ['nullable', 'string', 'max:80'],
+            'google_verification' => ['nullable', 'string', 'regex:/^[A-Za-z0-9_\-]{10,100}$/'],
+            'bing_verification' => ['nullable', 'string', 'regex:/^[A-Fa-f0-9]{32}$/'],
+            'social' => ['array'],
+            'social.*' => ['nullable', 'url:https', 'max:300'],
         ], [
+            'google_verification.regex' => 'Paste the code from Search Console (letters, numbers, - and _).',
+            'bing_verification.regex' => 'The Bing code is 32 characters (0-9, A-F).',
             'ads_client.regex' => 'The AdSense publisher ID looks like ca-pub-1234567890123456.',
             'slots.*.regex' => 'Ad slot IDs are the 6–12 digit numbers from AdSense.',
             'ga4_id.regex' => 'The GA4 measurement ID looks like G-XXXXXXXXXX.',
@@ -73,7 +95,12 @@ class SettingsController extends Controller
             'telegram.gmp' => $request->boolean('telegram_gmp'),
             'telegram.new_ipo' => $request->boolean('telegram_new_ipo'),
             'email.digest' => $request->boolean('email_digest'),
+            'seo.google_verification' => $data['google_verification'] ?? null,
+            'seo.bing_verification' => $data['bing_verification'] ?? null,
         ];
+        foreach (array_keys(self::SOCIAL_NETWORKS) as $network) {
+            $values['social.'.$network] = $data['social'][$network] ?? null;
+        }
         foreach (array_keys(self::AD_SLOTS) as $slot) {
             $values['ads.slots.'.$slot] = $data['slots'][$slot] ?? null;
         }
