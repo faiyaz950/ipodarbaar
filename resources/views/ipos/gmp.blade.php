@@ -4,7 +4,11 @@
     use App\Models\Ipo;
 
     $withGmp = $active->filter(fn (Ipo $ipo): bool => $ipo->hasGmp());
-    $top = $withGmp->sortByDesc(fn (Ipo $ipo): float => $ipo->gmpPercent() ?? 0)->first();
+    $highest = $withGmp->filter(fn (Ipo $ipo): bool => $ipo->gmp > 0 && $ipo->gmpPercent() !== null)
+        ->sortByDesc(fn (Ipo $ipo): float => $ipo->gmpPercent())->values();
+    $top = $highest->first();
+    // The feed has no subscription figures; the column appears once an editor adds them.
+    $showSubscription = $active->contains(fn (Ipo $ipo): bool => $ipo->subscription_total !== null);
     $today = now()->format('j M Y');
     $gmpFaqs = [
         ['What is IPO GMP?', 'IPO GMP (grey market premium) is the premium over the issue price at which IPO shares are traded unofficially before listing. A GMP of ₹40 on an issue price of ₹200 means grey-market dealers expect the shares to list around ₹240.'],
@@ -15,7 +19,7 @@
     ];
 @endphp
 
-@section('title', 'IPO GMP Today ('.$today.'): Live Grey Market Premium')
+@section('title', 'Live IPO GMP Today ('.$today.'): Grey Market Premium')
 @section('description', 'Live IPO GMP today ('.$today.') for '.$active->count().' mainboard & SME IPOs: grey market premium, expected listing price and gain %.'.($top ? ' Highest now: '.$top->name.' '.number_format($top->gmpPercent(), 1).'%.' : ''))
 
 @push('head')
@@ -23,7 +27,7 @@
 <x-jsonld :data="[
     '@context' => 'https://schema.org',
     '@type' => 'CollectionPage',
-    'name' => 'IPO GMP Today',
+    'name' => 'Live IPO GMP Today',
     'url' => route('ipos.gmp'),
     'dateModified' => (\App\Services\IpoSyncService::lastSyncedAt() ?? now())->toIso8601String(),
     'mainEntity' => [
@@ -43,7 +47,7 @@
 <section class="page-head">
     <div class="container">
         <nav class="crumbs"><a href="{{ route('home') }}">Home</a> <x-icon name="chevron-right" :size="13" /> <span>IPO GMP</span></nav>
-        <h1>IPO GMP Today</h1>
+        <h1>Live IPO GMP Today</h1>
         <p class="lead">Live grey market premium (GMP) of every open, upcoming and closed IPO, with the expected listing price and listing gain for mainboard and SME issues.</p>
         <span class="updated-line"><x-icon name="refresh" :size="14" /> Updated {{ (\App\Services\IpoSyncService::lastSyncedAt() ?? now())->timezone(config('app.timezone'))->format('j M Y, g:i A') }} IST · {{ $withGmp->count() }} IPOs with GMP</span>
     </div>
@@ -66,6 +70,21 @@
             </div>
         </div>
 
+        @if ($highest->isNotEmpty())
+            <div class="card card-pad">
+                <h2 class="card-title" id="highest-gmp" style="margin-bottom:10px"><span class="ico"><x-icon name="trending-up" :size="16" /></span> Highest IPO GMP Today</h2>
+                <ol class="rank-list">
+                    @foreach ($highest->take(5) as $ipo)
+                        <li>
+                            <a href="{{ $ipo->url() }}#gmp">{{ $ipo->name }} IPO</a>:
+                            GMP <b class="up">+₹{{ Ipo::num($ipo->gmp) }}</b> ({{ number_format($ipo->gmpPercent(), 1) }}%), expected listing ₹{{ Ipo::num($ipo->estListingPrice()) }}
+                            <span class="muted">· {{ $ipo->typeLabel() }} · {{ match ($ipo->status()) { 'open' => 'closes '.($ipo->close_date ?? $ipo->open_date)->format('j M'), 'upcoming' => $ipo->open_date ? 'opens '.$ipo->open_date->format('j M') : 'dates awaited', default => 'lists '.($ipo->listing_date?->format('j M') ?? 'TBA') } }}</span>
+                        </li>
+                    @endforeach
+                </ol>
+            </div>
+        @endif
+
         <div class="card">
             <div class="card-head">
                 <div>
@@ -87,7 +106,9 @@
                             <th class="r">GMP</th>
                             <th class="r">Est. Listing</th>
                             <th class="r">Est. Gain</th>
+                            @if ($showSubscription)<th class="r">Subscription</th>@endif
                             <th>Open – Close</th>
+                            <th>Allotment</th>
                             <th>Listing</th>
                             <th>Status</th>
                         </tr>
@@ -102,12 +123,16 @@
                                         <div>
                                             <a href="{{ $ipo->url() }}" class="co-name">{{ $ipo->name }}</a>
                                             <div class="co-meta"><span class="badge b-{{ $ipo->type }}">{{ $ipo->typeLabel() }}</span>
+                                                @if ($ipo->issue_size)<span>₹{{ Ipo::num($ipo->issue_size) }} Cr</span>@endif
                                                 @if ($ipo->source_updated_at)<span>Updated {{ $ipo->source_updated_at->diffForHumans(null, true) }} ago</span>@endif
                                             </div>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="r">{{ $ipo->price ? '₹'.Ipo::num($ipo->price) : '—' }}</td>
+                                <td class="r">
+                                    {{ $ipo->price ? '₹'.Ipo::num($ipo->price) : '—' }}
+                                    @if ($ipo->lot_size)<small class="muted cell-sub">Lot {{ number_format($ipo->lot_size) }}</small>@endif
+                                </td>
                                 <td class="r"><b class="{{ $cls }}">{{ $ipo->hasGmp() ? ($ipo->gmp > 0 ? '+' : '').'₹'.Ipo::num($ipo->gmp) : '—' }}</b></td>
                                 <td class="r">{{ $ipo->estListingPrice() ? '₹'.Ipo::num($ipo->estListingPrice()) : '—' }}</td>
                                 <td class="r">
@@ -117,12 +142,14 @@
                                         <span class="muted">—</span>
                                     @endif
                                 </td>
+                                @if ($showSubscription)<td class="r">{{ $ipo->subscription_total !== null ? number_format($ipo->subscription_total, 2).'x' : '—' }}</td>@endif
                                 <td class="dates">{{ $ipo->open_date ? $ipo->open_date->format('j M').' – '.($ipo->close_date ?? $ipo->open_date)->format('j M') : 'Awaited' }}</td>
+                                <td>{{ ($allotmentDates[$ipo->id] ?? null)?->format('j M') ?? 'TBA' }}</td>
                                 <td>{{ $ipo->listing_date?->format('j M') ?? 'TBA' }}</td>
                                 <td><x-status-badge :ipo="$ipo" /></td>
                             </tr>
                         @empty
-                            <tr><td colspan="8"><div class="table-empty">No active IPOs right now.</div></td></tr>
+                            <tr><td colspan="{{ $showSubscription ? 10 : 9 }}"><div class="table-empty">No active IPOs right now.</div></td></tr>
                         @endforelse
                     </tbody>
                 </table>

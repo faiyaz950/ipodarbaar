@@ -10,6 +10,31 @@
     $h1 = IpoHubs::fill($config['h1'], $fill);
     $hubUrl = route('ipos.'.$hub);
     $related = collect(IpoHubs::all())->except($hub)->map(fn (array $h, string $key): array => ['url' => route('ipos.'.$key), 'label' => $h['label']]);
+
+    // Upcoming and open IPOs are split by board, with a short daily summary and a spotlight list.
+    $listed = $ipos->getCollection();
+    $grouped = isset($config['groups']) && ! $filter && ! $ipos->hasPages() && $listed->isNotEmpty();
+    $boards = $grouped ? $listed->groupBy('type') : collect();
+    $summary = null;
+    $spotlight = collect();
+    $spotlightTitle = null;
+    if ($grouped) {
+        $mainboardCount = $boards->get('mainboard', collect())->count();
+        $smeCount = $boards->get('sme', collect())->count();
+        $largest = $listed->filter(fn (Ipo $ipo): bool => (bool) $ipo->issue_size)->sortByDesc('issue_size')->first();
+        $summary = 'As of '.now()->format('j M Y').', '.$listed->count().' '.($listed->count() === 1 ? 'IPO is' : 'IPOs are')
+            .($hub === 'upcoming' ? ' lined up' : ' open for subscription').': '.$mainboardCount.' mainboard and '.$smeCount.' SME.'
+            .($largest ? ' The largest is '.$largest->name.' at ₹'.Ipo::num($largest->issue_size).' crore.' : '');
+
+        if ($hub === 'upcoming') {
+            $weekEnd = today()->addDays(6);
+            $spotlight = $listed->filter(fn (Ipo $ipo): bool => $ipo->open_date !== null && $ipo->open_date->lte($weekEnd))->values();
+            $spotlightTitle = 'Upcoming IPOs This Week ('.today()->format('j M').' – '.$weekEnd->format('j M').')';
+        } else {
+            $spotlight = $listed->filter(fn (Ipo $ipo): bool => (bool) ($ipo->close_date ?? $ipo->open_date)?->isToday())->values();
+            $spotlightTitle = 'IPOs Closing Today ('.today()->format('j M').')';
+        }
+    }
 @endphp
 
 @section('title', $title)
@@ -50,6 +75,9 @@
         </nav>
         <h1>{{ $h1 }}</h1>
         <p class="lead">{{ $config['lead'] }}</p>
+        @if ($summary && $page === 1)
+            <p class="hub-summary">{{ $summary }}</p>
+        @endif
         <span class="updated-line"><x-icon name="refresh" :size="14" /> Updated {{ now()->format('j M Y, g:i A') }} IST · {{ number_format($ipos->total()) }} {{ $ipos->total() === 1 ? 'IPO' : 'IPOs' }}</span>
     </div>
 </section>
@@ -121,6 +149,13 @@
                         </tbody>
                     </table>
                 </div>
+            @elseif ($grouped)
+                @foreach ($config['groups'] as $board => $heading)
+                    @if ($boards->has($board))
+                        <h2 class="group-title" id="{{ $board }}">{{ $heading }} <span class="muted">({{ $boards[$board]->count() }})</span></h2>
+                        <x-ipo-table :ipos="$boards[$board]" :status="$status" />
+                    @endif
+                @endforeach
             @else
                 <x-ipo-table :ipos="$ipos" :status="$status" :empty="'No '.strtolower($config['label']).' right now. Check the IPO calendar for what is coming next.'" />
             @endif
@@ -130,6 +165,26 @@
                 <div style="border-top: 1px solid var(--border)">{{ $ipos->onEachSide(1)->links() }}</div>
             @endif
         </div>
+
+        @if ($spotlight->isNotEmpty())
+            <div class="card card-pad">
+                <h2 class="card-title" id="spotlight" style="margin-bottom:10px"><span class="ico"><x-icon name="calendar" :size="16" /></span> {{ $spotlightTitle }}</h2>
+                <ol class="rank-list">
+                    @foreach ($spotlight as $ipo)
+                        <li>
+                            <a href="{{ $ipo->url() }}">{{ $ipo->name }} IPO</a>
+                            ({{ $ipo->typeLabel() }}):
+                            @if ($hub === 'upcoming')
+                                opens {{ $ipo->open_date->format('D, j M') }}, closes {{ ($ipo->close_date ?? $ipo->open_date)->format('D, j M') }}
+                            @else
+                                closes today at 5 PM{{ $ipo->subscription_total !== null ? ', subscribed '.number_format($ipo->subscription_total, 2).'x so far' : '' }}
+                            @endif
+                            · price band {{ $ipo->priceBand() }}{{ $ipo->hasGmp() ? ' · GMP '.($ipo->gmp >= 0 ? '₹' : '-₹').Ipo::num(abs($ipo->gmp)) : '' }}
+                        </li>
+                    @endforeach
+                </ol>
+            </div>
+        @endif
 
         @if ($page === 1)
             <div class="card card-pad seo-copy">

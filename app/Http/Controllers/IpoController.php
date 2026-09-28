@@ -80,7 +80,8 @@ class IpoController extends Controller
             $query->inStatus($status);
         }
 
-        $ipos = $query->paginate(25)->withQueryString();
+        // Upcoming and open IPOs rarely pass a few dozen, so they fit on one page, split by board.
+        $ipos = $query->paginate(isset($config['groups']) && $filter === null ? 60 : 25)->withQueryString();
 
         return view('ipos.hub', [
             'hub' => $hub,
@@ -130,7 +131,7 @@ class IpoController extends Controller
         ]);
     }
 
-    public function gmp()
+    public function gmp(IpoDigestBuilder $digest)
     {
         $active = Ipo::active()->get()->sortBy(fn (Ipo $i) => [
             $i->hasGmp() ? 0 : 1,
@@ -142,7 +143,9 @@ class IpoController extends Controller
             ->whereDate('listing_date', '>=', now()->subDays(30)->toDateString())
             ->orderByDesc('listing_date')->get();
 
-        return view('ipos.gmp', compact('active', 'recent'));
+        $allotmentDates = $active->mapWithKeys(fn (Ipo $ipo): array => [$ipo->id => $digest->allotmentDate($ipo)]);
+
+        return view('ipos.gmp', compact('active', 'recent', 'allotmentDates'));
     }
 
     public function calendar(Request $request)

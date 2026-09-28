@@ -10,7 +10,7 @@ namespace App\Support;
 class IpoHubs
 {
     /**
-     * @return array<string, array{path: string, status: string|null, type: string|null, label: string, title: string, h1: string, description: string, lead: string, about: array<int, array{0: string, 1: string}>, faqs: array<int, array{0: string, 1: string}>}>
+     * @return array<string, array{path: string, status: string|null, type: string|null, label: string, title: string, h1: string, description: string, lead: string, groups?: array<string, string>, about: array<int, array{0: string, 1: string}>, faqs: array<int, array{0: string, 1: string}>}>
      */
     public static function all(): array
     {
@@ -20,8 +20,9 @@ class IpoHubs
                 'status' => 'upcoming',
                 'type' => null,
                 'label' => 'Upcoming IPOs',
-                'title' => 'Upcoming IPO {month} {year}: Dates, Price Band & GMP',
+                'title' => 'Upcoming IPO List {month} {year}: Dates, Price & GMP',
                 'h1' => 'Upcoming IPOs in {month} {year}',
+                'groups' => ['mainboard' => 'Upcoming Mainboard IPOs', 'sme' => 'Upcoming SME IPOs'],
                 'description' => 'Upcoming IPO list for {month} {year}: {count} mainboard and SME IPOs with open and close dates, price band, lot size, issue size and latest GMP. Updated {date}.',
                 'lead' => 'All upcoming mainboard and SME IPOs in India with their subscription dates, price band, issue size and grey market premium, updated through the day.',
                 'about' => [
@@ -41,6 +42,7 @@ class IpoHubs
                 'label' => 'Current IPOs',
                 'title' => 'Current IPO Open Today: Live GMP & Subscription',
                 'h1' => 'Current IPOs Open for Subscription',
+                'groups' => ['mainboard' => 'Mainboard IPOs Open Today', 'sme' => 'SME IPOs Open Today'],
                 'description' => '{count} IPOs open today ({date}): live GMP, price band, lot size, closing date and subscription status of every current mainboard and SME IPO in India.',
                 'lead' => 'Every IPO you can apply for right now, sorted by closing date so the ones closing today come first.',
                 'about' => [

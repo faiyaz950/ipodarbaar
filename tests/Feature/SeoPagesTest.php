@@ -51,7 +51,7 @@ class SeoPagesTest extends TestCase
             ->assertDontSee('soon-co-ipo" class="co-name"', false);
 
         $this->get('/upcoming-ipo')->assertOk()
-            ->assertSee('<title>Upcoming IPO September 2026: Dates, Price Band &amp; GMP | IPO Darbaar</title>', false)
+            ->assertSee('<title>Upcoming IPO List September 2026: Dates, Price &amp; GMP | IPO Darbaar</title>', false)
             ->assertSee('soon-co-ipo" class="co-name"', false)
             ->assertDontSee('open-co-ipo" class="co-name"', false);
     }
@@ -62,6 +62,57 @@ class SeoPagesTest extends TestCase
             ->assertSee('<title>IPO Darbaar: IPO GMP Today, Upcoming IPO &amp; Allotment Status</title>', false)
             ->assertSee('<h1 class="hero-h1">IPO Darbaar:', false)
             ->assertSee('"alternateName":["IPO Darbar","IPODarbaar","ipodarbaar.in"]', false);
+    }
+
+    public function test_upcoming_hub_splits_boards_and_lists_this_weeks_openings(): void
+    {
+        Ipo::factory()->upcoming()->create(['name' => 'Big Board', 'slug' => 'big-board-ipo', 'issue_size' => 900]);
+        Ipo::factory()->upcoming()->sme()->create(['name' => 'Small Shop', 'slug' => 'small-shop-ipo', 'open_date' => '2026-10-20', 'close_date' => '2026-10-22']);
+
+        $this->get('/upcoming-ipo')->assertOk()
+            ->assertSee('As of 24 Sep 2026, 2 IPOs are lined up: 1 mainboard and 1 SME. The largest is Big Board at ₹900 crore.')
+            ->assertSeeInOrder(['Upcoming Mainboard IPOs', 'big-board-ipo" class="co-name"', 'Upcoming SME IPOs', 'small-shop-ipo" class="co-name"'], false)
+            ->assertSeeInOrder(['Upcoming IPOs This Week (24 Sep – 30 Sep)', 'Big Board IPO</a>', 'opens Sun, 27 Sep'], false)
+            ->assertDontSee('Small Shop IPO</a>', false);
+
+        // A filtered view keeps the plain single table.
+        $this->get('/upcoming-ipo?type=sme')->assertOk()->assertDontSee('Upcoming SME IPOs');
+    }
+
+    public function test_current_hub_lists_ipos_closing_today(): void
+    {
+        Ipo::factory()->create(['name' => 'Last Call', 'slug' => 'last-call-ipo', 'open_date' => '2026-09-22', 'close_date' => '2026-09-24', 'subscription_total' => 12.5]);
+        Ipo::factory()->open()->create(['name' => 'Still Open', 'slug' => 'still-open-ipo']);
+
+        $this->get('/current-ipo')->assertOk()
+            ->assertSeeInOrder(['IPOs Closing Today (24 Sep)', 'Last Call IPO</a>', 'closes today at 5 PM, subscribed 12.50x so far'], false)
+            ->assertDontSee('Still Open IPO</a>', false)
+            ->assertSee('Subscribed 12.50x');
+    }
+
+    public function test_live_gmp_page_ranks_the_highest_gmp_and_shows_allotment_dates(): void
+    {
+        Ipo::factory()->open()->create(['name' => 'Modest Gain', 'slug' => 'modest-gain-ipo', 'gmp' => 6]);
+        Ipo::factory()->open()->create(['name' => 'Hot Pick', 'slug' => 'hot-pick-ipo', 'gmp' => 60]);
+        Ipo::factory()->upcoming()->create(['name' => 'No Premium', 'slug' => 'no-premium-ipo', 'gmp' => null]);
+
+        $this->get('/ipo-gmp')->assertOk()
+            ->assertSee('<title>Live IPO GMP Today (24 Sep 2026): Grey Market Premium | IPO Darbaar</title>', false)
+            ->assertSee('<h1>Live IPO GMP Today</h1>', false)
+            ->assertSeeInOrder(['Highest IPO GMP Today', 'Hot Pick IPO</a>', '(50.0%)', 'Modest Gain IPO</a>', '(5.0%)'], false)
+            ->assertDontSee('No Premium IPO</a>:', false)
+            // Opened 23 Sep, closes 25 Sep (Fri): allotment T+1 is Mon 28 Sep.
+            ->assertSee('<td>28 Sep</td>', false)
+            // No IPO has subscription figures, so the column stays hidden.
+            ->assertDontSee('<th class="r">Subscription</th>', false);
+    }
+
+    public function test_ipo_tables_show_lot_size_and_minimum_investment(): void
+    {
+        Ipo::factory()->open()->create(['name' => 'Lot Co', 'slug' => 'lot-co-ipo']);
+
+        // ₹120 × 125 shares = ₹15,000 for one lot.
+        $this->get('/current-ipo')->assertOk()->assertSee('Lot 125 · min ₹15,000');
     }
 
     public function test_filtered_hubs_are_not_indexed(): void

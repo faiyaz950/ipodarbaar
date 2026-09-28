@@ -40,11 +40,19 @@
                             @else
                                 <small>Lists {{ $ipo->listing_date?->format('j M') ?? 'TBA' }}</small>
                             @endif
+                            @if ($ipo->subscription_total !== null)
+                                <small>Subscribed {{ number_format($ipo->subscription_total, 2) }}x</small>
+                            @endif
                         @else
                             <span class="muted">Dates awaited</span>
                         @endif
                     </td>
-                    <td class="r" data-label="Price band">{{ $ipo->priceBand() }}</td>
+                    <td class="r" data-label="Price band">
+                        {{ $ipo->priceBand() }}
+                        @if ($ipo->lot_size)
+                            <small class="muted cell-sub">Lot {{ number_format($ipo->lot_size) }}@if ($minimum = $ipo->lotTable()[0]['amount'] ?? null) · min ₹{{ \App\Models\Ipo::num($minimum) }}@endif</small>
+                        @endif
+                    </td>
                     <td class="r" data-label="Issue size">{{ $ipo->issue_size ? '₹'.\App\Models\Ipo::num($ipo->issue_size).' Cr' : '—' }}</td>
                     <td class="r" data-label="GMP">
                         @if ($ipo->hasGmp())
