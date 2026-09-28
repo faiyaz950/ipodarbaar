@@ -53,5 +53,7 @@ fi
 echo "→ Rebuilding caches"
 "$PHP" artisan config:clear
 "$PHP" artisan optimize
+# Cached pages were rendered by the old code; drop them so visitors get the new version.
+"$PHP" artisan cache:clear pages
 
 echo "✓ Deployed $(git rev-parse --short HEAD)"
