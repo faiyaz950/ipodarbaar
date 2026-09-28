@@ -61,6 +61,23 @@
             </div>
         </div>
 
+        @php
+            $feeds = ['All IPOs' => route('ipos.calendar-feed'), 'Mainboard' => route('ipos.calendar-feed', ['type' => 'mainboard']), 'SME' => route('ipos.calendar-feed', ['type' => 'sme'])];
+            $webcal = fn (string $url): string => preg_replace('#^https?://#', 'webcal://', $url);
+        @endphp
+        <div class="card card-pad cal-subscribe">
+            <div>
+                <h2 class="card-title" id="subscribe" style="margin-bottom:6px"><span class="ico"><x-icon name="bell" :size="16" /></span> Subscribe to the IPO calendar</h2>
+                <p class="muted" style="margin:0">Every IPO opening, closing, allotment and listing date in your phone's calendar, updated automatically.</p>
+            </div>
+            <div class="hub-links">
+                @foreach ($feeds as $label => $url)
+                    <a class="chip" href="https://calendar.google.com/calendar/render?cid={{ urlencode($webcal($url)) }}" target="_blank" rel="noopener nofollow">Google: {{ $label }}</a>
+                @endforeach
+                <a class="chip" href="{{ $webcal($feeds['All IPOs']) }}" rel="nofollow">Apple / Outlook</a>
+            </div>
+        </div>
+
         <div class="card">
             <div class="card-head">
                 <h2 class="card-title" id="agenda"><span class="ico"><x-icon name="calendar" :size="16" /></span> IPO dates this month, day by day</h2>

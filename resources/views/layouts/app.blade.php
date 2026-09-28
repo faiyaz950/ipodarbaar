@@ -78,7 +78,7 @@
                 $organization,
                 [
                     '@type' => 'WebSite', '@id' => route('home').'#website', 'name' => 'IPO Darbaar', 'alternateName' => ['IPO Darbar', 'IPODarbaar', 'ipodarbaar.in'], 'url' => route('home'), 'inLanguage' => 'en-IN', 'publisher' => ['@id' => route('home').'#org'],
-                    'potentialAction' => ['@type' => 'SearchAction', 'target' => ['@type' => 'EntryPoint', 'urlTemplate' => route('ipos.index').'?q={search_term_string}'], 'query-input' => 'required name=search_term_string'],
+                    'potentialAction' => ['@type' => 'SearchAction', 'target' => ['@type' => 'EntryPoint', 'urlTemplate' => route('search').'?q={search_term_string}'], 'query-input' => 'required name=search_term_string'],
                 ],
             ],
         ]" />
@@ -161,10 +161,11 @@
                         ['ipos.allotment', null, 'check-circle', 'Allotment Status'],
                         ['ipos.listing-today', null, 'calendar', 'Listing Today'],
                         ['ipos.report-card', null, 'trophy', 'IPO Report Card'],
+                        ['actions.buyback', null, 'repeat', 'Buybacks, Rights & NCDs'],
                     ],
                 ];
             @endphp
-            <div class="dd dd-mega {{ request()->routeIs('calculators.*', 'portfolio', 'ipos.sme-dashboard') ? 'active' : '' }}">
+            <div class="dd dd-mega {{ request()->routeIs('calculators.*', 'portfolio', 'ipos.sme-dashboard', 'actions.*') ? 'active' : '' }}">
                 <button type="button" aria-haspopup="true">Tools <x-icon name="chevron-down" :size="15" /></button>
                 <div class="dd-menu">
                     @foreach ($toolGroups as $group => $links)
@@ -182,10 +183,10 @@
         </nav>
 
         <div class="header-actions">
-            <form class="search" action="{{ route('ipos.index') }}" method="get" role="search" data-search>
+            <form class="search" action="{{ route('search') }}" method="get" role="search" data-search>
                 <label class="search-field">
                     <x-icon name="search" :size="17" />
-                    <input type="search" name="q" placeholder="Search any IPO…" autocomplete="off" aria-label="Search IPOs" data-search-input>
+                    <input type="search" name="q" placeholder="Search IPOs, guides, tools…" autocomplete="off" aria-label="Search IPO Darbaar" data-search-input>
                     <kbd>/</kbd>
                 </label>
                 <div class="suggest" data-suggest></div>
@@ -207,10 +208,10 @@
 </header>
 
 <div class="drawer" data-drawer>
-    <form class="search" action="{{ route('ipos.index') }}" method="get" role="search" data-search>
+    <form class="search" action="{{ route('search') }}" method="get" role="search" data-search>
         <label class="search-field">
             <x-icon name="search" :size="17" />
-            <input type="search" name="q" placeholder="Search any IPO…" autocomplete="off" aria-label="Search IPOs" data-search-input>
+            <input type="search" name="q" placeholder="Search IPOs, guides, tools…" autocomplete="off" aria-label="Search IPO Darbaar" data-search-input>
         </label>
         <div class="suggest" data-suggest></div>
     </form>
@@ -233,6 +234,7 @@
         <a href="{{ route('calculators.index') }}"><x-icon name="calculator" /> Calculators &amp; Tools</a>
         <a href="{{ route('portfolio') }}" class="sub">IPO Portfolio Tracker</a>
         <a href="{{ route('ipos.sme-dashboard') }}" class="sub">SME IPO Dashboard</a>
+        <a href="{{ route('actions.buyback') }}" class="sub">Buybacks, Rights &amp; NCDs</a>
         <a href="{{ route('guides.index') }}"><x-icon name="file-text" /> IPO Guide</a>
         <a href="{{ route('watchlist') }}"><x-icon name="star" /> My Watchlist</a>
         <a href="{{ route('alerts') }}"><x-icon name="bell" /> IPO Alerts</a>
@@ -301,6 +303,9 @@
                     <li><a href="{{ route('ipos.gmp.sme') }}">SME IPO GMP</a></li>
                     <li><a href="{{ route('ipos.calendar') }}">IPO Calendar</a></li>
                     <li><a href="{{ route('ipos.report-card') }}">IPO Report Card</a></li>
+                    <li><a href="{{ route('actions.buyback') }}">Share Buybacks</a></li>
+                    <li><a href="{{ route('actions.rights') }}">Rights Issues</a></li>
+                    <li><a href="{{ route('actions.ncd') }}">NCD Issues</a></li>
                     <li><a href="{{ route('compare') }}">Compare IPOs</a></li>
                 </ul>
             </div>
@@ -345,7 +350,7 @@
 
 <div class="toast" data-toast role="status" aria-live="polite"></div>
 
-<script>window.IPO_DARBAAR = { suggestUrl: @json(route('ipos.suggest')), searchUrl: @json(route('ipos.index')) };</script>
+<script>window.IPO_DARBAAR = { suggestUrl: @json(route('ipos.suggest')), searchUrl: @json(route('search')) };</script>
 <script src="{{ asset('assets/js/app.js') }}?v={{ filemtime(public_path('assets/js/app.js')) }}" defer></script>
 @stack('scripts')
 </body>

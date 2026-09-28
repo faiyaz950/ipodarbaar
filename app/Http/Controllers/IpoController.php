@@ -6,8 +6,10 @@ use App\Models\Ipo;
 use App\Models\IpoVote;
 use App\Services\IpoDigestBuilder;
 use App\Services\NewsService;
+use App\Support\IcsCalendar;
 use App\Support\IpoHubs;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 
 class IpoController extends Controller
@@ -144,6 +146,56 @@ class IpoController extends Controller
         $allotmentDates = $active->mapWithKeys(fn (Ipo $ipo): array => [$ipo->id => $digest->allotmentDate($ipo)]);
 
         return view('ipos.gmp', compact('active', 'recent', 'allotmentDates', 'type'));
+    }
+
+    /**
+     * The IPO's opening, closing, allotment and listing dates as a calendar file.
+     */
+    public function ics(Ipo $ipo): Response
+    {
+        return $this->calendarResponse((new IcsCalendar($ipo->name.' IPO dates'))->addIpo($ipo), $ipo->slug.'-dates.ics');
+    }
+
+    /**
+     * Subscribable calendar of IPO dates from 30 days back to 4 months ahead. Narrow it
+     * with ?type=mainboard|sme or ?ipos=slug-1,slug-2 (a watchlist, up to 50 IPOs).
+     */
+    public function calendarFeed(Request $request): Response
+    {
+        $type = in_array($request->query('type'), ['mainboard', 'sme'], true) ? $request->query('type') : null;
+        $slugs = collect(explode(',', (string) $request->query('ipos', '')))
+            ->map(fn (string $slug): string => trim($slug))
+            ->filter(fn (string $slug): bool => (bool) preg_match('/^[a-z0-9-]{1,120}$/', $slug))
+            ->unique()->take(50)->values();
+
+        $from = today()->subDays(30)->toDateString();
+        $to = today()->addMonths(4)->toDateString();
+        $ipos = Ipo::query()
+            ->ofType($type)
+            ->when($slugs->isNotEmpty(), fn ($q) => $q->whereIn('slug', $slugs))
+            ->where(fn ($q) => $q->where(fn ($d) => $d->whereDate('open_date', '>=', $from)->whereDate('open_date', '<=', $to))
+                ->orWhere(fn ($d) => $d->whereDate('listing_date', '>=', $from)->whereDate('listing_date', '<=', $to)))
+            ->orderBy('open_date')
+            ->get();
+
+        $name = $slugs->isNotEmpty() ? 'My IPO watchlist' : match ($type) {
+            'sme' => 'SME IPO calendar',
+            'mainboard' => 'Mainboard IPO calendar',
+            default => 'IPO calendar',
+        };
+        $calendar = new IcsCalendar($name.' · IPO Darbaar');
+        $ipos->each(fn (Ipo $ipo) => $calendar->addIpo($ipo));
+
+        return $this->calendarResponse($calendar, 'ipo-darbaar-calendar.ics', inline: true);
+    }
+
+    private function calendarResponse(IcsCalendar $calendar, string $filename, bool $inline = false): Response
+    {
+        return response($calendar->render(), 200, [
+            'Content-Type' => 'text/calendar; charset=utf-8',
+            'Content-Disposition' => ($inline ? 'inline' : 'attachment').'; filename="'.$filename.'"',
+            'Cache-Control' => 'public, max-age=900',
+        ]);
     }
 
     /**

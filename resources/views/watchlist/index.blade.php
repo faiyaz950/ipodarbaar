@@ -14,7 +14,7 @@
 </section>
 
 <div class="page-body">
-    <div class="container" data-watchlist data-url="{{ route('watchlist.items') }}">
+    <div class="container" data-watchlist data-url="{{ route('watchlist.items') }}" data-ics="{{ route('ipos.calendar-feed') }}">
         <div class="card empty" data-watchlist-empty hidden>
             <div class="table-empty">
                 <div class="ico"><x-icon name="star" :size="22" /></div>
@@ -24,6 +24,13 @@
                     <a href="{{ route('ipos.current') }}" class="btn btn-gold btn-sm">Browse open IPOs</a>
                     <a href="{{ route('ipos.upcoming') }}" class="btn btn-outline btn-sm">Upcoming IPOs</a>
                 </div>
+            </div>
+        </div>
+        <div class="card card-pad cal-subscribe" data-watch-calendar hidden style="margin-bottom:20px">
+            <p class="muted" style="margin:0"><x-icon name="calendar" :size="15" /> Get the dates of your watched IPOs in your calendar, updated automatically.</p>
+            <div class="hub-links">
+                <a class="chip" data-watch-ics="google" href="#" target="_blank" rel="noopener nofollow">Google Calendar</a>
+                <a class="chip" data-watch-ics="webcal" href="#" rel="nofollow">Apple / Outlook</a>
             </div>
         </div>
         <div data-watchlist-items>

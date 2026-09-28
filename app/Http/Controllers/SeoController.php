@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CorporateAction;
 use App\Models\Ipo;
 use App\Services\IndexNowService;
 use App\Services\IpoStatsService;
@@ -165,6 +166,15 @@ class SeoController extends Controller
         }
         foreach (config('ipodarbar.news_categories') as $category) {
             $urls[] = route('news.category', $category['slug']);
+        }
+
+        // Offer lists only once they have entries (empty lists are noindex), plus each offer page.
+        $actions = CorporateAction::query()->published()->get(['type', 'slug']);
+        foreach ($actions->pluck('type')->unique() as $type) {
+            $urls[] = route('actions.'.$type);
+        }
+        foreach ($actions as $action) {
+            $urls[] = $action->url();
         }
 
         foreach ($stats->years() as $year) {

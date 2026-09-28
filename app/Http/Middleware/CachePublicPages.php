@@ -17,11 +17,11 @@ class CachePublicPages
     /** Route names (patterns) whose pages look the same for every anonymous visitor. */
     private const ROUTES = [
         'home', 'ipos.*', 'news.index', 'news.category', 'news.show', 'guides.*', 'calculators.*',
-        'about', 'contact', 'editorial-policy', 'disclaimer', 'privacy', 'alerts', 'portfolio', 'compare',
+        'about', 'contact', 'editorial-policy', 'disclaimer', 'privacy', 'alerts', 'portfolio', 'compare', 'actions.*',
     ];
 
     /** JSON and action endpoints under the patterns above. */
-    private const EXCLUDED = ['ipos.suggest', 'ipos.vote'];
+    private const EXCLUDED = ['ipos.suggest', 'ipos.vote', 'ipos.ics', 'ipos.calendar-feed'];
 
     public function handle(Request $request, Closure $next): Response
     {

@@ -153,6 +153,17 @@
                         </div>
                     @endforeach
                 </div>
+                @php $calendarEvents = \App\Support\IcsCalendar::ipoEvents($ipo); @endphp
+                @if ($calendarEvents && $ipo->status() !== 'listed')
+                    <div class="cal-add">
+                        <span class="cal-add-label"><x-icon name="calendar" :size="15" /> Add dates to your calendar:</span>
+                        <a class="chip" href="{{ route('ipos.ics', $ipo) }}" rel="nofollow" download>Apple / Outlook (.ics)</a>
+                        @foreach ($calendarEvents as $event)
+                            @continue($event['date']->lt(today()))
+                            <a class="chip" href="{{ \App\Support\IcsCalendar::googleLink($ipo, $event) }}" target="_blank" rel="noopener nofollow">Google: {{ ['opens' => 'Opens', 'closes' => 'Closes', 'allotment' => 'Allotment', 'listing' => 'Listing'][$event['key']] }}</a>
+                        @endforeach
+                    </div>
+                @endif
             </div>
             @endif
 

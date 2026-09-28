@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\CalculatorController;
 use App\Http\Controllers\CompareController;
+use App\Http\Controllers\CorporateActionController;
 use App\Http\Controllers\GuideController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IpoController;
@@ -14,16 +15,19 @@ use App\Http\Controllers\OgImageController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PortfolioController;
 use App\Http\Controllers\RelayController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\WatchlistController;
 use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\FlushPageCacheAfterWrites;
 use App\Http\Middleware\RefreshIpoData;
+use App\Models\CorporateAction;
 use App\Support\IpoHubs;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', HomeController::class)->name('home');
+Route::get('/search', [SearchController::class, 'index'])->name('search');
 
 // IPOs
 Route::get('/ipo', [IpoController::class, 'index'])->name('ipos.index');
@@ -37,11 +41,13 @@ Route::get('/sme-ipo-gmp', [IpoController::class, 'gmp'])->defaults('type', 'sme
 Route::get('/ipo-listing-today', [IpoController::class, 'listingToday'])->name('ipos.listing-today');
 Route::get('/sme-ipo-dashboard', [IpoController::class, 'smeDashboard'])->name('ipos.sme-dashboard');
 Route::get('/ipo-calendar', [IpoController::class, 'calendar'])->name('ipos.calendar');
+Route::get('/ipo-calendar.ics', [IpoController::class, 'calendarFeed'])->name('ipos.calendar-feed');
 Route::get('/ipo/search/suggest', [IpoController::class, 'suggest'])->name('ipos.suggest');
 Route::get('/ipo-compare', [CompareController::class, 'index'])->name('compare');
 Route::get('/ipo-report-card', [IpoYearController::class, 'index'])->name('ipos.report-card');
 Route::get('/ipo/{year}', [IpoYearController::class, 'show'])->where('year', '20\d\d')->name('ipos.year');
 Route::get('/ipo/{ipo}', [IpoController::class, 'show'])->name('ipos.show');
+Route::get('/ipo/{ipo}/calendar.ics', [IpoController::class, 'ics'])->name('ipos.ics');
 Route::post('/ipo/{ipo}/vote', [IpoVoteController::class, 'store'])->middleware('throttle:10,1')->name('ipos.vote');
 
 // Watchlist (stored in the browser) and offline fallback for the installed app
@@ -67,6 +73,12 @@ Route::get('/{categorySlug}-news', [NewsController::class, 'index'])
 Route::get('/shorts', [NewsController::class, 'shorts'])->name('news.shorts');
 Route::get('/shorts/feed', [NewsController::class, 'feed'])->name('news.feed');
 Route::get('/news/{id}/{slug?}', [NewsController::class, 'show'])->whereNumber('id')->name('news.show');
+
+// Buybacks, rights issues and NCD issues (entered in the admin panel)
+foreach (CorporateAction::TYPES as $actionType => $actionMeta) {
+    Route::get('/'.$actionMeta['path'], [CorporateActionController::class, 'index'])->defaults('type', $actionType)->name('actions.'.$actionType);
+    Route::get('/'.$actionMeta['path'].'/{offer:slug}', [CorporateActionController::class, 'show'])->defaults('type', $actionType)->name('actions.'.$actionType.'.show');
+}
 
 // IPO Academy guides
 Route::get('/ipo-guide', [GuideController::class, 'index'])->name('guides.index');
@@ -114,11 +126,22 @@ Route::prefix('admin')->name('admin.')->withoutMiddleware(RefreshIpoData::class)
         Route::get('/', [Admin\DashboardController::class, 'index'])->name('dashboard');
         Route::post('/sync', [Admin\DashboardController::class, 'sync'])->middleware('throttle:6,1')->name('sync');
         Route::get('/ipos', [Admin\IpoController::class, 'index'])->name('ipos.index');
+        Route::get('/ipos/bulk', [Admin\IpoBulkController::class, 'index'])->name('ipos.bulk');
+        Route::put('/ipos/bulk', [Admin\IpoBulkController::class, 'update'])->name('ipos.bulk.update');
+        Route::get('/ipos/bulk.csv', [Admin\IpoBulkController::class, 'csv'])->name('ipos.bulk.csv');
+        Route::post('/ipos/bulk/import', [Admin\IpoBulkController::class, 'import'])->name('ipos.bulk.import');
         Route::get('/ipos/{ipo}/edit', [Admin\IpoController::class, 'edit'])->name('ipos.edit');
         Route::put('/ipos/{ipo}', [Admin\IpoController::class, 'update'])->name('ipos.update');
         Route::post('/ipos/{ipo}/unlock', [Admin\IpoController::class, 'unlock'])->name('ipos.unlock');
         Route::get('/ipos/{ipo}/details', [Admin\IpoDetailController::class, 'edit'])->name('ipos.details.edit');
         Route::put('/ipos/{ipo}/details', [Admin\IpoDetailController::class, 'update'])->name('ipos.details.update');
+
+        Route::get('/actions', [Admin\CorporateActionController::class, 'index'])->name('actions.index');
+        Route::get('/actions/create', [Admin\CorporateActionController::class, 'create'])->name('actions.create');
+        Route::post('/actions', [Admin\CorporateActionController::class, 'store'])->name('actions.store');
+        Route::get('/actions/{offer}/edit', [Admin\CorporateActionController::class, 'edit'])->name('actions.edit');
+        Route::put('/actions/{offer}', [Admin\CorporateActionController::class, 'update'])->name('actions.update');
+        Route::delete('/actions/{offer}', [Admin\CorporateActionController::class, 'destroy'])->name('actions.destroy');
 
         Route::get('/news', [Admin\NewsController::class, 'index'])->name('news.index');
         Route::whereNumber('id')->group(function () {

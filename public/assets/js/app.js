@@ -268,6 +268,14 @@
     var list = watchlist();
     var items = $('[data-watchlist-items]', root);
     var empty = $('[data-watchlist-empty]', root);
+    var cal = $('[data-watch-calendar]', root);
+    if (cal) {
+      var feed = root.getAttribute('data-ics') + '?ipos=' + encodeURIComponent(list.slice(0, 50).join(','));
+      var webcal = feed.replace(/^https?:\/\//, 'webcal://');
+      $('[data-watch-ics="webcal"]', cal).href = webcal;
+      $('[data-watch-ics="google"]', cal).href = 'https://calendar.google.com/calendar/render?cid=' + encodeURIComponent(webcal);
+      cal.hidden = !list.length;
+    }
     if (!list.length) {
       items.innerHTML = '';
       empty.hidden = false;

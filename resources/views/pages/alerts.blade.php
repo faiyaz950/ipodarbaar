@@ -71,6 +71,17 @@
             </div>
 
             <div class="card card-pad alert-card">
+                <span class="ico ico-blue"><x-icon name="calendar" :size="20" /></span>
+                <h2>Calendar: dates on your phone</h2>
+                <ul class="checklist">
+                    <li>Every IPO opening, closing, allotment and listing date</li>
+                    <li>Works with Google Calendar, Apple Calendar and Outlook</li>
+                    <li>Updates by itself as new IPOs are announced</li>
+                </ul>
+                <a class="btn btn-outline" href="{{ route('ipos.calendar') }}#subscribe"><x-icon name="calendar" :size="15" /> Subscribe to the IPO calendar</a>
+            </div>
+
+            <div class="card card-pad alert-card">
                 <span class="ico ico-amber"><x-icon name="star" :size="20" /></span>
                 <h2>Watchlist &amp; app</h2>
                 <ul class="checklist">

@@ -8,6 +8,7 @@
         <h1>IPOs</h1>
         <p class="muted">Edit any IPO. Changed API fields are locked so the sync won’t overwrite them.</p>
     </div>
+    <a class="btn btn-gold btn-sm" href="{{ route('admin.ipos.bulk') }}"><x-icon name="layers" :size="14" /> Bulk edit / CSV</a>
 </div>
 
 <div class="card">
