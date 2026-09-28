@@ -54,7 +54,7 @@ class CorporateActionTest extends TestCase
         $hidden = CorporateAction::factory()->create(['company' => 'Hidden Labs', 'is_published' => false]);
 
         $this->get($offer->url())->assertOk()
-            ->assertSee('<title>Rights Co Rights Issue 2026: Price, Record Date &amp; Dates | IPO Darbaar</title>', false)
+            ->assertSee('<title>Rights Co Rights Issue 2026: Price, Ratio &amp; Record Date | IPO Darbaar</title>', false)
             ->assertSeeInOrder(['Rights issue price', '₹250', 'Rights ratio', '1:5'])
             ->assertSee('<p>First paragraph.</p>', false)
             ->assertSee('<p>Second paragraph.</p>', false)

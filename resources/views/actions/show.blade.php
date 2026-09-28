@@ -21,7 +21,7 @@
     ]);
 @endphp
 
-@section('title', $name.': Price, Record Date & Dates')
+@section('title', $name.': '.['buyback' => 'Price, Record Date & Dates', 'rights' => 'Price, Ratio & Record Date', 'ncd' => 'Coupon, Rating & Dates'][$action->type])
 @section('description', \Illuminate\Support\Str::limit($name.': '.($action->summary() ?: 'offer details').'. '.($action->open_date ? 'Opens '.$action->open_date->format('j M Y').'.' : 'Dates awaited.'), 158))
 
 @push('head')
