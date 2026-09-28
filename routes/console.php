@@ -14,6 +14,10 @@ Schedule::call(fn () => SchedulerHeartbeat::beat())->name('scheduler-heartbeat')
 Schedule::command('ipo:sync')->everyFifteenMinutes()->withoutOverlapping(10)->when(fn () => config('ipodarbar.ipo_api.pull'));
 Schedule::command('ipo:sync --full')->dailyAt('03:30')->withoutOverlapping(30)->when(fn () => config('ipodarbar.ipo_api.pull'));
 
+// Start the GitHub relay (source pages, logos) ourselves; GitHub skips most of its own scheduled runs.
+Schedule::command('relay:trigger')->everyFifteenMinutes()->when(fn () => filled(config('ipodarbar.relay.token')));
+Schedule::command('relay:trigger --full')->dailyAt('03:30')->when(fn () => filled(config('ipodarbar.relay.token')));
+
 // Telegram channel: new IPO alerts after each sync, a morning digest and an evening GMP board.
 Schedule::command('darbaar:telegram new')->everyFifteenMinutes()->withoutOverlapping(10);
 Schedule::command('darbaar:telegram digest')->dailyAt('09:00');

@@ -21,6 +21,17 @@ return [
     ],
 
     /*
+    | GitHub Actions relay workflow, started by the scheduler through workflow_dispatch.
+    | The token is a fine-grained PAT limited to this repo with "Actions: read and write".
+    */
+    'relay' => [
+        'token' => env('GITHUB_DISPATCH_TOKEN'),
+        'repo' => env('GITHUB_RELAY_REPO', 'faiyaz950/ipodarbaar'),
+        'workflow' => 'ipo-relay.yml',
+        'ref' => 'main',
+    ],
+
+    /*
     | The scheduler writes a heartbeat every minute; while it is younger than this many
     | minutes, page requests skip the fallback IPO sync.
     */
