@@ -1,0 +1,134 @@
+/* IPO Darbaar blog: list cards, post page and live IPO cards. Loaded on /blog pages only. */
+
+/* ---------- List pages ---------- */
+.blog-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.blog-head .chip { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.14); color: #D5DCF0; }
+.blog-head .chip:hover { border-color: var(--gold-2); color: #fff; }
+.blog-head .chip.active { background: var(--gold-2); border-color: var(--gold-2); color: var(--navy-900); }
+.blog-head .chip .count { background: rgba(255,255,255,.12); color: inherit; }
+.blog-head .chip.active .count { background: rgba(10,22,51,.12); color: var(--navy-900); }
+
+.blog-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+.blog-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.layout .blog-grid-3 { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+
+.blog-card { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-xs); transition: transform .15s, box-shadow .15s, border-color .15s; }
+.blog-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); border-color: var(--border-strong); }
+.blog-card:focus-visible { outline: none; box-shadow: var(--ring); }
+.blog-media { position: relative; aspect-ratio: 16 / 9; background: linear-gradient(135deg, var(--navy-800), var(--navy-600)); overflow: hidden; }
+.blog-media img { width: 100%; height: 100%; object-fit: cover; }
+.blog-media::after { content: ""; position: absolute; inset: 0; background-image: var(--jaali); opacity: .12; pointer-events: none; }
+.blog-media:has(img)::after { display: none; }
+.blog-media.cat-ipo-reviews { background: linear-gradient(135deg, #10204A, #243C7A); }
+.blog-media.cat-weekly-wrap { background: linear-gradient(135deg, #5A3E0A, #A57A1E); }
+.blog-media.cat-listing-recap { background: linear-gradient(135deg, #064A34, #0A8F62); }
+.blog-media.cat-trends { background: linear-gradient(135deg, #2E1D6E, #6A48D9); }
+.blog-media.cat-explainers { background: linear-gradient(135deg, #1B2A44, #3E5A8A); }
+.blog-media-label { position: absolute; left: 18px; bottom: 14px; z-index: 1; font-family: var(--font-display); font-size: 22px; font-weight: 600; color: #fff; letter-spacing: -.01em; }
+
+.blog-body { display: flex; flex-direction: column; gap: 8px; padding: 18px 20px 20px; flex: 1; }
+.blog-cat { font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--gold-ink); }
+.blog-body h3 { font-size: 17.5px; line-height: 1.35; color: var(--text); margin: 0; }
+.blog-card:hover h3 { color: var(--blue); }
+.blog-body p { font-size: 14px; line-height: 1.55; color: var(--text-2); margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.blog-meta { margin-top: auto; padding-top: 6px; font-size: 12.5px; color: var(--muted); }
+
+/* The newest post on the first page spans the grid. */
+.blog-card.is-feature { grid-column: 1 / -1; flex-direction: row; }
+.blog-card.is-feature .blog-media { flex: 0 0 56%; aspect-ratio: auto; min-height: 300px; }
+.blog-card.is-feature .blog-body { padding: 30px 32px; justify-content: center; gap: 12px; }
+.blog-card.is-feature h3 { font-family: var(--font-display); font-size: clamp(24px, 2.4vw, 32px); line-height: 1.18; letter-spacing: -.015em; }
+.blog-card.is-feature p { font-size: 15.5px; -webkit-line-clamp: 4; }
+.blog-card.is-feature .blog-media-label { font-size: 30px; left: 26px; bottom: 22px; }
+
+.blog-empty { text-align: center; padding: 40px 22px; }
+.blog-empty h2 { margin-bottom: 8px; }
+.blog-subscribe { margin-top: 28px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 420px); gap: 20px; align-items: center; }
+
+/* ---------- Post page ---------- */
+.blog-post-head h1 { max-width: 900px; }
+.blog-post-head .lead { max-width: 780px; }
+.blog-cat-pill { display: inline-block; margin-top: 16px; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; background: rgba(230,190,98,.14); color: var(--gold-2); border: 1px solid rgba(230,190,98,.35); }
+.blog-cat-pill:hover { background: rgba(230,190,98,.24); }
+.blog-post-head .article-head h1, .blog-post-head h1 { margin-top: 12px; }
+.blog-byline { color: #fff; font-weight: 600; }
+.blog-byline:hover { color: var(--gold-2); }
+.blog-preview-note { display: inline-flex; align-items: center; gap: 8px; margin-top: 14px; padding: 8px 14px; border-radius: 10px; background: var(--amber-soft); color: var(--amber); font-size: 13.5px; font-weight: 600; }
+
+.blog-article { padding: 32px; }
+.blog-banner { margin: 0 0 26px; }
+
+.blog-takeaways { margin: 0 0 24px; padding: 18px 20px; border-radius: var(--radius); background: var(--gold-soft); border: 1px solid rgba(200,150,46,.28); }
+.blog-takeaways-title { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--gold-ink); margin-bottom: 8px; font-size: 15px; }
+.blog-takeaways ul { margin: 0; padding-left: 1.2em; color: var(--text); font-size: 15.5px; line-height: 1.6; }
+.blog-takeaways li { margin: .3em 0; }
+.blog-takeaways li::marker { color: var(--gold); }
+
+.blog-toc { margin: 0 0 26px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2); }
+.blog-toc summary { cursor: pointer; padding: 13px 18px; font-weight: 700; color: var(--text); font-size: 14.5px; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+.blog-toc summary::-webkit-details-marker { display: none; }
+.blog-toc summary::after { content: "–"; color: var(--muted); font-weight: 600; }
+.blog-toc:not([open]) summary::after { content: "+"; }
+.blog-toc ol { margin: 0; padding: 0 18px 14px 36px; font-size: 14.5px; line-height: 1.5; }
+.blog-toc li { margin: 6px 0; }
+.blog-toc a { color: var(--blue); }
+.blog-toc a:hover { text-decoration: underline; }
+
+.blog-prose { font-size: 16.5px; line-height: 1.8; }
+.blog-prose h2 { font-family: var(--font-display); font-size: 25px; line-height: 1.25; letter-spacing: -.01em; margin-top: 1.6em; scroll-margin-top: calc(var(--header-h) + 20px); }
+.blog-prose h3 { font-size: 19px; line-height: 1.35; margin-top: 1.4em; }
+.blog-prose h4 { font-size: 16.5px; color: var(--text); margin: 1.2em 0 .4em; }
+.blog-prose > :first-child { margin-top: 0; }
+.blog-table { margin: 1.2em 0 1.4em; overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.blog-prose table { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.5; }
+.blog-prose th, .blog-prose td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+.blog-prose th { background: var(--surface-2); color: var(--text); font-weight: 700; white-space: nowrap; }
+.blog-prose tr:last-child td { border-bottom: 0; }
+
+.blog-section-title { font-family: var(--font-display); font-size: 22px; margin: 30px 0 14px; color: var(--text); }
+section > .blog-section-title { margin-top: 6px; }
+
+.blog-ipo-cards { display: grid; gap: 14px; }
+.blog-ipo-card { margin: 1.4em 0; padding: 18px 20px; border: 1px solid var(--border); border-left: 4px solid var(--gold); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-xs); font-size: 14.5px; line-height: 1.5; }
+.blog-ipo-cards .blog-ipo-card { margin: 0; }
+.blog-ipo-head { display: flex; align-items: center; gap: 12px; }
+.blog-ipo-name { font-weight: 700; font-size: 16.5px; color: var(--text); text-decoration: none !important; }
+.blog-ipo-name:hover { color: var(--blue); }
+.blog-ipo-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 14px 0 12px; }
+.blog-ipo-facts div { margin: 0; }
+.blog-ipo-facts dt { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.blog-ipo-facts dd { margin: 2px 0 0; font-weight: 700; color: var(--text); }
+.blog-ipo-facts dd.up { color: var(--green); }
+.blog-ipo-facts dd.down { color: var(--red); }
+.blog-ipo-link { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 14px; color: var(--blue); text-decoration: none !important; }
+.blog-ipo-link:hover { text-decoration: underline !important; }
+
+.blog-disclaimer { margin: 26px 0 0; padding-top: 16px; border-top: 1px dashed var(--border-strong); font-size: 12.5px; line-height: 1.6; color: var(--muted); }
+.blog-share { margin-top: 18px; }
+
+.blog-author-box { display: flex; gap: 16px; align-items: flex-start; }
+.blog-author-mark { flex: none; width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; background: var(--navy-900); color: var(--gold-2); }
+.blog-author-label { font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.blog-author-name { font-size: 17px; font-weight: 700; color: var(--text); }
+.blog-author-name:hover { color: var(--blue); }
+.blog-author-box p { margin: 8px 0; font-size: 14.5px; line-height: 1.6; color: var(--text-2); }
+
+/* ---------- Home and IPO page strips ---------- */
+.blog-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+
+@media (max-width: 1060px) {
+  .blog-grid, .blog-grid-3, .blog-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .blog-card.is-feature .blog-media { flex-basis: 50%; min-height: 260px; }
+}
+@media (max-width: 720px) {
+  .blog-grid, .blog-grid-3, .layout .blog-grid-3, .blog-strip { grid-template-columns: 1fr; gap: 16px; }
+  .blog-card.is-feature { flex-direction: column; }
+  .blog-card.is-feature .blog-media { flex: none; aspect-ratio: 16 / 9; min-height: 0; }
+  .blog-card.is-feature .blog-body { padding: 18px 20px 20px; }
+  .blog-subscribe { grid-template-columns: 1fr; }
+  .blog-article { padding: 18px; }
+  .blog-prose { font-size: 16px; }
+  .blog-prose h2 { font-size: 22px; }
+  .blog-ipo-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .blog-author-box { flex-direction: column; }
+}

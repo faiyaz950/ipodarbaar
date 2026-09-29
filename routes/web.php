@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin;
+use App\Http\Controllers\BlogController;
 use App\Http\Controllers\CalculatorController;
 use App\Http\Controllers\CompareController;
 use App\Http\Controllers\CorporateActionController;
@@ -80,6 +81,12 @@ foreach (CorporateAction::TYPES as $actionType => $actionMeta) {
     Route::get('/'.$actionMeta['path'].'/{offer:slug}', [CorporateActionController::class, 'show'])->defaults('type', $actionType)->name('actions.'.$actionType.'.show');
 }
 
+// Blog (original articles by the Research Desk)
+Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
+Route::get('/blog/feed.xml', [BlogController::class, 'feed'])->name('blog.feed');
+Route::get('/blog/author/{author:slug}', [BlogController::class, 'author'])->name('blog.author');
+Route::get('/blog/{slug}', [BlogController::class, 'show'])->where('slug', '[a-z0-9-]+')->name('blog.show');
+
 // IPO Academy guides
 Route::get('/ipo-guide', [GuideController::class, 'index'])->name('guides.index');
 Route::get('/ipo-guide/{slug}', [GuideController::class, 'show'])->where('slug', '[a-z0-9-]+')->name('guides.show');
@@ -142,6 +149,18 @@ Route::prefix('admin')->name('admin.')->withoutMiddleware(RefreshIpoData::class)
         Route::get('/actions/{offer}/edit', [Admin\CorporateActionController::class, 'edit'])->name('actions.edit');
         Route::put('/actions/{offer}', [Admin\CorporateActionController::class, 'update'])->name('actions.update');
         Route::delete('/actions/{offer}', [Admin\CorporateActionController::class, 'destroy'])->name('actions.destroy');
+
+        Route::get('/blog', [Admin\BlogPostController::class, 'index'])->name('blog.index');
+        Route::get('/blog/create', [Admin\BlogPostController::class, 'create'])->name('blog.create');
+        Route::post('/blog', [Admin\BlogPostController::class, 'store'])->name('blog.store');
+        Route::get('/blog/authors', [Admin\BlogAuthorController::class, 'index'])->name('blog.authors');
+        Route::post('/blog/authors', [Admin\BlogAuthorController::class, 'store'])->name('blog.authors.store');
+        Route::put('/blog/authors/{author}', [Admin\BlogAuthorController::class, 'update'])->whereNumber('author')->name('blog.authors.update');
+        Route::whereNumber('post')->group(function () {
+            Route::get('/blog/{post}/edit', [Admin\BlogPostController::class, 'edit'])->name('blog.edit');
+            Route::put('/blog/{post}', [Admin\BlogPostController::class, 'update'])->name('blog.update');
+            Route::delete('/blog/{post}', [Admin\BlogPostController::class, 'destroy'])->name('blog.destroy');
+        });
 
         Route::get('/news', [Admin\NewsController::class, 'index'])->name('news.index');
         Route::whereNumber('id')->group(function () {

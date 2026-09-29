@@ -161,7 +161,7 @@ p { margin: 0; }
 .nav > a, .nav .dd > button {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 9px 13px; border-radius: 10px; border: 0; background: none;
-  font-size: 14.5px; font-weight: 500; color: #C9D1E8;
+  font-size: 14.5px; font-weight: 500; color: #C9D1E8; white-space: nowrap;
   transition: background .15s, color .15s;
 }
 .nav > a:hover, .nav .dd > button:hover, .nav .dd:focus-within > button { color: #fff; background: rgba(255,255,255,.07); }
@@ -891,10 +891,17 @@ body.shorts-page .ticker, body.shorts-page .site-footer, body.shorts-page .topst
 /* ==========================================================================
    Responsive
    ========================================================================== */
+@media (max-width: 1320px) {
+  .site-header .container { gap: 20px; }
+  .search-field { width: 210px; }
+  .search-field:focus-within { width: 250px; }
+}
+
 @media (max-width: 1180px) {
-  .search-field { width: 200px; }
-  .search-field:focus-within { width: 240px; }
-  .nav > a, .nav .dd > button { padding: 9px 10px; font-size: 14px; }
+  .site-header .container { gap: 14px; }
+  .search-field { width: 160px; }
+  .search-field:focus-within { width: 210px; }
+  .nav > a, .nav .dd > button { padding: 9px 8px; font-size: 14px; }
   .shorts-shell { grid-template-columns: 1fr 440px 1fr; gap: 20px; }
 }
 

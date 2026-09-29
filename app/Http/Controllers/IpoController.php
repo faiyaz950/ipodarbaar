@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BlogPost;
 use App\Models\Ipo;
 use App\Models\IpoVote;
 use App\Services\IpoDigestBuilder;
@@ -125,6 +126,8 @@ class IpoController extends Controller
             'related' => $related,
             'ipoNews' => $companyNews ?: $news->latest(5, 1, 9)['items'],
             'companyNews' => $companyNews !== [],
+            'blogPosts' => BlogPost::query()->live()->whereHas('ipos', fn ($q) => $q->whereKey($ipo->id))
+                ->latest('published_at')->limit(3)->get(['id', 'title', 'slug', 'category', 'published_at', 'reading_minutes']),
         ]);
     }
 

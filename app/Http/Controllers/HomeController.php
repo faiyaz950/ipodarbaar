@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BlogPost;
 use App\Models\Ipo;
 use App\Services\IpoStatsService;
 use App\Services\NewsService;
@@ -48,6 +49,7 @@ class HomeController extends Controller
             'calculators' => Calculators::featured(),
             'categories' => $news->categories(),
             'report' => $reportYear ? $ipoStats->forYear($reportYear) : null,
+            'posts' => BlogPost::query()->live()->latest('published_at')->limit(3)->get(),
         ]);
     }
 

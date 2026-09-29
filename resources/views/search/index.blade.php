@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', $q !== '' ? 'Search: '.$q : 'Search IPO Darbaar')
-@section('description', 'Search IPOs, IPO lists, guides, calculators and market news on IPO Darbaar.')
+@section('description', 'Search IPOs, IPO lists, guides, blog posts, calculators and market news on IPO Darbaar.')
 @section('robots', 'noindex, follow')
 
 @section('content')
@@ -75,6 +75,15 @@
                 <div class="card-head"><h2 class="card-title"><span class="ico"><x-icon name="file-text" :size="16" /></span> Guides</h2></div>
                 @foreach ($results['guides'] as $guide)
                     <a class="admin-row" href="{{ route('guides.show', $guide['slug']) }}"><span>{{ $guide['h1'] }}<small class="muted">{{ $guide['summary'] }}</small></span><x-icon name="arrow-right" :size="14" /></a>
+                @endforeach
+            </div>
+        @endif
+
+        @if ($results['posts']->isNotEmpty())
+            <div class="card">
+                <div class="card-head"><h2 class="card-title"><span class="ico"><x-icon name="pen-line" :size="16" /></span> Blog</h2></div>
+                @foreach ($results['posts'] as $post)
+                    <a class="admin-row" href="{{ $post->url() }}"><span>{{ $post->title }}<small class="muted">{{ $post->categoryLabel() }} · {{ $post->published_at->format('j M Y') }}</small></span><x-icon name="arrow-right" :size="14" /></a>
                 @endforeach
             </div>
         @endif

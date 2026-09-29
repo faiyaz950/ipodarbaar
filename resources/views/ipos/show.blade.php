@@ -386,6 +386,19 @@
 
             <x-ad-slot name="ipo_sidebar" />
 
+            @if ($blogPosts->isNotEmpty())
+            <div class="card widget">
+                <div class="card-head">
+                    <div class="card-title"><span class="ico"><x-icon name="pen-line" :size="16" /></span> {{ $ipo->name }} IPO on our blog</div>
+                </div>
+                @foreach ($blogPosts as $post)
+                    <a class="list-link" href="{{ $post->url() }}">
+                        <span><span class="t">{{ $post->title }}</span><span class="m">{{ $post->categoryLabel() }} · {{ $post->reading_minutes }} min read</span></span>
+                    </a>
+                @endforeach
+            </div>
+            @endif
+
             <div class="card widget">
                 <div class="card-head">
                     <div class="card-title"><span class="ico"><x-icon name="layers" :size="16" /></span> Other IPOs</div>

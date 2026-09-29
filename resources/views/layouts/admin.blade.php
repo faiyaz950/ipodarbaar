@@ -32,6 +32,7 @@
             <a href="{{ route('admin.dashboard') }}" class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}"><x-icon name="layout" :size="16" /> Dashboard</a>
             <a href="{{ route('admin.ipos.index') }}" class="{{ request()->routeIs('admin.ipos.*') ? 'active' : '' }}"><x-icon name="layers" :size="16" /> IPOs</a>
             <a href="{{ route('admin.actions.index') }}" class="{{ request()->routeIs('admin.actions.*') ? 'active' : '' }}"><x-icon name="repeat" :size="16" /> Buybacks &amp; NCDs</a>
+            <a href="{{ route('admin.blog.index') }}" class="{{ request()->routeIs('admin.blog.*') ? 'active' : '' }}"><x-icon name="file-text" :size="16" /> Blog</a>
             <a href="{{ route('admin.news.index') }}" class="{{ request()->routeIs('admin.news.*') ? 'active' : '' }}"><x-icon name="newspaper" :size="16" /> News</a>
             <a href="{{ route('admin.settings') }}" class="{{ request()->routeIs('admin.settings*') ? 'active' : '' }}"><x-icon name="sparkles" :size="16" /> Settings</a>
             <a href="{{ route('admin.system') }}" class="{{ request()->routeIs('admin.system*') ? 'active' : '' }}"><x-icon name="gauge" :size="16" /> System</a>

@@ -180,6 +180,7 @@
                 </div>
             </div>
             <a href="{{ route('guides.index') }}" class="{{ request()->routeIs('guides.*') ? 'active' : '' }}">IPO Guide</a>
+            <a href="{{ route('blog.index') }}" class="{{ request()->routeIs('blog.*') ? 'active' : '' }}">Blog</a>
         </nav>
 
         <div class="header-actions">
@@ -236,6 +237,7 @@
         <a href="{{ route('ipos.sme-dashboard') }}" class="sub">SME IPO Dashboard</a>
         <a href="{{ route('actions.buyback') }}" class="sub">Buybacks, Rights &amp; NCDs</a>
         <a href="{{ route('guides.index') }}"><x-icon name="file-text" /> IPO Guide</a>
+        <a href="{{ route('blog.index') }}"><x-icon name="pen-line" /> Blog</a>
         <a href="{{ route('watchlist') }}"><x-icon name="star" /> My Watchlist</a>
         <a href="{{ route('alerts') }}"><x-icon name="bell" /> IPO Alerts</a>
         <a href="{{ route('about') }}"><x-icon name="info" /> About</a>
@@ -316,6 +318,13 @@
                     @foreach (array_slice(config('ipodarbar.news_categories'), 0, 5) as $c)
                         <li><a href="{{ route('news.category', $c['slug']) }}">{{ $c['name'] }} News</a></li>
                     @endforeach
+                </ul>
+                <h4 style="margin-top:22px">Blog</h4>
+                <ul>
+                    <li><a href="{{ route('blog.index') }}">Latest posts</a></li>
+                    <li><a href="{{ route('blog.show', 'ipo-reviews') }}">IPO Reviews</a></li>
+                    <li><a href="{{ route('blog.show', 'weekly-wrap') }}">Weekly IPO Wrap</a></li>
+                    <li><a href="{{ route('blog.show', 'trends') }}">IPO Trends &amp; Data</a></li>
                 </ul>
             </div>
             <div>

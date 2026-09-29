@@ -18,6 +18,7 @@ class CachePublicPages
     private const ROUTES = [
         'home', 'ipos.*', 'news.index', 'news.category', 'news.show', 'guides.*', 'calculators.*',
         'about', 'contact', 'editorial-policy', 'disclaimer', 'privacy', 'alerts', 'portfolio', 'compare', 'actions.*',
+        'blog.index', 'blog.show', 'blog.author',
     ];
 
     /** JSON and action endpoints under the patterns above. */

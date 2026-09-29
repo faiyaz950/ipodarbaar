@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BlogPost;
 use App\Models\Ipo;
 use App\Services\NewsService;
 use App\Support\Calculators;
@@ -13,7 +14,7 @@ use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 /**
- * Site-wide search across IPOs, IPO lists and tools, guides, calculators and recent news.
+ * Site-wide search across IPOs, IPO lists and tools, guides, blog posts, calculators and recent news.
  */
 class SearchController extends Controller
 {
@@ -25,13 +26,18 @@ class SearchController extends Controller
         $q = Str::limit(trim((string) $request->query('q', '')), 80, '');
         $words = collect(preg_split('/\s+/', Str::lower($q)) ?: [])->filter(fn (string $w): bool => mb_strlen($w) >= 2)->values();
 
-        $results = ['ipos' => collect(), 'pages' => collect(), 'guides' => collect(), 'calculators' => collect(), 'news' => collect()];
+        $results = ['ipos' => collect(), 'pages' => collect(), 'guides' => collect(), 'posts' => collect(), 'calculators' => collect(), 'news' => collect()];
         if ($words->isNotEmpty()) {
             $results = [
                 'ipos' => Ipo::search($q)->orderByRaw('open_date is null')->orderByDesc('open_date')->limit(12)->get(),
                 'pages' => $this->match($this->pages(), $words, fn (array $page): string => $page['title'].' '.$page['text'])->take(6),
                 'guides' => $this->match(collect(Guides::all())->map(fn (array $g, string $slug): array => $g + ['slug' => $slug])->values(), $words,
                     fn (array $g): string => $g['title'].' '.$g['summary'].' '.$g['description'])->take(6),
+                'posts' => BlogPost::query()->live()
+                    ->where(fn ($query) => $words->each(fn (string $word) => $query->where(fn ($w) => $w
+                        ->whereLike('title', '%'.$word.'%', caseSensitive: false)
+                        ->orWhereLike('excerpt', '%'.$word.'%', caseSensitive: false))))
+                    ->latest('published_at')->limit(6)->get(),
                 'calculators' => $this->match(collect(Calculators::all())->map(fn (array $c, string $slug): array => $c + ['slug' => $slug])->values(), $words,
                     fn (array $c): string => $c['name'].' '.$c['short'])->take(8),
                 'news' => $this->match(collect($news->latest(self::NEWS_POOL)['items']), $words,
@@ -86,6 +92,7 @@ class SearchController extends Controller
             ['title' => 'IPO Alerts', 'text' => 'alerts telegram whatsapp email notifications calendar', 'url' => route('alerts')],
             ['title' => 'My Watchlist', 'text' => 'watchlist starred ipos', 'url' => route('watchlist')],
             ['title' => 'Market News', 'text' => 'share market news ipo news shorts', 'url' => route('news.index')],
+            ['title' => 'IPO Blog', 'text' => 'blog ipo reviews analysis weekly ipo wrap listing recap trends articles', 'url' => route('blog.index')],
             ['title' => 'Share Buybacks', 'text' => 'buyback offers tender offer record date', 'url' => route('actions.buyback')],
             ['title' => 'Rights Issues', 'text' => 'rights issue ratio entitlement', 'url' => route('actions.rights')],
             ['title' => 'NCD Issues', 'text' => 'ncd non convertible debentures bonds coupon', 'url' => route('actions.ncd')],

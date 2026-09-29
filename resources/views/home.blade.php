@@ -372,6 +372,29 @@
 </section>
 @endif
 
+{{-- ============ BLOG ============ --}}
+@if ($posts->isNotEmpty())
+@push('head')
+<link rel="stylesheet" href="{{ asset('assets/css/blog.css') }}?v={{ filemtime(public_path('assets/css/blog.css')) }}">
+@endpush
+<section class="section" style="padding-top:8px">
+    <div class="container">
+        <div class="section-head">
+            <div>
+                <span class="eyebrow">From the Research Desk</span>
+                <h2 class="section-title">Latest from the Blog</h2>
+            </div>
+            <a class="link-gold" href="{{ route('blog.index') }}">All posts <x-icon name="arrow-right" :size="14" /></a>
+        </div>
+        <div class="blog-strip">
+            @foreach ($posts as $post)
+                @include('blog._card', ['post' => $post])
+            @endforeach
+        </div>
+    </div>
+</section>
+@endif
+
 {{-- ============ CALCULATORS ============ --}}
 <section class="section">
     <div class="container">

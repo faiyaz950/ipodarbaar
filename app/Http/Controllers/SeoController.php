@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BlogPost;
 use App\Models\CorporateAction;
 use App\Models\Ipo;
 use App\Services\IndexNowService;
@@ -24,7 +25,7 @@ class SeoController extends Controller
     private const ADSENSE_CERT_ID = 'f08c47fec0942fa0';
 
     /** Child sitemaps listed in /sitemap.xml. */
-    public const SITEMAPS = ['pages', 'ipos', 'news', 'news-archive'];
+    public const SITEMAPS = ['pages', 'ipos', 'blog', 'news', 'news-archive'];
 
     /** Pages of 100 stories included in the news archive sitemap. */
     private const NEWS_ARCHIVE_PAGES = 10;
@@ -77,6 +78,7 @@ class SeoController extends Controller
         $urls = match ($part) {
             'pages' => $this->pageUrls($stats),
             'ipos' => $this->ipoUrls(),
+            'blog' => $this->blogUrls(),
             'news-archive' => array_map(
                 fn (array $url): array => ['loc' => $url['loc'], 'lastmod' => $url['lastmod'] ? Carbon::parse($url['lastmod']) : null],
                 Cache::remember('sitemap:news-archive:v2', now()->addHours(6), fn (): array => $this->newsArchiveUrls($news))
@@ -110,6 +112,34 @@ class SeoController extends Controller
                 'image_title' => $ipo->name.' IPO',
             ])
             ->all();
+    }
+
+    /**
+     * The blog home, sections and author pages that have posts, and every live post with its image.
+     *
+     * @return array<int, array{loc: string, lastmod: Carbon|null, image?: string|null}>
+     */
+    private function blogUrls(): array
+    {
+        $posts = BlogPost::query()->live()->with('author:id,slug')->latest('published_at')->get();
+        if ($posts->isEmpty()) {
+            return [];
+        }
+
+        $newest = fn ($items): Carbon => $items->map(fn (BlogPost $post): Carbon => $post->updated_at->max($post->published_at))->max();
+
+        $urls = [['loc' => route('blog.index'), 'lastmod' => $newest($posts)]];
+        foreach ($posts->groupBy('category') as $category => $items) {
+            $urls[] = ['loc' => route('blog.show', $category), 'lastmod' => $newest($items)];
+        }
+        foreach ($posts->groupBy('blog_author_id') as $items) {
+            $urls[] = ['loc' => $items->first()->author->url(), 'lastmod' => $newest($items)];
+        }
+        foreach ($posts as $post) {
+            $urls[] = ['loc' => $post->url(), 'lastmod' => $post->updated_at->max($post->published_at), 'image' => $post->imageUrl()];
+        }
+
+        return $urls;
     }
 
     /**

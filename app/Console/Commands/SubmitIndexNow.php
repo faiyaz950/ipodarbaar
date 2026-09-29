@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\BlogPost;
 use App\Models\Ipo;
 use App\Services\IndexNowService;
 use App\Services\NewsService;
@@ -13,7 +14,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 
 #[Signature('seo:indexnow')]
-#[Description('Submit IPO pages, hubs and news that changed since the last run to IndexNow')]
+#[Description('Submit IPO pages, hubs, blog posts and news that changed since the last run to IndexNow')]
 class SubmitIndexNow extends Command
 {
     private const LAST_RUN_KEY = 'indexnow:last_run';
@@ -43,12 +44,20 @@ class SubmitIndexNow extends Command
             ->pluck('url')
             ->all();
 
+        // Posts published (including scheduled ones going live) or edited since the last run.
+        $blogUrls = BlogPost::query()->live()
+            ->where(fn ($q) => $q->where('published_at', '>', $since)->orWhere('updated_at', '>', $since))
+            ->limit(100)->get()
+            ->map(fn (BlogPost $post): string => $post->url())
+            ->all();
+
         $hubUrls = $ipoUrls === [] ? [] : array_merge(
             [route('home'), route('ipos.gmp'), route('ipos.gmp.mainboard'), route('ipos.gmp.sme'), route('ipos.listing-today'), route('ipos.sme-dashboard'), route('ipos.calendar')],
             array_map(fn (string $hub): string => route('ipos.'.$hub), array_keys(IpoHubs::all()))
         );
 
-        $urls = array_merge($ipoUrls, $newsUrls, $hubUrls, $newsUrls === [] ? [] : [route('news.index')]);
+        $urls = array_merge($ipoUrls, $newsUrls, $hubUrls, $newsUrls === [] ? [] : [route('news.index')],
+            $blogUrls, $blogUrls === [] ? [] : [route('blog.index')]);
 
         if ($urls === []) {
             Cache::forever(self::LAST_RUN_KEY, $startedAt->toIso8601String());

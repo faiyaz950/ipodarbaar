@@ -3,6 +3,8 @@
     'use strict';
 
     var ALLOWED = ['P', 'BR', 'UL', 'OL', 'LI', 'STRONG', 'B', 'EM', 'I', 'U', 'H2', 'H3', 'H4', 'BLOCKQUOTE', 'A', 'TABLE', 'THEAD', 'TBODY', 'TR', 'TH', 'TD'];
+    // Full http(s) links, or paths on this site such as /ipo-gmp.
+    var LINK = /^(https?:\/\/|\/(?!\/))\S*$/i;
     var DROP = ['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'IMG', 'SVG', 'VIDEO', 'AUDIO', 'FORM', 'INPUT', 'BUTTON'];
 
     /** Keep only formatting tags (no attributes except http(s) link targets); unwrap everything else. */
@@ -34,7 +36,7 @@
             }
             var href = tag === 'A' ? child.getAttribute('href') : null;
             Array.prototype.slice.call(child.attributes).forEach(function (a) { child.removeAttribute(a.name); });
-            if (href && /^https?:\/\//i.test(href)) { child.setAttribute('href', href); }
+            if (href && LINK.test(href)) { child.setAttribute('href', href); }
         });
     }
 
@@ -65,13 +67,28 @@
                 var cmd = btn.getAttribute('data-cmd');
                 var arg = btn.getAttribute('data-arg');
                 if (cmd === 'createLink') {
-                    arg = window.prompt('Link URL (https://…)', 'https://');
-                    if (!arg || !/^https?:\/\/\S+$/i.test(arg)) { return; }
+                    arg = window.prompt('Link URL (https://… or a page on this site like /ipo-gmp)', 'https://');
+                    if (!arg || !LINK.test(arg)) { return; }
                 }
                 document.execCommand(cmd, false, cmd === 'formatBlock' ? '<' + arg + '>' : arg);
                 dirty = true;
             });
         });
+
+        // [[ipo:slug]] is replaced by a live IPO card when the post is shown.
+        var ipoBtn = root.querySelector('[data-rte-ipo]');
+        if (ipoBtn) {
+            ipoBtn.addEventListener('mousedown', function (e) { e.preventDefault(); });
+            ipoBtn.addEventListener('click', function () {
+                if (sourceMode) { return; }
+                var slug = (window.prompt('IPO page address or slug, e.g. https://ipodarbaar.in/ipo/abc-ipo or abc-ipo', '') || '').trim();
+                slug = slug.replace(/[?#].*$/, '').replace(/\/+$/, '').split('/').pop().toLowerCase();
+                if (!/^[a-z0-9-]+$/.test(slug)) { return; }
+                body.focus();
+                document.execCommand('insertHTML', false, '<p>[[ipo:' + slug + ']]</p>');
+                dirty = true;
+            });
+        }
 
         sourceBtn.addEventListener('click', function () {
             if (!sourceMode) {
