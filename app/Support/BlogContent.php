@@ -73,12 +73,15 @@ class BlogContent
             return '<h2 id="'.e($id).'">'.$m[1].'</h2>';
         }, $html) ?? $html;
 
+        // [[ipo:slug]] on its own line becomes a live card with the IPO's latest details. The code is
+        // parked in an HTML comment first so the IPO linker can't turn the slug into a link.
+        $html = preg_replace('#(?:<p>\s*)?\[\[ipo:([a-z0-9-]{1,120})\]\](?:\s*</p>)?#i', '<!--ipo-card:$1-->', $html) ?? $html;
+
         if ($post->relationLoaded('ipos') ? $post->ipos->isNotEmpty() : $post->ipos()->exists()) {
             $html = IpoLinker::link($html, $post->ipos)['html'];
         }
 
-        // [[ipo:slug]] on its own line becomes a live card with the IPO's latest details.
-        $html = preg_replace_callback('#(?:<p>\s*)?\[\[ipo:([a-z0-9-]{1,120})\]\](?:\s*</p>)?#i', function (array $m): string {
+        $html = preg_replace_callback('#<!--ipo-card:([a-z0-9-]{1,120})-->#i', function (array $m): string {
             $ipo = Ipo::query()->where('slug', strtolower($m[1]))->first();
 
             return $ipo ? view('blog._ipo-card', ['ipo' => $ipo])->render() : '';

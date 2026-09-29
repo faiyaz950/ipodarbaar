@@ -138,6 +138,19 @@ class BlogTest extends TestCase
         $this->assertStringContainsString('href="'.$alpha->url().'"', $html);
     }
 
+    public function test_card_code_is_not_swallowed_by_the_ipo_linker(): void
+    {
+        $ipo = Ipo::factory()->create(['name' => 'Orient Cables India', 'slug' => 'orient-cables-india-ipo']);
+        $post = $this->makePost(['body' => '<p><a href="/ipo/orient-cables-india-ipo">Orient Cables India</a> closes today.</p><p>[[ipo:orient-cables-india-ipo]]</p>']);
+        $post->ipos()->attach($ipo);
+
+        $html = $this->get('/blog/'.$post->slug)->assertOk()->getContent();
+
+        $this->assertSame(1, substr_count($html, 'class="blog-ipo-card"'));
+        $this->assertStringNotContainsString('[[ipo:', $html);
+        $this->assertStringNotContainsString('IPOs in this post', $html);
+    }
+
     public function test_ipo_page_lists_posts_tagged_with_it(): void
     {
         $ipo = Ipo::factory()->create(['name' => 'Alpha Tech', 'slug' => 'alpha-tech-ipo']);
