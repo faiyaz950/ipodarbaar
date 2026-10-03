@@ -306,6 +306,12 @@
                             <div class="cell"><span>Gain per share</span><b class="{{ $listingGainCls }}">{{ $ipo->listingGain() !== null ? ($ipo->listingGain() > 0 ? '+' : '').'₹'.Ipo::num($ipo->listingGain()) : '—' }}</b></div>
                         @endif
                     </div>
+                    @if ($ipo->gmpErrorPoints() !== null)
+                        <p class="muted" style="font-size:13.5px;padding:0 22px 16px;margin:0">
+                            The last GMP before listing (₹{{ Ipo::num($ipo->listing_gmp) }}) pointed to about {{ Ipo::money($ipo->price + $ipo->listing_gmp) }}; the shares opened {{ number_format(abs($ipo->gmpErrorPoints()), 1) }} points {{ $ipo->gmpErrorPoints() >= 0 ? 'above' : 'below' }} that estimate.
+                            <a class="link" href="{{ route('ipos.gmp-accuracy') }}">How accurate is GMP?</a>
+                        </p>
+                    @endif
                 </div>
             @endif
 

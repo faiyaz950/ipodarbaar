@@ -205,7 +205,7 @@
             </div>
             <div>
                 <h2>GMP is a signal, not a promise</h2>
-                <p>The grey market is unregulated and GMP can swing sharply with overall market mood, especially in the last two days before listing. Compare it with subscription numbers, the company's financials and valuation before deciding. Read our guide on <a class="link" href="{{ route('guides.show', 'what-is-ipo-gmp') }}">what IPO GMP is and how reliable it is</a>, or estimate your profit with the <a class="link" href="{{ route('calculators.show', 'ipo-gmp') }}">IPO GMP calculator</a>.</p>
+                <p>The grey market is unregulated and GMP can swing sharply with overall market mood, especially in the last two days before listing. Compare it with subscription numbers, the company's financials and valuation before deciding. Read our guide on <a class="link" href="{{ route('guides.show', 'what-is-ipo-gmp') }}">what IPO GMP is and how reliable it is</a>, or estimate your profit with the <a class="link" href="{{ route('calculators.show', 'ipo-gmp') }}">IPO GMP calculator</a>. To see how often GMP has matched the actual listing, check our <a class="link" href="{{ route('ipos.gmp-accuracy') }}">GMP accuracy tracker</a>.</p>
             </div>
         </div>
 

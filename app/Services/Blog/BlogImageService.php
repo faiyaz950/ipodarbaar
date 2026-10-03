@@ -123,6 +123,64 @@ class BlogImageService
     }
 
     /**
+     * For each listing: the gain the GMP pointed to next to the actual listing gain, on a shared
+     * scale with a zero line, so misses in either direction are easy to see.
+     *
+     * @param  Collection<int, Ipo>  $ipos  Listed IPOs with a listing price.
+     * @return array{path: string, width: int, height: int}|null
+     */
+    public function gmpVsActualChart(string $name, string $title, string $subtitle, Collection $ipos, string $note): ?array
+    {
+        $ipos = $ipos->filter(fn (Ipo $ipo): bool => $ipo->listingGainPercent() !== null)->take(12)->values();
+        if ($ipos->isEmpty()) {
+            return null;
+        }
+
+        $rowHeight = 92;
+        $height = 290 + $ipos->count() * $rowHeight + 100;
+
+        return $this->draw($name, $height, function (GdCanvas $c) use ($title, $subtitle, $ipos, $note, $rowHeight, $height): void {
+            $this->chartFrame($c, $title, $subtitle, $note, $height);
+
+            $legend = 80;
+            foreach ([['#C8962E', 'GMP estimate'], ['#0A8F62', 'Actual listing gain'], ['#D13A3A', 'Listed below issue price']] as [$color, $label]) {
+                $c->roundedRect($legend, 196, $legend + 22, 218, 6, $c->color($color));
+                $legend += 34 + $c->text('medium', 21, $legend + 34, 215, $c->color('#3E4862'), $label) + 40;
+            }
+
+            $values = $ipos->flatMap(fn (Ipo $ipo): array => [$ipo->gmpEstimatePercent() ?? 0.0, $ipo->listingGainPercent()]);
+            $min = min(0.0, (float) $values->min());
+            $max = max(0.0, (float) $values->max(), 1.0);
+            [$left, $right] = [560, 1300];
+            $x = fn (float $v): int => (int) round($left + ($v - $min) / ($max - $min) * ($right - $left));
+            $zero = $x(0.0);
+
+            foreach ($ipos as $i => $ipo) {
+                $y = 262 + $i * $rowHeight;
+                $this->logoTile($c, $ipo, 80, $y + 12, 56, '#F1F3F8');
+                $c->text('bold', 24, 154, $y + 40, $c->color('#0A1633'), $c->clip('bold', 24, $ipo->name, 380));
+                $c->text('medium', 19, 154, $y + 68, $c->color('#737D96'), $ipo->typeLabel().' · issue '.Ipo::money($ipo->price));
+
+                $c->rect($left, $y + 8, $right, $y + 76, $c->color('#F6F7FA'));
+                $c->rect($zero - 1, $y + 4, $zero + 1, $y + 80, $c->color('#B8C0D3'));
+                $bars = [[$ipo->gmpEstimatePercent(), '#C8962E', 14], [$ipo->listingGainPercent(), $ipo->listingGainPercent() < 0 ? '#D13A3A' : '#0A8F62', 46]];
+                foreach ($bars as [$value, $color, $offset]) {
+                    if ($value === null) {
+                        continue;
+                    }
+                    $end = $x((float) $value);
+                    $c->roundedRect(min($zero, $end), $y + $offset, max($zero, $end, min($zero, $end) + 4), $y + $offset + 22, 6, $c->color($color));
+                }
+
+                $gmp = $ipo->gmpEstimatePercent();
+                $c->textRight('bold', 21, 1520, $y + 34, $c->color('#87600F'), 'GMP '.($gmp === null ? '—' : ($gmp > 0 ? '+' : '').number_format($gmp, 1).'%'));
+                $actual = $ipo->listingGainPercent();
+                $c->textRight('bold', 21, 1520, $y + 66, $c->color($actual < 0 ? '#D13A3A' : '#0A8F62'), 'Listed '.($actual > 0 ? '+' : '').number_format($actual, 1).'%');
+            }
+        });
+    }
+
+    /**
      * Opening, closing and listing counts for each weekday.
      *
      * @param  list<array{day: string, date: string, opening: int, closing: int, listing: int}>  $days

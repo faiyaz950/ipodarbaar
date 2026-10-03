@@ -19,6 +19,7 @@ class BlogAutomationController extends Controller
         $settings->set([
             'blog.auto.daily' => $request->boolean('daily'),
             'blog.auto.weekly' => $request->boolean('weekly'),
+            'blog.auto.listing' => $request->boolean('listing'),
             'blog.auto.publish' => $request->boolean('publish'),
         ]);
 

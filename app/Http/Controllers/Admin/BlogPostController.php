@@ -42,6 +42,7 @@ class BlogPostController extends Controller
             'auto' => [
                 'daily' => $publisher->enabled('daily'),
                 'weekly' => $publisher->enabled('weekly'),
+                'listing' => $publisher->enabled('listing'),
                 'publish' => $publisher->publishes(),
             ],
         ]);

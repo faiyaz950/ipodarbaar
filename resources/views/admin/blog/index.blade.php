@@ -17,12 +17,13 @@
 
 <div class="card card-pad" style="margin-bottom:20px">
     <div class="card-title af-section" style="margin-bottom:6px"><x-icon name="refresh" :size="16" /> Automatic posts</div>
-    <p class="muted" style="font-size:13.5px;margin-bottom:14px">Written from the IPO data with charts and company logos: an <b>IPO Today</b> update every weekday at 8:50 AM (skipped when nothing is happening) and a <b>weekly IPO calendar</b> every Sunday at 10 AM for the week ahead.</p>
+    <p class="muted" style="font-size:13.5px;margin-bottom:14px">Written from the IPO data with charts and company logos: an <b>IPO Today</b> update every weekday at 8:50 AM (skipped when nothing is happening), a <b>listing day recap</b> at 9:45 PM on days with listings, and a <b>weekly IPO calendar</b> every Sunday at 10 AM for the week ahead.</p>
     <form method="post" action="{{ route('admin.blog.automation') }}" class="btn-row" style="align-items:center;gap:18px">
         @csrf
         @method('PUT')
         <label class="af-check"><input type="checkbox" name="daily" value="1" @checked($auto['daily'])> Daily IPO Today post</label>
         <label class="af-check"><input type="checkbox" name="weekly" value="1" @checked($auto['weekly'])> Weekly IPO calendar</label>
+        <label class="af-check"><input type="checkbox" name="listing" value="1" @checked($auto['listing'])> Listing day recap</label>
         <label class="af-check"><input type="checkbox" name="publish" value="1" @checked($auto['publish'])> Publish automatically (untick to save as drafts for review)</label>
         <button type="submit" class="btn btn-outline btn-sm">Save</button>
     </form>

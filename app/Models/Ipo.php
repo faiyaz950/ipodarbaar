@@ -62,6 +62,7 @@ class Ipo extends Model
         'subscription_updated_at' => 'datetime',
         'listing_price' => 'float',
         'listing_close' => 'float',
+        'listing_gmp' => 'float',
         'locked_fields' => 'array',
     ];
 
@@ -474,6 +475,21 @@ class Ipo extends Model
         }
 
         return $d;
+    }
+
+    /** The listing gain the last GMP before listing pointed to, in percent of the issue price. */
+    public function gmpEstimatePercent(): ?float
+    {
+        return ($this->listing_gmp !== null && $this->price) ? round($this->listing_gmp / $this->price * 100, 2) : null;
+    }
+
+    /** How far the actual listing gain landed from the GMP estimate, in percentage points (+ = listed higher). */
+    public function gmpErrorPoints(): ?float
+    {
+        $estimate = $this->gmpEstimatePercent();
+        $actual = $this->listingGainPercent();
+
+        return ($estimate !== null && $actual !== null) ? round($actual - $estimate, 2) : null;
     }
 
     /** Listing-day close compared with the issue price, in percent. */

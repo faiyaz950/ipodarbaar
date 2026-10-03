@@ -15,7 +15,7 @@ use Illuminate\Support\Carbon;
  */
 class AutoBlogPublisher
 {
-    public const KINDS = ['daily' => 'Daily IPO update', 'weekly' => 'Weekly IPO calendar'];
+    public const KINDS = ['daily' => 'Daily IPO update', 'weekly' => 'Weekly IPO calendar', 'listing' => 'Listing day recap'];
 
     public function __construct(private AutoBlogWriter $writer, private Settings $settings) {}
 
@@ -47,15 +47,23 @@ class AutoBlogPublisher
             return ['status' => 'off', 'message' => self::KINDS[$kind].' posts are switched off.', 'post' => null];
         }
 
-        $slug = $kind === 'daily' ? $this->writer->dailySlug($day) : $this->writer->weeklySlug(self::weekStart($day));
+        $slug = match ($kind) {
+            'daily' => $this->writer->dailySlug($day),
+            'weekly' => $this->writer->weeklySlug(self::weekStart($day)),
+            'listing' => $this->writer->listingSlug($day),
+        };
         $existing = BlogPost::query()->where('slug', $slug)->first();
         if ($existing && ! $force) {
             return ['status' => 'exists', 'message' => 'Already written: '.$existing->url(), 'post' => $existing];
         }
 
-        $draft = $kind === 'daily' ? $this->writer->daily($day) : $this->writer->weekly(self::weekStart($day));
+        $draft = match ($kind) {
+            'daily' => $this->writer->daily($day),
+            'weekly' => $this->writer->weekly(self::weekStart($day)),
+            'listing' => $this->writer->listingRecap($day),
+        };
         if (! $draft) {
-            return ['status' => 'empty', 'message' => 'No IPO events to write about for '.$day->format('j M Y').'.', 'post' => null];
+            return ['status' => 'empty', 'message' => ($kind === 'listing' ? 'No listings with prices recorded' : 'No IPO events to write about').' for '.$day->format('j M Y').'.', 'post' => null];
         }
 
         $post = $existing ?? new BlogPost;

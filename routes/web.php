@@ -5,6 +5,7 @@ use App\Http\Controllers\BlogController;
 use App\Http\Controllers\CalculatorController;
 use App\Http\Controllers\CompareController;
 use App\Http\Controllers\CorporateActionController;
+use App\Http\Controllers\GmpAccuracyController;
 use App\Http\Controllers\GuideController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IpoController;
@@ -46,6 +47,7 @@ Route::get('/ipo-calendar.ics', [IpoController::class, 'calendarFeed'])->name('i
 Route::get('/ipo/search/suggest', [IpoController::class, 'suggest'])->name('ipos.suggest');
 Route::get('/ipo-compare', [CompareController::class, 'index'])->name('compare');
 Route::get('/ipo-report-card', [IpoYearController::class, 'index'])->name('ipos.report-card');
+Route::get('/ipo-gmp-accuracy', GmpAccuracyController::class)->name('ipos.gmp-accuracy');
 Route::get('/ipo/{year}', [IpoYearController::class, 'show'])->where('year', '20\d\d')->name('ipos.year');
 Route::get('/ipo/{ipo}', [IpoController::class, 'show'])->name('ipos.show');
 Route::get('/ipo/{ipo}/calendar.ics', [IpoController::class, 'ics'])->name('ipos.ics');

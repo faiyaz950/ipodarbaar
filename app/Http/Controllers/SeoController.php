@@ -183,7 +183,7 @@ class SeoController extends Controller
     {
         $urls = [
             route('home'), route('ipos.index'), route('ipos.gmp'), route('ipos.gmp.mainboard'), route('ipos.gmp.sme'),
-            route('ipos.listing-today'), route('ipos.sme-dashboard'), route('ipos.calendar'), route('ipos.report-card'), route('portfolio'),
+            route('ipos.listing-today'), route('ipos.sme-dashboard'), route('ipos.calendar'), route('ipos.report-card'), route('ipos.gmp-accuracy'), route('portfolio'),
             route('news.index'), route('news.shorts'), route('calculators.index'), route('guides.index'), route('alerts'),
             route('about'), route('contact'), route('editorial-policy'), route('disclaimer'), route('privacy'),
         ];

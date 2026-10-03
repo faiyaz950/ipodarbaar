@@ -3,6 +3,7 @@
 namespace App\Services\Market;
 
 use App\Models\Ipo;
+use App\Models\IpoGmpHistory;
 use App\Services\IpoStatsService;
 use App\Support\PageCache;
 use Illuminate\Support\Carbon;
@@ -153,6 +154,7 @@ class ListingPriceSync
     {
         $ipo->listing_price ??= round($open, 2);
         $ipo->listing_exchange ??= $exchange;
+        $ipo->listing_gmp ??= $this->gmpBeforeListing($ipo, $date);
         if ($close !== null && $close > 0) {
             $ipo->listing_close ??= round($close, 2);
         }
@@ -166,6 +168,15 @@ class ListingPriceSync
             $ipo->locked_fields = array_values(array_unique([...($ipo->locked_fields ?? []), 'listing_date']));
         }
         $ipo->save();
+    }
+
+    /** The last daily GMP recorded before listing day, else the current one (listing day's feed may already show the result). */
+    private function gmpBeforeListing(Ipo $ipo, Carbon $date): ?float
+    {
+        $before = IpoGmpHistory::query()->where('ipo_id', $ipo->id)->whereDate('date', '<', $date->toDateString())
+            ->whereNotNull('gmp')->orderByDesc('date')->value('gmp');
+
+        return $before !== null ? (float) $before : $ipo->gmp;
     }
 
     private function done(int $recorded): int

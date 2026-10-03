@@ -161,6 +161,7 @@
                         ['ipos.allotment', null, 'check-circle', 'Allotment Status'],
                         ['ipos.listing-today', null, 'calendar', 'Listing Today'],
                         ['ipos.report-card', null, 'trophy', 'IPO Report Card'],
+                        ['ipos.gmp-accuracy', null, 'target', 'GMP Accuracy Tracker'],
                         ['actions.buyback', null, 'repeat', 'Buybacks, Rights & NCDs'],
                     ],
                 ];
@@ -305,6 +306,7 @@
                     <li><a href="{{ route('ipos.gmp.sme') }}">SME IPO GMP</a></li>
                     <li><a href="{{ route('ipos.calendar') }}">IPO Calendar</a></li>
                     <li><a href="{{ route('ipos.report-card') }}">IPO Report Card</a></li>
+                    <li><a href="{{ route('ipos.gmp-accuracy') }}">GMP Accuracy Tracker</a></li>
                     <li><a href="{{ route('actions.buyback') }}">Share Buybacks</a></li>
                     <li><a href="{{ route('actions.rights') }}">Rights Issues</a></li>
                     <li><a href="{{ route('actions.ncd') }}">NCD Issues</a></li>

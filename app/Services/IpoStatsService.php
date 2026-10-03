@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Ipo;
 use Closure;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
@@ -68,6 +69,100 @@ class IpoStatsService
                 'months' => $months,
             ];
         });
+    }
+
+    /**
+     * How close the last GMP before listing came to the actual listing price, for every IPO
+     * with both on record. Error is in percentage points of the issue price (+ = listed higher).
+     *
+     * @return array<string, mixed>
+     */
+    public function gmpAccuracy(): array
+    {
+        return $this->remember('gmp-accuracy', function (): array {
+            $ipos = Ipo::query()
+                ->whereNotNull('listing_price')->whereNotNull('listing_gmp')->where('price', '>', 0)
+                ->whereDate('listing_date', '<=', now()->toDateString())
+                ->orderByDesc('listing_date')->get()
+                // A listing below 0.3x or above 3x the issue price means the price on file is wrong, not the GMP.
+                ->filter(fn (Ipo $ipo): bool => $ipo->gmpErrorPoints() !== null && $ipo->listing_price >= $ipo->price * 0.3 && $ipo->listing_price <= $ipo->price * 3)
+                ->values();
+
+            $bands = [
+                ['GMP zero or negative', null, 0.0],
+                ['GMP up to 10%', 0.0, 10.0],
+                ['GMP 10% to 25%', 10.0, 25.0],
+                ['GMP 25% to 50%', 25.0, 50.0],
+                ['GMP above 50%', 50.0, null],
+            ];
+
+            return [
+                'summary' => $this->accuracySummary($ipos),
+                'since' => $ipos->last()?->listing_date?->format('M Y'),
+                'boards' => [
+                    'Mainboard' => $this->accuracySummary($ipos->where('type', 'mainboard')),
+                    'SME' => $this->accuracySummary($ipos->where('type', 'sme')),
+                ],
+                'bands' => collect($bands)->map(function (array $band) use ($ipos): array {
+                    [$label, $from, $to] = $band;
+                    $in = $ipos->filter(fn (Ipo $ipo): bool => ($from === null || $ipo->gmpEstimatePercent() > $from) && ($to === null || $ipo->gmpEstimatePercent() <= $to));
+
+                    return [
+                        'label' => $label,
+                        'count' => $in->count(),
+                        'expected' => $in->isEmpty() ? null : round($in->avg(fn (Ipo $ipo): float => $ipo->gmpEstimatePercent()), 2),
+                        'actual' => $in->isEmpty() ? null : round($in->avg(fn (Ipo $ipo): float => $ipo->listingGainPercent()), 2),
+                        'premium_share' => $in->isEmpty() ? null : round($in->filter(fn (Ipo $ipo): bool => $ipo->listingGainPercent() > 0)->count() * 100 / $in->count(), 1),
+                    ];
+                })->all(),
+                'months' => $ipos->groupBy(fn (Ipo $ipo): string => $ipo->listing_date->format('Y-m'))
+                    ->map(fn (Collection $in, string $month): array => ['label' => Carbon::parse($month.'-01')->format('M Y')] + $this->accuracySummary($in))
+                    ->take(12)->values()->all(),
+                'misses' => $ipos->sortByDesc(fn (Ipo $ipo): float => abs($ipo->gmpErrorPoints()))->take(10)->map($this->accuracyRow(...))->values()->all(),
+                'recent' => $ipos->take(40)->map($this->accuracyRow(...))->values()->all(),
+            ];
+        });
+    }
+
+    /**
+     * @param  Collection<int, Ipo>  $ipos
+     * @return array{count: int, median_abs_error: float|null, mean_error: float|null, within5: float|null, within10: float|null, direction: float|null, over: float|null}
+     */
+    private function accuracySummary(Collection $ipos): array
+    {
+        $count = $ipos->count();
+        $share = fn (callable $test): ?float => $count ? round($ipos->filter($test)->count() * 100 / $count, 1) : null;
+
+        return [
+            'count' => $count,
+            'median_abs_error' => $this->median($ipos->map(fn (Ipo $ipo): float => abs($ipo->gmpErrorPoints()))->sort()->values()),
+            'mean_error' => $count ? round($ipos->avg(fn (Ipo $ipo): float => $ipo->gmpErrorPoints()), 2) : null,
+            'within5' => $share(fn (Ipo $ipo): bool => abs($ipo->gmpErrorPoints()) <= 5),
+            'within10' => $share(fn (Ipo $ipo): bool => abs($ipo->gmpErrorPoints()) <= 10),
+            // Right direction: a positive GMP and a listing above the issue price, or neither.
+            'direction' => $share(fn (Ipo $ipo): bool => ($ipo->listing_gmp > 0) === ($ipo->listingGainPercent() > 0)),
+            'over' => $share(fn (Ipo $ipo): bool => $ipo->gmpErrorPoints() < 0),
+        ];
+    }
+
+    /**
+     * @return array{name: string, url: string, type: string, date: string, price: float, gmp: float, expected_price: float, expected: float, listing_price: float, actual: float, error: float}
+     */
+    private function accuracyRow(Ipo $ipo): array
+    {
+        return [
+            'name' => $ipo->name,
+            'url' => $ipo->url(),
+            'type' => $ipo->typeLabel(),
+            'date' => $ipo->listing_date->format('j M Y'),
+            'price' => $ipo->price,
+            'gmp' => $ipo->listing_gmp,
+            'expected_price' => round($ipo->price + $ipo->listing_gmp, 2),
+            'expected' => $ipo->gmpEstimatePercent(),
+            'listing_price' => $ipo->listing_price,
+            'actual' => $ipo->listingGainPercent(),
+            'error' => $ipo->gmpErrorPoints(),
+        ];
     }
 
     public function flush(): void

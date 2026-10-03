@@ -52,7 +52,7 @@
         </div>
         <div class="note info">
             <x-icon name="info" />
-            <span>Listing gains compare the listing-day price with the upper price band, using only IPOs with a recorded listing price. Past performance doesn't indicate future returns.</span>
+            <span>Listing gains compare the listing-day price with the upper price band, using only IPOs with a recorded listing price. Past performance doesn't indicate future returns. See also how close the grey market came on each listing in the <a class="link" href="{{ route('ipos.gmp-accuracy') }}">GMP accuracy tracker</a>.</span>
         </div>
     </div>
 </div>

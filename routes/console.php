@@ -37,6 +37,8 @@ Schedule::command('ipo:listing-prices')->weekdays()->at('21:30');
 // Blog: the "IPO today" update on weekday mornings and the week-ahead calendar on Sundays.
 Schedule::command('blog:auto daily')->weekdays()->at('08:50')->withoutOverlapping(10);
 Schedule::command('blog:auto weekly')->sundays()->at('10:00')->withoutOverlapping(10);
+// The listing day recap once the evening bhavcopies have given listing prices and day-1 closes.
+Schedule::command('blog:auto listing')->weekdays()->at('21:45')->withoutOverlapping(10);
 
 // Tell IndexNow search engines (Bing, Yandex…) about changed pages soon after each sync.
 Schedule::command('seo:indexnow')->everyThirtyMinutes()->withoutOverlapping(10);

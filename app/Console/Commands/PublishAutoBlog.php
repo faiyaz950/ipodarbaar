@@ -8,8 +8,8 @@ use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 
-#[Signature('blog:auto {kind=daily : daily or weekly} {--date= : The day to write about (weekly: any day in, or the weekend before, the week)} {--force : Rewrite the post if it already exists, even when switched off} {--draft : Save a new post as a draft}')]
-#[Description('Write the automatic daily IPO update or weekly IPO calendar blog post from IPO data')]
+#[Signature('blog:auto {kind=daily : daily, weekly or listing} {--date= : The day to write about (weekly: any day in, or the weekend before, the week)} {--force : Rewrite the post if it already exists, even when switched off} {--draft : Save a new post as a draft}')]
+#[Description('Write the automatic daily IPO update, weekly IPO calendar or listing day recap blog post from IPO data')]
 class PublishAutoBlog extends Command
 {
     public function handle(AutoBlogPublisher $publisher): int

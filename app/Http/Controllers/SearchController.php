@@ -86,6 +86,7 @@ class SearchController extends Controller
             ['title' => 'IPO Listing Today', 'text' => 'listing price listing gain ipos listing this week', 'url' => route('ipos.listing-today')],
             ['title' => 'IPO Calendar', 'text' => 'ipo dates open close allotment listing calendar subscribe', 'url' => route('ipos.calendar')],
             ['title' => 'IPO Report Card', 'text' => 'ipo performance listing gains year funds raised', 'url' => route('ipos.report-card')],
+            ['title' => 'IPO GMP Accuracy Tracker', 'text' => 'gmp accuracy accurate grey market premium vs actual listing price', 'url' => route('ipos.gmp-accuracy')],
             ['title' => 'SME IPO Dashboard', 'text' => 'sme ipo market dashboard gmp funds raised', 'url' => route('ipos.sme-dashboard')],
             ['title' => 'IPO Portfolio Tracker', 'text' => 'track ipo applications allotment profit portfolio', 'url' => route('portfolio')],
             ['title' => 'Compare IPOs', 'text' => 'compare ipos side by side', 'url' => route('compare')],

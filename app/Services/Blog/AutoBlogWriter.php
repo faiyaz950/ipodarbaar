@@ -2,6 +2,7 @@
 
 namespace App\Services\Blog;
 
+use App\Models\BlogPost;
 use App\Models\Ipo;
 use App\Models\IpoFinancial;
 use App\Services\IpoDigestBuilder;
@@ -155,6 +156,10 @@ class AutoBlogWriter
                 $this->link($ipo), Ipo::money($ipo->price), Ipo::money($ipo->listing_price), $ipo->listingGainPercent() !== null ? $this->percent($ipo->listingGainPercent()) : '—',
                 $ipo->listing_close ? Ipo::money($ipo->listing_close) : '—', $ipo->listingCloseGainPercent() !== null ? $this->percent($ipo->listingCloseGainPercent()) : '—',
             ])->all());
+            $recap = BlogPost::query()->live()->where('slug', $this->listingSlug($lastDay))->first();
+            if ($recap) {
+                $html[] = '<p>Full story, with GMP against the actual listing for each IPO: <a href="'.e(route('blog.show', $recap->slug, false)).'">'.e($recap->title).'</a>.</p>';
+            }
             $best = $listedLast->filter(fn (Ipo $ipo): bool => $ipo->listingGainPercent() !== null)->sortByDesc(fn (Ipo $ipo): float => $ipo->listingGainPercent())->first();
             if ($best) {
                 $html[] = '<p>'.e($best->name).' had the strongest debut, opening '.e($this->percent($best->listingGainPercent())).' above its issue price'
@@ -361,6 +366,154 @@ class AutoBlogWriter
         ];
     }
 
+    /**
+     * The evening recap of the day's listings: listing price against issue price and GMP,
+     * day-1 close, subscription, and how close the grey market came.
+     *
+     * @return Draft|null
+     */
+    public function listingRecap(Carbon $day): ?array
+    {
+        $day = $day->copy()->startOfDay();
+        if ($day->isWeekend()) {
+            return null;
+        }
+
+        $listed = Ipo::query()
+            ->whereDate('listing_date', $day->toDateString())->whereNotNull('listing_price')->where('price', '>', 0)
+            ->with('detail')->get()
+            ->filter(fn (Ipo $ipo): bool => $ipo->listing_price >= $ipo->price * 0.3 && $ipo->listing_price <= $ipo->price * 3)
+            ->sortByDesc(fn (Ipo $ipo): float => $ipo->listingGainPercent())->values();
+        if ($listed->isEmpty()) {
+            return null;
+        }
+
+        $label = $day->format('j M Y');
+        $long = $day->format('l, j F Y');
+        $slug = $this->listingSlug($day);
+        $best = $listed->first();
+        $worst = $listed->last();
+        $up = $listed->filter(fn (Ipo $ipo): bool => $ipo->listingGainPercent() > 0);
+        $down = $listed->filter(fn (Ipo $ipo): bool => $ipo->listingGainPercent() < 0);
+        $withGmp = $listed->filter(fn (Ipo $ipo): bool => $ipo->gmpErrorPoints() !== null);
+        $close10 = $withGmp->filter(fn (Ipo $ipo): bool => abs($ipo->gmpErrorPoints()) <= 10);
+        $average = round($listed->avg(fn (Ipo $ipo): float => $ipo->listingGainPercent()), 2);
+        $main = $listed->filter->isMainboard()->values();
+        $sme = $listed->reject->isMainboard()->values();
+        $verb = fn (float $pct): string => abs(round($pct)).'% '.($pct >= 0 ? 'Higher' : 'Lower');
+
+        $title = 'IPO Listing Recap ('.$label.'): '.$best->name.' Lists '.$verb($best->listingGainPercent())
+            .($listed->count() > 1 ? ', '.$listed->count().' IPOs Debut' : '');
+
+        $cover = $this->images->cover($slug.'-cover', 'Listing day recap', $title, $long.' · listing prices vs issue price and GMP', array_values(array_filter([
+            [(string) $listed->count(), $this->ipoWord($listed->count()).' listed'],
+            [$this->percent($best->listingGainPercent()), 'Best: '.$this->shortName($best)],
+            $listed->count() > 1 ? [$this->percent($average), 'Average listing gain'] : null,
+            $withGmp->isNotEmpty() ? [$close10->count().' of '.$withGmp->count(), 'Within 10 pts of GMP'] : null,
+        ])), $listed);
+
+        $html = [];
+        $html[] = '<p>'.e(Str::ucfirst($this->countWord($listed->count(), 'company', 'companies'))).' made '.($listed->count() === 1 ? 'its' : 'their').' stock market debut on '.e($long)
+            .($main->isNotEmpty() && $sme->isNotEmpty() ? ' ('.$main->count().' on the mainboard and '.$sme->count().' on the SME platforms)' : '').'. '
+            .e($up->count().' opened above the issue price and '.$down->count().' below.').' '
+            .e($best->name.' had the strongest start, opening '.$this->percent($best->listingGainPercent()).' at '.Ipo::money($best->listing_price).' against an issue price of '.Ipo::money($best->price))
+            .($listed->count() > 1 && $worst->isNot($best) ? e('; '.$worst->name.' was the weakest at '.$this->percent($worst->listingGainPercent())) : '').'.</p>';
+        $html[] = '<p>Below: each listing price against the issue price and the last grey market premium (GMP), where the shares closed on day one, and how the issues were subscribed. Listing prices are the first trades on NSE, or BSE for issues listed only there.</p>';
+
+        $html[] = '<h2>Listing day at a glance</h2>';
+        $html[] = $this->table(['IPO', 'Board', 'Issue price', 'GMP estimate', 'Listing price', 'Listing gain', 'Day-1 close', 'Close vs issue'], $listed->map(fn (Ipo $ipo): array => [
+            $this->link($ipo), $ipo->typeLabel(), Ipo::money($ipo->price),
+            $ipo->gmpEstimatePercent() !== null ? Ipo::money($ipo->price + $ipo->listing_gmp).' ('.$this->percent($ipo->gmpEstimatePercent()).')' : '—',
+            Ipo::money($ipo->listing_price), $this->percent($ipo->listingGainPercent()),
+            $ipo->listing_close ? Ipo::money($ipo->listing_close) : '—', $ipo->listingCloseGainPercent() !== null ? $this->percent($ipo->listingCloseGainPercent()) : '—',
+        ])->all());
+
+        if ($withGmp->isNotEmpty()) {
+            $miss = $withGmp->sortByDesc(fn (Ipo $ipo): float => abs($ipo->gmpErrorPoints()))->first();
+            $html[] = '<h2>GMP vs the actual listing</h2>';
+            $html[] = '<p>The grey market came within 10 percentage points of the listing gain for '.e($close10->count().' of '.$withGmp->count()).' '.e($this->ipoWord($withGmp->count()))
+                .' and within 5 points for '.e((string) $withGmp->filter(fn (Ipo $ipo): bool => abs($ipo->gmpErrorPoints()) <= 5)->count()).'. '
+                .e('The biggest miss was '.$miss->name.', which opened '.number_format(abs($miss->gmpErrorPoints()), 1).' points '.($miss->gmpErrorPoints() >= 0 ? 'above' : 'below').' what its GMP pointed to.')
+                .' Our <a href="/ipo-gmp-accuracy">GMP accuracy tracker</a> keeps the running record across every listing.</p>';
+            $html[] = $this->figure($this->images->gmpVsActualChart($slug.'-gmp-vs-actual', 'GMP vs actual listing gain', $long.': the gain the last GMP pointed to and where each IPO opened', $listed,
+                'Listing prices from NSE and BSE · GMP is unofficial'), 'GMP vs actual listing gain, '.$label, 'Gold: the listing gain the last GMP before listing pointed to. Green or red: the actual listing gain.');
+        }
+
+        if ($main->isNotEmpty()) {
+            $html[] = '<h2>Mainboard listings</h2>';
+            foreach ($main as $ipo) {
+                $html[] = $this->listingProfile($ipo);
+            }
+        }
+
+        if ($sme->isNotEmpty()) {
+            $html[] = '<h2>SME listings</h2>';
+            $html[] = $this->table(['IPO', 'Issue price', 'Listing price', 'Listing gain', 'Day-1 close', 'Subscribed'], $sme->map(fn (Ipo $ipo): array => [
+                $this->link($ipo), Ipo::money($ipo->price), Ipo::money($ipo->listing_price), $this->percent($ipo->listingGainPercent()),
+                $ipo->listing_close ? Ipo::money($ipo->listing_close).' ('.$this->percent($ipo->listingCloseGainPercent()).')' : '—', $this->times($ipo->subscription_total),
+            ])->all());
+            // Short stories for the most notable SME debuts: the best and, when different, the weakest.
+            foreach ($sme->count() > 1 ? collect([$sme->first(), $sme->last()]) : $sme as $notable) {
+                $html[] = $this->listingProfile($notable);
+            }
+            $capped = $sme->filter(fn (Ipo $ipo): bool => $ipo->listingGainPercent() >= 89.5);
+            if ($capped->isNotEmpty()) {
+                $html[] = '<p>'.e($this->nameList($capped)).' opened at the 90% limit that SME shares are allowed on their first day, so their true demand may have been even higher than the listing price shows.</p>';
+            }
+        }
+
+        $next = Ipo::query()->whereDate('listing_date', '>', $day->toDateString())->whereDate('listing_date', '<=', $day->copy()->addDays(7)->toDateString())
+            ->whereNull('listing_price')->orderBy('listing_date')->get();
+        if ($next->isNotEmpty()) {
+            $html[] = '<h2>Next listings</h2>';
+            $html[] = '<p>These IPOs are due to list in the coming days. The GMP estimate is where the grey market expects them to open; as today showed, the actual listing can differ.</p>';
+            $html[] = $this->table(['IPO', 'Board', 'Listing date', 'Issue price', 'GMP', 'GMP estimate'], $next->map(fn (Ipo $ipo): array => [
+                $this->link($ipo), $ipo->typeLabel(), $this->date($ipo->listing_date), $ipo->price ? Ipo::money($ipo->price) : '—', $this->gmpText($ipo),
+                $ipo->estListingPrice() !== null ? Ipo::money($ipo->estListingPrice()) : '—',
+            ])->all());
+        }
+
+        $html[] = '<h2>What the day tells us</h2>';
+        $points = array_filter([
+            $listed->count() > 1 ? 'The average listing gain was '.$this->percent($average).', and '.$up->count().' of '.$listed->count().' listings opened at a premium.' : null,
+            $this->subscriptionPattern($listed),
+            $this->dayOnePattern($listed),
+        ]);
+        $html[] = '<ul>'.implode('', array_map(fn (string $point): string => '<li>'.e($point).'</li>', $points)).'<li>Listing prices for every IPO are on the <a href="/ipo-listing-today">IPO listing today</a> page, and year-wise results on the <a href="/ipo-report-card">IPO report card</a>.</li></ul>';
+
+        $html[] = $this->faqs(array_values(array_filter([
+            ['Which IPOs listed on '.$label.'?', $this->nameList($listed, 10).'.'],
+            ['Which IPO gave the best listing gain on '.$label.'?', $best->name.' opened '.$this->percent($best->listingGainPercent()).' at '.Ipo::money($best->listing_price).' against an issue price of '.Ipo::money($best->price)
+                .($best->listing_close ? ' and closed the day at '.Ipo::money($best->listing_close).' ('.$this->percent($best->listingCloseGainPercent()).').' : '.')],
+            $withGmp->isNotEmpty() ? ['How accurate was GMP on '.$label.'?', 'GMP was within 10 percentage points of the listing gain for '.$close10->count().' of '.$withGmp->count().' IPOs. GMP is unofficial and can differ sharply from the listing price.'] : null,
+        ])));
+        $html[] = $this->note();
+
+        return [
+            'slug' => $slug,
+            'category' => 'listing-recap',
+            'title' => $title,
+            'seo_title' => 'IPO Listing Recap ('.$label.'): Listing Gains vs GMP',
+            'excerpt' => Str::limit($listed->count().' '.$this->ipoWord($listed->count()).' listed on '.$label.': '.$up->count().' at a premium and '.$down->count().' at a discount. '
+                .$best->name.' opened '.$this->percent($best->listingGainPercent()).'. Listing prices, day-1 closes, GMP and subscription.', 315),
+            'seo_description' => Str::limit('IPO listing recap '.$label.': '.$this->nameList($listed, 3).'. Listing price vs issue price and GMP, day-1 close and subscription.', 155),
+            'takeaways' => implode("\n", array_values(array_filter([
+                'Best listing: '.$best->name.' at '.$this->percent($best->listingGainPercent()),
+                $listed->count() > 1 ? 'Weakest: '.$worst->name.' at '.$this->percent($worst->listingGainPercent()) : null,
+                $listed->count() > 1 ? 'Average listing gain: '.$this->percent($average).' across '.$listed->count().' IPOs' : null,
+                $withGmp->isNotEmpty() ? 'GMP was within 10 points for '.$close10->count().' of '.$withGmp->count() : null,
+            ]))),
+            'body' => implode("\n", array_filter($html)),
+            'image' => $cover ? ['path' => $cover['path'], 'alt' => 'IPO listing recap '.$label] : null,
+            'ipo_ids' => $listed->pluck('id')->all(),
+        ];
+    }
+
+    public function listingSlug(Carbon $day): string
+    {
+        return 'ipo-listing-recap-'.Str::lower($day->format('j-F-Y'));
+    }
+
     public function dailySlug(Carbon $day): string
     {
         return 'ipo-today-'.Str::lower($day->format('j-F-Y'));
@@ -429,6 +582,57 @@ class AutoBlogWriter
         $out[] = '<p>'.e(implode(' ', $facts)).($facts !== [] ? ' ' : '').'<a href="'.e($this->path($ipo)).'">'.e($ipo->name).' IPO: live GMP, subscription and allotment</a></p>';
 
         return implode("\n", array_filter($out));
+    }
+
+    /** One mainboard listing told as a short story: open, GMP, close, money per lot, subscription. */
+    private function listingProfile(Ipo $ipo): string
+    {
+        $gain = $ipo->listingGainPercent();
+        $sentences = [
+            $this->business($ipo),
+            $this->plausibleSize($ipo) ? 'It raised '.$this->size($ipo).' in its IPO.' : null,
+            $ipo->name.' opened at '.Ipo::money($ipo->listing_price).($ipo->listing_exchange ? ' on '.$ipo->listing_exchange : '').', '.$this->percent($gain).' against the issue price of '.Ipo::money($ipo->price).'.',
+            $ipo->lot_size && abs($ipo->listing_price - $ipo->price) >= 0.01 ? 'For an investor allotted one lot of '.number_format($ipo->lot_size).' shares, that is '.($gain >= 0 ? 'a gain' : 'a loss').' of about '.Ipo::money(abs($ipo->listing_price - $ipo->price) * $ipo->lot_size).' at the opening price.' : null,
+            $ipo->gmpErrorPoints() !== null ? 'The last GMP before listing was '.($ipo->listing_gmp < 0 ? '-₹' : '₹').Ipo::num(abs($ipo->listing_gmp)).', pointing to about '.Ipo::money($ipo->price + $ipo->listing_gmp)
+                .', so the listing came in '.number_format(abs($ipo->gmpErrorPoints()), 1).' points '.($ipo->gmpErrorPoints() >= 0 ? 'above' : 'below').' the grey market estimate.' : null,
+            $ipo->listing_close ? 'The shares closed the day at '.Ipo::money($ipo->listing_close).' ('.$this->percent($ipo->listingCloseGainPercent()).' against the issue price), '
+                .($ipo->listing_close > $ipo->listing_price ? 'above' : ($ipo->listing_close < $ipo->listing_price ? 'below' : 'level with')).' where they opened.' : null,
+            $ipo->subscription_total !== null ? 'The issue had been subscribed '.$this->times($ipo->subscription_total).' overall'
+                .($ipo->subscription_qib !== null ? ' (QIB '.$this->times($ipo->subscription_qib).', NII '.$this->times($ipo->subscription_nii).', retail '.$this->times($ipo->subscription_retail).')' : '').'.' : null,
+        ];
+
+        return '<h3>'.e($ipo->name).'</h3><p>'.e(implode(' ', array_filter($sentences))).' <a href="'.e($this->path($ipo)).'">'.e($ipo->name).' IPO page</a></p>';
+    }
+
+    /**
+     * @param  Collection<int, Ipo>  $listed
+     */
+    private function subscriptionPattern(Collection $listed): ?string
+    {
+        $known = $listed->filter(fn (Ipo $ipo): bool => $ipo->subscription_total !== null);
+        $hot = $known->filter(fn (Ipo $ipo): bool => $ipo->subscription_total >= 50);
+        $rest = $known->filter(fn (Ipo $ipo): bool => $ipo->subscription_total < 50);
+        if ($hot->isEmpty() || $rest->isEmpty()) {
+            return null;
+        }
+
+        return 'Issues subscribed 50 times or more opened '.$this->percent($hot->avg(fn (Ipo $ipo): float => $ipo->listingGainPercent())).' on average, against '
+            .$this->percent($rest->avg(fn (Ipo $ipo): float => $ipo->listingGainPercent())).' for the rest.';
+    }
+
+    /**
+     * @param  Collection<int, Ipo>  $listed
+     */
+    private function dayOnePattern(Collection $listed): ?string
+    {
+        $closed = $listed->filter(fn (Ipo $ipo): bool => $ipo->listing_close !== null);
+        if ($closed->isEmpty()) {
+            return null;
+        }
+        $higher = $closed->filter(fn (Ipo $ipo): bool => $ipo->listing_close > $ipo->listing_price)->count();
+        $lower = $closed->filter(fn (Ipo $ipo): bool => $ipo->listing_close < $ipo->listing_price)->count();
+
+        return 'By the close, '.$higher.' of '.$closed->count().' had risen above their listing price and '.$lower.' had fallen below it.';
     }
 
     /** "Orient Cables India is a manufacturer of networking cables." from the IPO's description. */
