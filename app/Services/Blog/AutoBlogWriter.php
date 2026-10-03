@@ -80,7 +80,7 @@ class AutoBlogWriter
             $listing->isNotEmpty() ? [(string) $listing->count(), 'Listing today'] : null,
             $opening->isNotEmpty() ? [(string) $opening->count(), 'Opening today'] : null,
             $stillOpen->isNotEmpty() ? [(string) $stillOpen->count(), 'Still open'] : null,
-            $top ? [$this->percent($top->gmpPercent()), 'Top GMP: '.Str::limit($top->name, 14, '…')] : null,
+            $top ? [$this->percent($top->gmpPercent()), 'Top GMP: '.$this->shortName($top)] : null,
         ])), $closing->merge($opening)->merge($listing)->unique('id'));
 
         $html = [];
@@ -243,7 +243,7 @@ class AutoBlogWriter
             [(string) $bidding->count(), 'IPOs taking bids'],
             [$main->count().' + '.$sme->count(), 'Mainboard + SME'],
             [(string) $listing->count(), 'Listings this week'],
-            $top ? [$this->percent($top->gmpPercent()), 'Top GMP: '.Str::limit($top->name, 14, '…')] : null,
+            $top ? [$this->percent($top->gmpPercent()), 'Top GMP: '.$this->shortName($top)] : null,
         ])), $main->merge($sme)->take(9));
         $weekChart = $this->images->weekChart($slug.'-week', 'The IPO week at a glance', 'IPOs opening, closing and listing each trading day, mainboard and SME together', $days,
             'Source: offer documents and IPO Darbaar data, '.now()->format('j M Y'));
@@ -609,6 +609,12 @@ class AutoBlogWriter
         $parts = array_values($parts);
 
         return count($parts) <= 1 ? (string) ($parts[0] ?? '') : implode(', ', array_slice($parts, 0, -1)).' and '.end($parts);
+    }
+
+    /** First word of the company name, for tight spaces such as image tiles. */
+    private function shortName(Ipo $ipo): string
+    {
+        return Str::limit(Str::before($ipo->name.' ', ' '), 12, '');
     }
 
     private function ipoWord(int $n): string
