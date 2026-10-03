@@ -3,6 +3,7 @@
 namespace App\Services\Market;
 
 use App\Models\Ipo;
+use App\Services\IpoStatsService;
 use App\Support\PageCache;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -22,7 +23,7 @@ class ListingPriceSync
     /** Look for a listing up to this many days after the issue closed. */
     private const MAX_DAYS_AFTER_CLOSE = 14;
 
-    public function __construct(private NseClient $nse, private Bhavcopy $bhavcopy) {}
+    public function __construct(private NseClient $nse, private Bhavcopy $bhavcopy, private IpoStatsService $stats) {}
 
     /** Today's mainboard listings from the special pre-open session. */
     public function morning(): int
@@ -171,6 +172,7 @@ class ListingPriceSync
     {
         if ($recorded > 0) {
             PageCache::flush();
+            $this->stats->flush();
         }
 
         return $recorded;

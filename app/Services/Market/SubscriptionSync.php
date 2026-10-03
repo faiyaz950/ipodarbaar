@@ -4,6 +4,7 @@ namespace App\Services\Market;
 
 use App\Models\Ipo;
 use App\Models\IpoSubscriptionDay;
+use App\Services\IpoStatsService;
 use App\Support\PageCache;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -18,7 +19,7 @@ class SubscriptionSync
     /** Keep reading an issue for this many days after it closes, for the final figures. */
     private const AFTER_CLOSE_DAYS = 3;
 
-    public function __construct(private NseClient $nse) {}
+    public function __construct(private NseClient $nse, private IpoStatsService $stats) {}
 
     /**
      * @return array{issues: int, linked: int, updated: int}
@@ -45,6 +46,7 @@ class SubscriptionSync
 
         if ($updated > 0) {
             PageCache::flush();
+            $this->stats->flush();
         }
 
         return ['issues' => count($issues), 'linked' => $linked, 'updated' => $updated];
@@ -71,6 +73,7 @@ class SubscriptionSync
 
         if ($updated > 0) {
             PageCache::flush();
+            $this->stats->flush();
         }
 
         return ['linked' => $linked, 'updated' => $updated];
