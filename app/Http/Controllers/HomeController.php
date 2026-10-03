@@ -8,6 +8,7 @@ use App\Services\IpoStatsService;
 use App\Services\NewsService;
 use App\Support\Calculators;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 class HomeController extends Controller
 {
@@ -49,8 +50,22 @@ class HomeController extends Controller
             'calculators' => Calculators::featured(),
             'categories' => $news->categories(),
             'report' => $reportYear ? $ipoStats->forYear($reportYear) : null,
-            'posts' => BlogPost::query()->live()->latest('published_at')->limit(3)->get(),
+            'posts' => $this->blogPosts(),
         ]);
+    }
+
+    /**
+     * The latest IPO Today update plus the newest other posts, so the daily post
+     * doesn't push everything else off the home page.
+     *
+     * @return Collection<int, BlogPost>
+     */
+    private function blogPosts(): Collection
+    {
+        $daily = BlogPost::query()->live()->where('category', 'daily')->latest('published_at')->first();
+        $others = BlogPost::query()->live()->where('category', '!=', 'daily')->latest('published_at')->limit($daily ? 2 : 3)->get();
+
+        return $others->when($daily, fn (Collection $posts) => $posts->prepend($daily))->sortByDesc('published_at')->values();
     }
 
     /** Monday → Sunday of the current week with IPO events per day. */

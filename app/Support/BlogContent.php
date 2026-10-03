@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
  */
 class BlogContent
 {
-    private const ALLOWED_TAGS = '<p><br><ul><ol><li><strong><b><em><i><u><h2><h3><h4><blockquote><a><table><thead><tbody><tr><th><td>';
+    private const ALLOWED_TAGS = '<p><br><ul><ol><li><strong><b><em><i><u><h2><h3><h4><blockquote><a><table><thead><tbody><tr><th><td><figure><figcaption><img>';
 
     public static function sanitize(string $html): string
     {
@@ -29,6 +29,9 @@ class BlogContent
             $tag = strtolower($m[2]);
             if ($m[1] === '/') {
                 return "</{$tag}>";
+            }
+            if ($tag === 'img') {
+                return self::image($m[3], $host);
             }
             if ($tag !== 'a') {
                 return $tag === 'br' ? '<br>' : "<{$tag}>";
@@ -51,6 +54,32 @@ class BlogContent
         }, $html) ?? '';
 
         return trim(preg_replace('#<p>(\s|&nbsp;|<br>)*</p>#i', '', $html) ?? '');
+    }
+
+    /**
+     * Images are allowed only from this site's uploads folder; anything else is dropped.
+     */
+    private static function image(string $attributes, string $host): string
+    {
+        $attr = fn (string $name): ?string => preg_match('/\b'.$name.'\s*=\s*(["\'])(.*?)\1/is', $attributes, $m) ? trim(html_entity_decode($m[2])) : null;
+
+        $src = (string) $attr('src');
+        if (preg_match('#^https?://#i', $src) && parse_url($src, PHP_URL_HOST) === $host) {
+            $src = (string) parse_url($src, PHP_URL_PATH);
+        }
+        if (! preg_match('#^/uploads/[A-Za-z0-9/_.-]+\.(webp|png|jpe?g)$#i', $src) || str_contains($src, '..')) {
+            return '';
+        }
+
+        $size = '';
+        foreach (['width', 'height'] as $name) {
+            $value = (int) $attr($name);
+            if ($value > 0 && $value <= 4000) {
+                $size .= ' '.$name.'="'.$value.'"';
+            }
+        }
+
+        return '<img src="'.e($src).'" alt="'.e((string) $attr('alt')).'"'.$size.' loading="lazy" decoding="async">';
     }
 
     /**

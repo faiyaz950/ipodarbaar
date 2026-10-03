@@ -153,6 +153,9 @@ Route::prefix('admin')->name('admin.')->withoutMiddleware(RefreshIpoData::class)
         Route::get('/blog', [Admin\BlogPostController::class, 'index'])->name('blog.index');
         Route::get('/blog/create', [Admin\BlogPostController::class, 'create'])->name('blog.create');
         Route::post('/blog', [Admin\BlogPostController::class, 'store'])->name('blog.store');
+        Route::post('/blog/images', [Admin\BlogPostController::class, 'uploadImage'])->middleware('throttle:30,1')->name('blog.images');
+        Route::put('/blog/automation', [Admin\BlogAutomationController::class, 'update'])->name('blog.automation');
+        Route::post('/blog/automation/run', [Admin\BlogAutomationController::class, 'run'])->middleware('throttle:10,1')->name('blog.automation.run');
         Route::get('/blog/authors', [Admin\BlogAuthorController::class, 'index'])->name('blog.authors');
         Route::post('/blog/authors', [Admin\BlogAuthorController::class, 'store'])->name('blog.authors.store');
         Route::put('/blog/authors/{author}', [Admin\BlogAuthorController::class, 'update'])->whereNumber('author')->name('blog.authors.update');

@@ -22,6 +22,8 @@
             @if ($long)
                 <span class="rte-sep"></span>
                 <button type="button" data-rte-ipo title="Insert a live IPO card">+ IPO card</button>
+                <button type="button" data-rte-image data-upload="{{ route('admin.blog.images') }}" title="Upload and insert an image">+ Image</button>
+                <input type="file" accept="image/jpeg,image/png,image/webp" data-rte-image-input hidden>
             @endif
             <span class="rte-sep"></span>
             <button type="button" data-rte-source title="Edit the raw HTML">&lt;/&gt;</button>

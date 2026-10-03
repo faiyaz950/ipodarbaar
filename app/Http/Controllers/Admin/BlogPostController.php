@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\BlogAuthor;
 use App\Models\BlogPost;
 use App\Models\Ipo;
+use App\Services\Blog\AutoBlogPublisher;
 use App\Support\BlogContent;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -24,7 +26,7 @@ class BlogPostController extends Controller
     /** Featured images wider than this are scaled down on upload. */
     private const IMAGE_MAX_WIDTH = 1600;
 
-    public function index(Request $request): View
+    public function index(Request $request, AutoBlogPublisher $publisher): View
     {
         $status = in_array($request->query('status'), ['draft', 'scheduled', 'published'], true) ? $request->query('status') : null;
 
@@ -37,6 +39,11 @@ class BlogPostController extends Controller
                 ->orderByRaw("status = 'draft' desc")->latest('published_at')->latest('id')
                 ->paginate(30)->withQueryString(),
             'status' => $status,
+            'auto' => [
+                'daily' => $publisher->enabled('daily'),
+                'weekly' => $publisher->enabled('weekly'),
+                'publish' => $publisher->publishes(),
+            ],
         ]);
     }
 
@@ -79,6 +86,22 @@ class BlogPostController extends Controller
         $post->delete();
 
         return redirect()->route('admin.blog.index')->with('status', '“'.$post->title.'” deleted.');
+    }
+
+    /**
+     * Uploads an image for use inside a post's text; the editor inserts it as a figure.
+     */
+    public function uploadImage(Request $request): JsonResponse
+    {
+        $request->validate([
+            'image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120', 'dimensions:min_width=400'],
+        ], ['image.dimensions' => 'The image should be at least 400 pixels wide.']);
+
+        $file = $request->file('image');
+        $path = $this->storeImage($file, Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) ?: 'image');
+        [$width, $height] = @getimagesize(Storage::disk('uploads')->path($path)) ?: [null, null];
+
+        return response()->json(['url' => '/uploads/'.$path, 'width' => $width, 'height' => $height]);
     }
 
     /**

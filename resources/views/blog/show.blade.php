@@ -8,8 +8,10 @@
     $image = $post->imageUrl() ?: asset('images/brand/og-logo.png');
     $author = $post->author;
     $modified = $post->updated_at && $post->published_at && $post->updated_at->gt($post->published_at->copy()->addDay()) ? $post->updated_at : null;
-    // IPOs placed in the text with [[ipo:slug]] already have a card; the rest are listed after the post.
+    // IPOs placed in the text with [[ipo:slug]] already have a card; the rest are listed after the post,
+    // unless there are so many (round-ups) that the post's own tables already cover them.
     $cardIpos = $post->ipos->reject(fn ($ipo) => str_contains((string) $post->body, '[[ipo:'.$ipo->slug.']]'));
+    $cardIpos = $cardIpos->count() <= 6 ? $cardIpos : collect();
     $takeaways = $post->takeawayList();
 @endphp
 

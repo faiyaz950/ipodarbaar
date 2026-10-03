@@ -182,6 +182,40 @@ class BlogTest extends TestCase
         );
     }
 
+    public function test_sanitizer_keeps_only_images_from_our_uploads(): void
+    {
+        config(['app.url' => 'https://ipodarbaar.in']);
+
+        $html = BlogContent::sanitize(
+            '<figure><img src="/uploads/blog/chart.webp" alt="Chart" width="1200" height="675" onerror="x()" style="a"><figcaption>Source: NSE</figcaption></figure>'
+            .'<p><img src="https://ipodarbaar.in/uploads/blog/b.png" alt="B"></p>'
+            .'<p><img src="https://evil.example/x.png" alt="X"><img src="/uploads/../.env"><img src="/secret.jpg"></p>'
+        );
+
+        $this->assertSame(
+            '<figure><img src="/uploads/blog/chart.webp" alt="Chart" width="1200" height="675" loading="lazy" decoding="async"><figcaption>Source: NSE</figcaption></figure>'
+            .'<p><img src="/uploads/blog/b.png" alt="B" loading="lazy" decoding="async"></p>',
+            $html
+        );
+    }
+
+    public function test_admin_can_upload_an_image_for_the_post_text(): void
+    {
+        Storage::fake('uploads');
+        $admin = $this->admin();
+
+        $response = $this->actingAs($admin)->postJson('/admin/blog/images', ['image' => UploadedFile::fake()->image('IPO Chart.png', 1600, 900)])
+            ->assertOk()
+            ->assertJson(['width' => 1600, 'height' => 900]);
+
+        $this->assertMatchesRegularExpression('#^/uploads/blog/ipo-chart-\d{14}\.(webp|png)$#', $response->json('url'));
+        Storage::disk('uploads')->assertExists(substr($response->json('url'), strlen('/uploads/')));
+
+        $this->actingAs($admin)->postJson('/admin/blog/images', ['image' => UploadedFile::fake()->image('tiny.png', 100, 100)])
+            ->assertUnprocessable()->assertJsonValidationErrors('image');
+        $this->actingAs(User::factory()->create())->postJson('/admin/blog/images', [])->assertForbidden();
+    }
+
     public function test_author_page_and_rss_feed(): void
     {
         $post = $this->makePost(['title' => 'Weekly IPO wrap for the week']);

@@ -11,6 +11,9 @@
 <style>
     .rte-long .rte-body { min-height: 420px; max-height: 72vh; font-size: 16px; }
     .rte-long .rte-body h2 { font-size: 22px; }
+    .rte-long .rte-body figure { margin: 1em 0; }
+    .rte-long .rte-body img { max-width: 100%; height: auto; border-radius: 10px; }
+    .rte-long .rte-body figcaption { font-size: 13px; color: var(--muted); text-align: center; }
     .rte-long .rte-body:empty::before { content: 'Start writing. Use H2 for each main section.'; }
     .blog-ipo-list { max-height: 320px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; padding: 6px 10px; }
     .blog-ipo-list label { display: flex; gap: 8px; align-items: center; padding: 5px 0; font-size: 13.5px; }
@@ -105,7 +108,7 @@
             <div class="card card-pad">
                 <div class="card-title af-section">Post text</div>
                 <x-rich-editor name="body" label="Text" :value="$post->body" long
-                    hint="Use H2 for each main section (they form the table of contents) and H3 inside them. “+ IPO card” adds a live card with the IPO's price band, GMP and dates. Link to IPO pages, guides and calculators on this site." />
+                    hint="Use H2 for each main section (they form the table of contents) and H3 inside them. “+ IPO card” adds a live card with the IPO's price band, GMP and dates; “+ Image” uploads a chart or picture (JPG, PNG or WebP). Link to IPO pages, guides and calculators on this site." />
             </div>
 
             <div class="card card-pad">

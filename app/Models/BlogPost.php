@@ -21,6 +21,11 @@ class BlogPost extends Model
 
     /** Kinds of posts; each has its own list page at /blog/{key}. */
     public const CATEGORIES = [
+        'daily' => [
+            'label' => 'IPO Today',
+            'title' => 'IPO Today: Daily IPO Update with GMP, Closing & Listing IPOs',
+            'description' => 'A daily update on the Indian IPO market: IPOs closing, opening and listing today, GMP, allotment dates, financials and price bands.',
+        ],
         'ipo-reviews' => [
             'label' => 'IPO Reviews',
             'title' => 'IPO Reviews: In-Depth Analysis of Upcoming IPOs',
