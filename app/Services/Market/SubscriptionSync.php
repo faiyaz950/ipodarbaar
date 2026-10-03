@@ -35,9 +35,12 @@ class SubscriptionSync
         $issues = $this->nse->currentIssues();
         $linked = $this->link($ipos, $issues);
 
+        // SME issues on NSE Emerge have no per-category reservation in NSE's data, only the overall figure.
+        $overall = array_column($issues, 'times', 'symbol');
+
         $updated = 0;
         foreach ($ipos->filter(fn (Ipo $ipo): bool => filled($ipo->nse_symbol)) as $ipo) {
-            $updated += (int) $this->update($ipo);
+            $updated += (int) $this->update($ipo, $overall[$ipo->nse_symbol] ?? null);
         }
 
         if ($updated > 0) {
@@ -73,9 +76,10 @@ class SubscriptionSync
         return ['linked' => $linked, 'updated' => $updated];
     }
 
-    public function update(Ipo $ipo): bool
+    public function update(Ipo $ipo, ?float $overall = null): bool
     {
-        $figures = $this->nse->subscription((string) $ipo->nse_symbol);
+        $figures = $this->nse->subscription((string) $ipo->nse_symbol)
+            ?? ($overall !== null ? ['qib' => null, 'nii' => null, 'bnii' => null, 'snii' => null, 'retail' => null, 'employee' => null, 'total' => $overall, 'as_of' => now()] : null);
         if ($figures === null) {
             return false;
         }

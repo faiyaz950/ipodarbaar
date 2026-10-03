@@ -108,6 +108,22 @@ class MarketDataTest extends TestCase
             ->assertSee('from NSE (bids on NSE and BSE combined)');
     }
 
+    public function test_sme_issues_without_category_reservations_get_the_overall_figure(): void
+    {
+        $ipo = Ipo::factory()->create(['name' => 'Eventions', 'type' => 'sme', 'price' => 118, 'open_date' => '2026-09-30', 'close_date' => '2026-10-05']);
+        $empty = ['dataList' => [['category' => 'Total', 'noOfShareOffered' => '0.0', 'noOfSharesBid' => '4466400.0', 'noOfTotalMeant' => '0.00', 'srNo' => null]], 'updateTime' => 'Updated as on 01-Oct-2026 17:00:00'];
+        Http::fake([
+            'www.nseindia.com/api/ipo-current-issue' => Http::response([
+                ['companyName' => 'Eventions Limited', 'symbol' => 'EVENTIONS', 'series' => 'SME', 'issueStartDate' => '30-Sep-2026', 'issueEndDate' => '05-Oct-2026', 'noOfTime' => '1.75'],
+            ]),
+            'www.nseindia.com/api/ipo-active-category*' => Http::response($empty),
+        ]);
+
+        $this->artisan('ipo:subscription')->expectsOutputToContain('updated 1')->assertSuccessful();
+        $this->assertSame(1.75, $ipo->fresh()->subscription_total);
+        $this->assertNull($ipo->fresh()->subscription_qib);
+    }
+
     public function test_backfill_links_past_issues_and_fetches_final_figures(): void
     {
         $ipo = Ipo::factory()->create(['name' => 'Moneyview', 'price' => 34, 'open_date' => '2026-09-24', 'close_date' => '2026-09-28', 'listing_date' => '2026-10-01']);

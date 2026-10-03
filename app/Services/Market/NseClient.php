@@ -27,7 +27,9 @@ class NseClient
     }
 
     /**
-     * @return list<array{symbol: string, name: string, series: string, start: ?Carbon, end: ?Carbon}>
+     * Issues taking bids, with the overall times subscribed on NSE.
+     *
+     * @return list<array{symbol: string, name: string, series: string, start: ?Carbon, end: ?Carbon, times: ?float}>
      */
     public function currentIssues(): array
     {
@@ -37,6 +39,7 @@ class NseClient
             'series' => (string) ($row['series'] ?? ''),
             'start' => $this->date($row['issueStartDate'] ?? null),
             'end' => $this->date($row['issueEndDate'] ?? null),
+            'times' => is_numeric($row['noOfTime'] ?? null) ? round((float) $row['noOfTime'], 2) : null,
         ] : null, (array) $this->get('ipo-current-issue'))));
     }
 
