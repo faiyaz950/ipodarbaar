@@ -56,8 +56,12 @@ class Ipo extends Model
         'subscription_nii' => 'float',
         'subscription_qib' => 'float',
         'subscription_total' => 'float',
+        'subscription_bnii' => 'float',
+        'subscription_snii' => 'float',
+        'subscription_employee' => 'float',
         'subscription_updated_at' => 'datetime',
         'listing_price' => 'float',
+        'listing_close' => 'float',
         'locked_fields' => 'array',
     ];
 
@@ -81,6 +85,11 @@ class Ipo extends Model
     public function financials(): HasMany
     {
         return $this->hasMany(IpoFinancial::class)->orderBy('period_end');
+    }
+
+    public function subscriptionDays(): HasMany
+    {
+        return $this->hasMany(IpoSubscriptionDay::class)->orderBy('date');
     }
 
     public function votes(): HasMany
@@ -467,6 +476,12 @@ class Ipo extends Model
         return $d;
     }
 
+    /** Listing-day close compared with the issue price, in percent. */
+    public function listingCloseGainPercent(): ?float
+    {
+        return ($this->listing_close && $this->price) ? round(($this->listing_close - $this->price) / $this->price * 100, 2) : null;
+    }
+
     /** Actual listing-day gain, when the listing price has been recorded. */
     public function listingGain(): ?float
     {
@@ -490,7 +505,10 @@ class Ipo extends Model
         return array_values(array_filter([
             ['label' => 'Retail (RII)', 'value' => $this->subscription_retail],
             ['label' => 'NII / HNI', 'value' => $this->subscription_nii],
+            ['label' => 'bHNI (>₹10L)', 'value' => $this->subscription_bnii],
+            ['label' => 'sHNI (₹2–10L)', 'value' => $this->subscription_snii],
             ['label' => 'QIB', 'value' => $this->subscription_qib],
+            ['label' => 'Employees', 'value' => $this->subscription_employee],
             ['label' => 'Total', 'value' => $this->subscription_total],
         ], fn ($r) => $r['value'] !== null));
     }

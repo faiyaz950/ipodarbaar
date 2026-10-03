@@ -115,7 +115,7 @@ class IpoController extends Controller
                 ->orderBy('open_date')->limit(6 - $related->count())->get());
         }
 
-        $ipo->load(['detail', 'financials']);
+        $ipo->load(['detail', 'financials', 'subscriptionDays']);
 
         $companyNews = $news->mentioning($ipo->name);
 

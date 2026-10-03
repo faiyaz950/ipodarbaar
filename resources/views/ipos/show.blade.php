@@ -257,7 +257,7 @@
                 <div class="card">
                     <div class="card-head">
                         <h2 class="card-title" id="subscription"><span class="ico"><x-icon name="users" :size="16" /></span> {{ $ipo->name }} IPO Subscription Status</h2>
-                        @if ($ipo->subscription_updated_at)<span class="card-sub">Updated {{ $ipo->subscription_updated_at->diffForHumans() }}</span>@endif
+                        @if ($ipo->subscription_updated_at)<span class="card-sub">As of {{ $ipo->subscription_updated_at->format('j M, g:i A') }}</span>@endif
                     </div>
                     <div class="subs">
                         @foreach ($ipo->subscriptionRows() as $row)
@@ -268,6 +268,26 @@
                             </div>
                         @endforeach
                     </div>
+                    @if ($ipo->subscriptionDays->count() > 1)
+                        <div class="table-wrap" style="border-top:1px solid var(--border)">
+                            <table class="table">
+                                <thead><tr><th>Day-wise</th><th class="r">QIB</th><th class="r">NII</th><th class="r">Retail</th><th class="r">Total</th></tr></thead>
+                                <tbody>
+                                    @foreach ($ipo->subscriptionDays as $day)
+                                        <tr>
+                                            <td>Day {{ $loop->iteration }} <span class="muted">· {{ $day->date->format('D, j M') }}</span></td>
+                                            @foreach (['qib', 'nii', 'retail', 'total'] as $category)
+                                                <td class="r">{{ $day->{$category} !== null ? number_format($day->{$category}, 2).'x' : '—' }}</td>
+                                            @endforeach
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                    @if ($ipo->nse_symbol)
+                        <p class="muted" style="font-size:12.5px;padding:0 22px 16px;margin:0">Times subscribed per category, from NSE (bids on NSE and BSE combined). {{ $ipo->status() === 'open' ? 'Updated every 15 minutes while the issue is open.' : 'Final figures after bidding closed.' }}</p>
+                    @endif
                 </div>
             @endif
 
@@ -277,9 +297,14 @@
                     <div class="card-head"><h2 class="card-title" id="listing"><span class="ico"><x-icon name="rocket" :size="16" /></span> {{ $ipo->name }} IPO Listing Price &amp; Gain</h2></div>
                     <div class="gmp-panel">
                         <div class="cell"><span>Issue price</span><b>{{ Ipo::money($ipo->price) }}</b></div>
-                        <div class="cell"><span>Listing price</span><b>{{ Ipo::money($ipo->listing_price) }}</b></div>
-                        <div class="cell"><span>Listing gain</span><b class="{{ $listingGainCls }}">{{ $ipo->listingGain() !== null ? ($ipo->listingGain() > 0 ? '+' : '').'₹'.Ipo::num($ipo->listingGain()) : '—' }}</b></div>
-                        <div class="cell"><span>Gain %</span><b class="{{ $listingGainCls }}">{{ $ipo->listingGainPercent() !== null ? number_format($ipo->listingGainPercent(), 2).'%' : '—' }}</b></div>
+                        <div class="cell"><span>Listing price{{ $ipo->listing_exchange ? ' ('.$ipo->listing_exchange.')' : '' }}</span><b>{{ Ipo::money($ipo->listing_price) }}</b></div>
+                        <div class="cell"><span>Listing gain</span><b class="{{ $listingGainCls }}">{{ $ipo->listingGainPercent() !== null ? ($ipo->listingGainPercent() > 0 ? '+' : '').number_format($ipo->listingGainPercent(), 2).'%' : '—' }}</b></div>
+                        @if ($ipo->listing_close)
+                            @php $closeCls = $ipo->listingCloseGainPercent() > 0 ? 'up' : ($ipo->listingCloseGainPercent() < 0 ? 'down' : 'flat'); @endphp
+                            <div class="cell"><span>Listing-day close</span><b class="{{ $closeCls }}">{{ Ipo::money($ipo->listing_close) }} <small style="font-size:13px;font-weight:600">({{ $ipo->listingCloseGainPercent() > 0 ? '+' : '' }}{{ number_format($ipo->listingCloseGainPercent(), 1) }}%)</small></b></div>
+                        @else
+                            <div class="cell"><span>Gain per share</span><b class="{{ $listingGainCls }}">{{ $ipo->listingGain() !== null ? ($ipo->listingGain() > 0 ? '+' : '').'₹'.Ipo::num($ipo->listingGain()) : '—' }}</b></div>
+                        @endif
                     </div>
                 </div>
             @endif

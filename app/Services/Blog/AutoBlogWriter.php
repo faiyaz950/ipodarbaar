@@ -46,6 +46,11 @@ class AutoBlogWriter
         $allotment = $all->filter(fn (Ipo $ipo): bool => $ipo->close_date?->lt($day) && ($this->digest->allotmentDate($ipo)?->isSameDay($day) ?? false))->values();
         $stillOpen = $all->filter(fn (Ipo $ipo): bool => $ipo->open_date?->lt($day) && $ipo->close_date?->gt($day))->sortBy('close_date')->values();
         $upcoming = $all->filter(fn (Ipo $ipo): bool => $ipo->open_date?->gt($day) && $ipo->open_date->lte($day->copy()->addDays(7)))->sortBy('open_date')->values();
+        // The most recent listing day before today (holidays skipped), once listing prices are known.
+        $recent = $all->filter(fn (Ipo $ipo): bool => $ipo->listing_price !== null && $ipo->listing_date?->lt($day) && $ipo->listing_date->gte($day->copy()->subDays(5)));
+        $lastDay = $recent->max('listing_date') ?? $day->copy()->subDay();
+        $listedLast = $recent->filter(fn (Ipo $ipo): bool => $ipo->listing_date->isSameDay($lastDay))
+            ->sortByDesc(fn (Ipo $ipo): float => $ipo->listingGainPercent() ?? -1000)->values();
 
         if ($closing->isEmpty() && $opening->isEmpty() && $listing->isEmpty() && $allotment->isEmpty() && $stillOpen->isEmpty()) {
             return null;
@@ -109,8 +114,8 @@ class AutoBlogWriter
                 if ($main->isNotEmpty()) {
                     $html[] = '<h3>SME IPOs closing today</h3>';
                 }
-                $html[] = $this->table(['IPO', 'Price band', 'Lot value', 'Issue size', 'GMP', 'Listing'], $sme->map(fn (Ipo $ipo): array => [
-                    $this->link($ipo), $ipo->priceBand(), $this->lotValue($ipo), $this->size($ipo), $this->gmpText($ipo), $this->date($ipo->listing_date),
+                $html[] = $this->table(['IPO', 'Price band', 'Lot value', 'Issue size', 'GMP', 'Subscribed', 'Listing'], $sme->map(fn (Ipo $ipo): array => [
+                    $this->link($ipo), $ipo->priceBand(), $this->lotValue($ipo), $this->size($ipo), $this->gmpText($ipo), $this->times($ipo->subscription_total), $this->date($ipo->listing_date),
                 ])->all());
             }
         }
@@ -143,10 +148,24 @@ class AutoBlogWriter
             $html[] = '<p>See <a href="/ipo-allotment-status">IPO allotment status</a> for registrar links, or read <a href="/ipo-guide/how-to-check-ipo-allotment-status">how to check IPO allotment status</a>.</p>';
         }
 
+        if ($listedLast->isNotEmpty()) {
+            $html[] = '<h2>How the last listings did</h2>';
+            $html[] = '<p>The '.e($this->countWord($listedLast->count(), 'IPO')).' that listed on '.e($lastDay->format('l, j M')).', with the opening (listing) price and the close that day against the issue price, from the NSE and BSE price files.</p>';
+            $html[] = $this->table(['IPO', 'Issue price', 'Listing price', 'Listing gain', 'Day-1 close', 'Close vs issue'], $listedLast->map(fn (Ipo $ipo): array => [
+                $this->link($ipo), Ipo::money($ipo->price), Ipo::money($ipo->listing_price), $ipo->listingGainPercent() !== null ? $this->percent($ipo->listingGainPercent()) : '—',
+                $ipo->listing_close ? Ipo::money($ipo->listing_close) : '—', $ipo->listingCloseGainPercent() !== null ? $this->percent($ipo->listingCloseGainPercent()) : '—',
+            ])->all());
+            $best = $listedLast->filter(fn (Ipo $ipo): bool => $ipo->listingGainPercent() !== null)->sortByDesc(fn (Ipo $ipo): float => $ipo->listingGainPercent())->first();
+            if ($best) {
+                $html[] = '<p>'.e($best->name).' had the strongest debut, opening '.e($this->percent($best->listingGainPercent())).' above its issue price'
+                    .($best->hasGmp() && $best->gmpPercent() !== null ? ' against a last GMP of '.e($this->percent($best->gmpPercent())) : '').'.</p>';
+            }
+        }
+
         if ($stillOpen->isNotEmpty()) {
             $html[] = '<h2>Other IPOs open for bidding</h2>';
-            $html[] = $this->table(['IPO', 'Board', 'Price band', 'Closes', 'GMP'], $stillOpen->map(fn (Ipo $ipo): array => [
-                $this->link($ipo), $ipo->typeLabel(), $ipo->priceBand(), $this->date($ipo->close_date), $this->gmpText($ipo),
+            $html[] = $this->table(['IPO', 'Board', 'Price band', 'Closes', 'GMP', 'Subscribed'], $stillOpen->map(fn (Ipo $ipo): array => [
+                $this->link($ipo), $ipo->typeLabel(), $ipo->priceBand(), $this->date($ipo->close_date), $this->gmpText($ipo), $this->times($ipo->subscription_total),
             ])->all());
         }
 
@@ -182,6 +201,7 @@ class AutoBlogWriter
             $opening->isNotEmpty() ? 'Opening today: '.$this->nameList($opening, 4) : null,
             $top ? 'Highest GMP: '.$top->name.' at '.$this->gmpText($top) : null,
             $allotment->isNotEmpty() ? 'Allotment expected: '.$this->nameList($allotment, 4) : null,
+            $listedLast->isNotEmpty() && $listedLast->first()->listingGainPercent() !== null ? 'Best debut on '.$lastDay->format('j M').': '.$listedLast->first()->name.' at '.$this->percent($listedLast->first()->listingGainPercent()) : null,
         ]));
 
         return [
@@ -382,6 +402,9 @@ class AutoBlogWriter
             : '';
         $out[] = '<p>'.e($price.$lot.'.'.$dates).'</p>';
         $out[] = '<p>'.$this->gmpSentence($ipo).'</p>';
+        if ($subscribed = $this->subscriptionSentence($ipo)) {
+            $out[] = '<p>'.e($subscribed).'</p>';
+        }
 
         $out[] = $this->financials($ipo);
 
@@ -433,6 +456,26 @@ class AutoBlogWriter
         }
 
         return 'The GMP is flat at ₹0, which suggests a listing close to the issue price. GMP is unofficial; see the '.$link.' table.';
+    }
+
+    private function subscriptionSentence(Ipo $ipo): ?string
+    {
+        if ($ipo->subscription_total === null) {
+            return null;
+        }
+        $parts = array_filter([
+            $ipo->subscription_qib !== null ? 'QIB '.$this->times($ipo->subscription_qib) : null,
+            $ipo->subscription_nii !== null ? 'NII '.$this->times($ipo->subscription_nii) : null,
+            $ipo->subscription_retail !== null ? 'retail '.$this->times($ipo->subscription_retail) : null,
+        ]);
+
+        return ($ipo->subscription_updated_at ? 'By '.$ipo->subscription_updated_at->format('D, j M, g:i A').', the' : 'The')
+            .' issue was subscribed '.$this->times($ipo->subscription_total).' overall'.($parts !== [] ? ' ('.$this->joinClauses(array_values($parts)).')' : '').', as per NSE data for bids on both exchanges.';
+    }
+
+    private function times(?float $value): string
+    {
+        return $value === null ? '—' : number_format($value, 2).'x';
     }
 
     private function financials(Ipo $ipo): ?string

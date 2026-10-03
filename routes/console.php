@@ -27,6 +27,13 @@ Schedule::command('darbaar:telegram gmp')->dailyAt('18:30');
 Schedule::command('darbaar:digest daily')->dailyAt('08:00');
 Schedule::command('darbaar:digest weekly')->weeklyOn(1, '08:05');
 
+// NSE subscription while IPOs take bids; listing prices from the 10 AM pre-open session and the evening bhavcopies.
+Schedule::command('ipo:subscription')->weekdays()->everyFifteenMinutes()->between('10:00', '19:45')->withoutOverlapping(10);
+Schedule::command('ipo:listing-prices --morning')->weekdays()->at('10:01');
+Schedule::command('ipo:listing-prices --morning')->weekdays()->at('10:16');
+Schedule::command('ipo:listing-prices')->weekdays()->at('19:00');
+Schedule::command('ipo:listing-prices')->weekdays()->at('21:30');
+
 // Blog: the "IPO today" update on weekday mornings and the week-ahead calendar on Sundays.
 Schedule::command('blog:auto daily')->weekdays()->at('08:50')->withoutOverlapping(10);
 Schedule::command('blog:auto weekly')->sundays()->at('10:00')->withoutOverlapping(10);
