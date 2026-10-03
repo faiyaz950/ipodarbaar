@@ -202,8 +202,41 @@
   }
   window.darbaarApplyLang = applyLang;
 
-  /* ---------- Analytics events (no-op unless GA4 is configured) ---------- */
+  /* ---------- Own analytics: page views and events, no cookies ---------- */
+  // Browsers that have opened the admin panel are left out, so editors don't count their own visits.
+  var counting = store.get('darbaar:no-track') !== '1';
+  function beacon(url, data) {
+    if (!counting) return;
+    var body = JSON.stringify(data);
+    try {
+      if (navigator.sendBeacon && navigator.sendBeacon(url, new Blob([body], { type: 'text/plain' }))) return;
+      fetch(url, { method: 'POST', body: body, keepalive: true, headers: { 'Content-Type': 'text/plain' } }).catch(function () {});
+    } catch (e) {}
+  }
+  function countView() {
+    var q = new URLSearchParams(location.search);
+    beacon('/d/v', {
+      p: location.pathname,
+      t: document.title,
+      r: document.referrer,
+      u: [q.get('utm_source') || '', q.get('utm_medium') || '', q.get('utm_campaign') || '']
+    });
+  }
+  // Pages opened in the background by link prerendering count only once they are actually seen.
+  if (document.visibilityState === 'prerender') {
+    document.addEventListener('visibilitychange', function seen() {
+      if (document.visibilityState !== 'visible') return;
+      document.removeEventListener('visibilitychange', seen);
+      countView();
+    });
+  } else {
+    countView();
+  }
+
+  /* ---------- Analytics events (ours, plus GA4 when configured) ---------- */
   function track(name, params) {
+    params = params || {};
+    beacon('/d/e', { n: name, l: params.label || params.ipo || params.method || params.choice || params.frequency || params.outcome || '', p: location.pathname });
     if (typeof window.darbaarTrack === 'function') window.darbaarTrack(name, params);
   }
 

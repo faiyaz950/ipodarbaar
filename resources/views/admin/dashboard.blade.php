@@ -27,6 +27,14 @@
     </div>
 </div>
 
+<a class="card card-pad" href="{{ route('admin.analytics', ['range' => 'today']) }}" style="display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin-bottom:16px;font-size:14px">
+    <b style="font-size:15px"><x-icon name="bar-chart" :size="16" /> Today on the site</b>
+    <span><b>{{ number_format($traffic['views']) }}</b> <span class="muted">page views</span></span>
+    <span><b>{{ number_format($traffic['visitors']) }}</b> <span class="muted">visitors</span></span>
+    <span><b>{{ number_format($traffic['live']) }}</b> <span class="muted">on the site now</span></span>
+    <span class="link-gold" style="margin-left:auto">Open analytics <x-icon name="arrow-right" :size="14" /></span>
+</a>
+
 <div class="admin-stats">
     <div class="card card-pad"><span class="muted">Total IPOs</span><b class="kpi">{{ number_format($stats['total']) }}</b></div>
     <div class="card card-pad"><span class="muted">Not yet listed</span><b class="kpi">{{ number_format($stats['active']) }}</b></div>

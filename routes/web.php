@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin;
+use App\Http\Controllers\AnalyticsBeaconController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\CalculatorController;
 use App\Http\Controllers\CompareController;
@@ -26,7 +27,10 @@ use App\Http\Middleware\FlushPageCacheAfterWrites;
 use App\Http\Middleware\RefreshIpoData;
 use App\Models\CorporateAction;
 use App\Support\IpoHubs;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 Route::get('/', HomeController::class)->name('home');
 Route::get('/search', [SearchController::class, 'index'])->name('search');
@@ -116,6 +120,15 @@ Route::withoutMiddleware(RefreshIpoData::class)->group(function () {
     Route::get('/sitemaps/{part}.xml', [SeoController::class, 'sitemap'])->whereIn('part', SeoController::SITEMAPS)->name('sitemaps.show');
 });
 
+// Own analytics: page views and events sent by app.js. No session, no cookies, no CSRF token.
+Route::prefix('d')->name('analytics.')
+    ->withoutMiddleware([RefreshIpoData::class, StartSession::class, ShareErrorsFromSession::class, PreventRequestForgery::class])
+    ->middleware('throttle:120,1')
+    ->group(function () {
+        Route::post('/v', [AnalyticsBeaconController::class, 'view'])->name('view');
+        Route::post('/e', [AnalyticsBeaconController::class, 'event'])->name('event');
+    });
+
 // IPO relay (see RelayController)
 Route::prefix('internal')->name('relay.')->withoutMiddleware(RefreshIpoData::class)->middleware('throttle:300,1')->group(function () {
     Route::post('/ipo-push', [RelayController::class, 'ipos'])->name('ipos');
@@ -166,6 +179,10 @@ Route::prefix('admin')->name('admin.')->withoutMiddleware(RefreshIpoData::class)
             Route::put('/blog/{post}', [Admin\BlogPostController::class, 'update'])->name('blog.update');
             Route::delete('/blog/{post}', [Admin\BlogPostController::class, 'destroy'])->name('blog.destroy');
         });
+
+        Route::get('/analytics', [Admin\AnalyticsController::class, 'index'])->name('analytics');
+        Route::get('/analytics/page', [Admin\AnalyticsController::class, 'page'])->name('analytics.page');
+        Route::get('/analytics/export.csv', [Admin\AnalyticsController::class, 'export'])->name('analytics.export');
 
         Route::get('/news', [Admin\NewsController::class, 'index'])->name('news.index');
         Route::whereNumber('id')->group(function () {

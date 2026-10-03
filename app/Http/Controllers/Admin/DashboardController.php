@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Ipo;
 use App\Models\IpoGmpHistory;
+use App\Services\Analytics\AnalyticsReport;
 use App\Services\IpoSyncService;
 use App\Services\LogoService;
 use Illuminate\Http\Request;
@@ -12,9 +13,10 @@ use Throwable;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(AnalyticsReport $analytics)
     {
         $active = Ipo::active()->get();
+        $today = now()->startOfDay();
 
         return view('admin.dashboard', [
             'stats' => [
@@ -23,6 +25,7 @@ class DashboardController extends Controller
                 'open' => Ipo::open()->count(),
                 'history' => IpoGmpHistory::count(),
             ],
+            'traffic' => $analytics->totals($today, $today) + ['live' => $analytics->liveVisitors()],
             'lastSynced' => IpoSyncService::lastSyncedAt(),
             'missingLot' => $active->whereNull('lot_size')->sortBy('open_date')->values(),
             'missingRegistrar' => $active->whereNull('registrar')->sortBy('open_date')->values(),

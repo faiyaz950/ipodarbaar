@@ -30,7 +30,7 @@ class SeoController extends Controller
     /** Pages of 100 stories included in the news archive sitemap. */
     private const NEWS_ARCHIVE_PAGES = 10;
 
-    private const DISALLOWED_PATHS = ['/admin', '/ipo/search/suggest', '/shorts/feed', '/watchlist/items', '/ipo-portfolio/prices', '/subscribe', '/unsubscribe'];
+    private const DISALLOWED_PATHS = ['/admin', '/d/', '/ipo/search/suggest', '/shorts/feed', '/watchlist/items', '/ipo-portfolio/prices', '/subscribe', '/unsubscribe'];
 
     public function robots(): Response
     {

@@ -46,5 +46,8 @@ Schedule::command('seo:indexnow')->everyThirtyMinutes()->withoutOverlapping(10);
 // Sends queued mail (digests, confirmations) without a long-running worker process.
 Schedule::command('queue:work --stop-when-empty --max-time=50 --tries=3')->everyMinute()->withoutOverlapping(5);
 
+// Site analytics: daily totals for finished days; raw page views are kept for 90 days.
+Schedule::command('analytics:rollup')->dailyAt('00:20')->withoutOverlapping(30);
+
 // Expired page-cache files are only removed when read; clear the page store hourly.
 Schedule::command('cache:clear pages')->hourly();
