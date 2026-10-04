@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Schedule;
 /*
  * One cron entry (`* * * * * php artisan schedule:run`) drives everything below.
  * Tasks run one after another, so the queue worker is last and bounded to 50 seconds.
+ * On the live server that cron entry fires every 15 minutes, so every time below must fall on
+ * :00, :15, :30 or :45 or it never runs (tests/Feature/ScheduleTest.php checks this).
  */
 
 Schedule::call(fn () => SchedulerHeartbeat::beat())->name('scheduler-heartbeat')->everyMinute();
@@ -25,17 +27,17 @@ Schedule::command('darbaar:telegram gmp')->dailyAt('18:30');
 
 // Email digest for confirmed subscribers.
 Schedule::command('darbaar:digest daily')->dailyAt('08:00');
-Schedule::command('darbaar:digest weekly')->weeklyOn(1, '08:05');
+Schedule::command('darbaar:digest weekly')->weeklyOn(1, '08:15');
 
 // NSE subscription while IPOs take bids; listing prices from the 10 AM pre-open session and the evening bhavcopies.
 Schedule::command('ipo:subscription')->weekdays()->everyFifteenMinutes()->between('10:00', '19:45')->withoutOverlapping(10);
-Schedule::command('ipo:listing-prices --morning')->weekdays()->at('10:01');
-Schedule::command('ipo:listing-prices --morning')->weekdays()->at('10:16');
+Schedule::command('ipo:listing-prices --morning')->weekdays()->at('10:00');
+Schedule::command('ipo:listing-prices --morning')->weekdays()->at('10:15');
 Schedule::command('ipo:listing-prices')->weekdays()->at('19:00');
 Schedule::command('ipo:listing-prices')->weekdays()->at('21:30');
 
 // Blog: the "IPO today" update on weekday mornings and the week-ahead calendar on Sundays.
-Schedule::command('blog:auto daily')->weekdays()->at('08:50')->withoutOverlapping(10);
+Schedule::command('blog:auto daily')->weekdays()->at('08:45')->withoutOverlapping(10);
 Schedule::command('blog:auto weekly')->sundays()->at('10:00')->withoutOverlapping(10);
 // The listing day recap once the evening bhavcopies have given listing prices and day-1 closes.
 Schedule::command('blog:auto listing')->weekdays()->at('21:45')->withoutOverlapping(10);
@@ -47,7 +49,7 @@ Schedule::command('seo:indexnow')->everyThirtyMinutes()->withoutOverlapping(10);
 Schedule::command('queue:work --stop-when-empty --max-time=50 --tries=3')->everyMinute()->withoutOverlapping(5);
 
 // Site analytics: daily totals for finished days; raw page views are kept for 90 days.
-Schedule::command('analytics:rollup')->dailyAt('00:20')->withoutOverlapping(30);
+Schedule::command('analytics:rollup')->dailyAt('00:15')->withoutOverlapping(30);
 
 // Expired page-cache files are only removed when read; clear the page store hourly.
 Schedule::command('cache:clear pages')->hourly();

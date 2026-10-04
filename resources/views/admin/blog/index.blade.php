@@ -17,7 +17,7 @@
 
 <div class="card card-pad" style="margin-bottom:20px">
     <div class="card-title af-section" style="margin-bottom:6px"><x-icon name="refresh" :size="16" /> Automatic posts</div>
-    <p class="muted" style="font-size:13.5px;margin-bottom:14px">Written from the IPO data with charts and company logos: an <b>IPO Today</b> update every weekday at 8:50 AM (skipped when nothing is happening), a <b>listing day recap</b> at 9:45 PM on days with listings, and a <b>weekly IPO calendar</b> every Sunday at 10 AM for the week ahead.</p>
+    <p class="muted" style="font-size:13.5px;margin-bottom:14px">Written from the IPO data with charts and company logos: an <b>IPO Today</b> update every weekday at 8:45 AM (skipped when nothing is happening), a <b>listing day recap</b> at 9:45 PM on days with listings, and a <b>weekly IPO calendar</b> every Sunday at 10 AM for the week ahead.</p>
     <form method="post" action="{{ route('admin.blog.automation') }}" class="btn-row" style="align-items:center;gap:18px">
         @csrf
         @method('PUT')

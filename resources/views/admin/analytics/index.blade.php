@@ -161,5 +161,5 @@
     </div>
 </div>
 
-<p class="muted" style="font-size:12.5px;margin-top:18px">A visitor is counted once per day per device (a daily hash of the IP address and browser, which is never stored). Bots and repeat reloads within 30 seconds aren't counted. Detailed rows are kept for {{ $retention }} days; daily totals are kept for good.</p>
+<p class="muted" style="font-size:12.5px;margin-top:18px">A visitor is counted once per day per device (a daily hash of the IP address and browser, which is never stored). Bots and repeat reloads within 30 seconds aren't counted. Detailed rows are kept for {{ $retention }} days; daily totals (added up each night) are kept for good.</p>
 @endsection
