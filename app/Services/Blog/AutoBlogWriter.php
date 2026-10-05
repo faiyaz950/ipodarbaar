@@ -6,6 +6,7 @@ use App\Models\BlogPost;
 use App\Models\Ipo;
 use App\Models\IpoFinancial;
 use App\Services\IpoDigestBuilder;
+use App\Support\IpoInsights;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -21,9 +22,6 @@ class AutoBlogWriter
 {
     /** IPOs whose bidding window is longer than this are treated as bad data and left out. */
     private const MAX_BIDDING_DAYS = 12;
-
-    /** SME issue sizes above this (₹ crore) are almost certainly data errors and are not quoted. */
-    private const MAX_SME_SIZE_CR = 300;
 
     public function __construct(private IpoDigestBuilder $digest, private BlogImageService $images) {}
 
@@ -532,18 +530,9 @@ class AutoBlogWriter
         $detail = $ipo->detail;
         $out = ['<h3>'.e($ipo->name).' IPO</h3>'];
 
-        $business = $this->business($ipo);
-        $structure = match (true) {
-            ! $this->plausibleSize($ipo) => null,
-            $detail && $detail->fresh_issue_cr && $detail->ofs_cr => 'The '.$this->size($ipo).' issue combines a fresh issue of '.$this->crore($detail->fresh_issue_cr).', which goes to the company, and an offer for sale (OFS) of '.$this->crore($detail->ofs_cr)
-                .' by existing shareholders, so about '.round($detail->fresh_issue_cr / ($detail->fresh_issue_cr + $detail->ofs_cr) * 100).'% of the money raised reaches the business.',
-            $detail && $detail->fresh_issue_cr && ! $detail->ofs_cr => 'The '.$this->size($ipo).' issue is entirely a fresh issue, so all the money goes to the company.',
-            $detail && ! $detail->fresh_issue_cr && $detail->ofs_cr => 'The '.$this->size($ipo).' issue is entirely an offer for sale, so the money goes to the selling shareholders, not the company.',
-            default => 'The issue size is '.$this->size($ipo).'.',
-        };
-        $promoters = $detail && $detail->promoter_holding_pre && $detail->promoter_holding_post
-            ? 'Promoter holding falls from '.$this->num($detail->promoter_holding_pre).'% to '.$this->num($detail->promoter_holding_post).'% after the issue.'
-            : null;
+        $business = IpoInsights::business($ipo);
+        $structure = IpoInsights::structure($ipo);
+        $promoters = IpoInsights::promoters($ipo);
         $out[] = '<p>'.e(trim(implode(' ', array_filter([$business, $structure, $promoters])))).'</p>';
 
         $price = str_contains($ipo->priceBand(), '–') ? 'The price band is '.$ipo->priceBand().' a share' : ($ipo->price ? 'The issue price is '.$ipo->priceBand().' a share' : 'The price band has not been announced yet');
@@ -589,7 +578,7 @@ class AutoBlogWriter
     {
         $gain = $ipo->listingGainPercent();
         $sentences = [
-            $this->business($ipo),
+            IpoInsights::business($ipo),
             $this->plausibleSize($ipo) ? 'It raised '.$this->size($ipo).' in its IPO.' : null,
             $ipo->name.' opened at '.Ipo::money($ipo->listing_price).($ipo->listing_exchange ? ' on '.$ipo->listing_exchange : '').', '.$this->percent($gain).' against the issue price of '.Ipo::money($ipo->price).'.',
             $ipo->lot_size && abs($ipo->listing_price - $ipo->price) >= 0.01 ? 'For an investor allotted one lot of '.number_format($ipo->lot_size).' shares, that is '.($gain >= 0 ? 'a gain' : 'a loss').' of about '.Ipo::money(abs($ipo->listing_price - $ipo->price) * $ipo->lot_size).' at the opening price.' : null,
@@ -635,17 +624,6 @@ class AutoBlogWriter
         return 'By the close, '.$higher.' of '.$closed->count().' had risen above their listing price and '.$lower.' had fallen below it.';
     }
 
-    /** "Orient Cables India is a manufacturer of networking cables." from the IPO's description. */
-    private function business(Ipo $ipo): ?string
-    {
-        $about = Str::squish((string) $ipo->about);
-        if (! preg_match('/\bwhich\s+(?:is|are)\s+(.{12,220}?)\.(?:\s|$)/i', $about, $m)) {
-            return null;
-        }
-
-        return $ipo->name.' is '.rtrim($m[1], ' ,;').'.';
-    }
-
     private function gmpSentence(Ipo $ipo): string
     {
         $link = '<a href="/ipo-gmp">live IPO GMP</a>';
@@ -679,7 +657,7 @@ class AutoBlogWriter
 
     private function times(?float $value): string
     {
-        return $value === null ? '—' : number_format($value, 2).'x';
+        return IpoInsights::times($value);
     }
 
     private function financials(Ipo $ipo): ?string
@@ -695,30 +673,7 @@ class AutoBlogWriter
         ])->all());
 
         // Growth is measured over full financial years only; a part-year period would distort it.
-        $years = $rows->filter(fn (IpoFinancial $f): bool => (bool) preg_match('/^FY\s?\d{2,4}$/i', trim((string) $f->period)))->values();
-        $sentences = [];
-        if ($years->count() >= 2) {
-            [$first, $last] = [$years->first(), $years->last()];
-            $span = $years->count() - 1;
-            if ($first->revenue > 0 && $last->revenue > 0) {
-                $change = ($last->revenue / $first->revenue - 1) * 100;
-                $sentences[] = 'Revenue '.($change >= 0 ? 'rose' : 'fell').' from '.$this->crore($first->revenue).' in '.$first->period.' to '.$this->crore($last->revenue).' in '.$last->period
-                    .($span >= 2 ? ', a compound annual '.($change >= 0 ? 'growth' : 'decline').' of '.$this->num(abs((($last->revenue / $first->revenue) ** (1 / $span) - 1) * 100), 1).'%' : ' ('.$this->percent($change).')').'.';
-            }
-            if ($first->pat !== null && $last->pat !== null) {
-                $sentences[] = match (true) {
-                    $last->pat < 0 => 'The company reported a loss of '.$this->crore(abs($last->pat)).' in '.$last->period.'.',
-                    $first->pat <= 0 => 'It moved from a '.($first->pat < 0 ? 'loss of '.$this->crore(abs($first->pat)) : 'break-even result').' in '.$first->period.' to a profit of '.$this->crore($last->pat).' in '.$last->period.'.',
-                    default => 'Profit after tax '.($last->pat >= $first->pat ? 'grew' : 'fell').' from '.$this->crore($first->pat).' to '.$this->crore($last->pat).'.',
-                };
-            }
-            if ($last->revenue > 0 && $last->pat !== null && $last->pat > 0) {
-                $sentences[] = 'That is a net profit margin of '.$this->num($last->pat / $last->revenue * 100, 1).'% in '.$last->period.'.';
-            }
-            if ($last->net_worth > 0 && $last->borrowings !== null) {
-                $sentences[] = 'Borrowings were '.$this->num($last->borrowings / $last->net_worth).' times net worth at the end of '.$last->period.'.';
-            }
-        }
+        $sentences = IpoInsights::growth($ipo);
 
         return '<p>Restated financials from the offer document (₹ crore):</p>'.$table.($sentences !== [] ? '<p>'.e(implode(' ', $sentences)).'</p>' : '');
     }
@@ -763,12 +718,12 @@ class AutoBlogWriter
 
     private function plausibleSize(Ipo $ipo): bool
     {
-        return $ipo->issue_size > 0 && ($ipo->isMainboard() || $ipo->issue_size <= self::MAX_SME_SIZE_CR);
+        return IpoInsights::plausibleSize($ipo);
     }
 
     private function size(Ipo $ipo): string
     {
-        return $this->plausibleSize($ipo) ? $this->crore($ipo->issue_size) : '—';
+        return IpoInsights::size($ipo);
     }
 
     private function lotValue(Ipo $ipo): string
@@ -797,17 +752,17 @@ class AutoBlogWriter
 
     private function crore(?float $value): string
     {
-        return $value === null ? '—' : ($value < 0 ? '-' : '').'₹'.Ipo::num(abs($value)).' Cr';
+        return IpoInsights::crore($value);
     }
 
     private function num(float $value, int $decimals = 2): string
     {
-        return Ipo::num(round($value, $decimals), $decimals);
+        return IpoInsights::num($value, $decimals);
     }
 
     private function percent(float $value): string
     {
-        return ($value > 0 ? '+' : '').number_format($value, 1).'%';
+        return IpoInsights::percent($value);
     }
 
     private function date(?Carbon $date): string

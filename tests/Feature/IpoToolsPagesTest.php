@@ -35,7 +35,7 @@ class IpoToolsPagesTest extends TestCase
         Ipo::factory()->create(['name' => 'Old Co', 'slug' => 'old-co-ipo', 'open_date' => '2026-08-01', 'close_date' => '2026-08-05', 'listing_date' => '2026-08-10']);
 
         $this->get('/ipo-listing-today')->assertOk()
-            ->assertSee('<title>IPO Listing Today (24 Sep 2026): Expected Listing Price &amp; GMP | IPO Darbaar</title>', false)
+            ->assertSee('<title>IPO Listing Today (24 Sep 2026): Listing Price &amp; GMP | IPO Darbaar</title>', false)
             ->assertSee('1 IPO lists on the stock exchanges today (24 Sep 2026): Today Co.')
             // ₹120 issue price + ₹15 GMP.
             ->assertSeeInOrder(['IPOs Listing Today', 'Today Co', '₹135', '+12.5%', 'After 10 AM'], false)

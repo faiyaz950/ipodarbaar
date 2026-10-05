@@ -23,7 +23,11 @@
     ]);
 @endphp
 
-@section('title', \App\Support\IpoSeo::title($ipo))
+@if (\App\Support\IpoSeo::fitsWithBrand(\App\Support\IpoSeo::title($ipo)))
+    @section('title', \App\Support\IpoSeo::title($ipo))
+@else
+    @section('title_full', \App\Support\IpoSeo::title($ipo))
+@endif
 @section('description', \App\Support\IpoSeo::description($ipo, $allotmentDate))
 @section('og_image', $ipo->shareImageUrl() ?? '')
 
@@ -66,7 +70,7 @@
             <div class="ipo-id">
                 <x-logo-tile :ipo="$ipo" size="xl" />
                 <div>
-                    <h1>{{ $ipo->name }} IPO</h1>
+                    <h1>{{ $ipo->name }} IPO <span style="display:block;font-family:var(--font);font-size:.42em;font-weight:600;letter-spacing:0;color:#C9D1E8;margin-top:6px">{{ \App\Support\IpoSeo::headline($ipo) }}</span></h1>
                     <div class="badges">
                         <x-status-badge :ipo="$ipo" />
                         <span class="badge b-{{ $ipo->type }}">{{ $ipo->typeLabel() }} IPO</span>
@@ -361,6 +365,20 @@
                     </table>
                 </div>
             </div>
+            @endif
+
+            {{-- Analysis worked out from the IPO's own numbers (unique to this page). --}}
+            @php $insights = \App\Support\IpoInsights::paragraphs($ipo); @endphp
+            @if (count($insights) >= 2)
+                <div class="card card-pad">
+                    <h2 class="card-title" style="margin-bottom:14px" id="analysis"><span class="ico"><x-icon name="sparkles" :size="16" /></span> {{ $ipo->name }} IPO analysis: what the numbers say</h2>
+                    <div class="prose">
+                        @foreach ($insights as $paragraph)
+                            <p>{{ $paragraph }}</p>
+                        @endforeach
+                    </div>
+                    <p class="muted" style="font-size:12.5px;margin:0">Worked out by IPO Darbaar from the offer document, exchange data and the latest GMP. For information only, not a recommendation.</p>
+                </div>
             @endif
 
             @include('ipos.company')

@@ -23,10 +23,21 @@
     ];
 @endphp
 
-@section('title', 'IPO Listing Today ('.$date.'): Expected Listing Price & GMP')
+@section('title', 'IPO Listing Today ('.$date.'): Listing Price & GMP')
+@php
+    // Name as many of today's listings as fit, whole names only, so the snippet never ends mid-word.
+    $shown = [];
+    foreach ($today as $ipo) {
+        if (mb_strlen(implode(', ', [...$shown, $ipo->name])) > 62) {
+            break;
+        }
+        $shown[] = $ipo->name;
+    }
+    $more = $today->count() - count($shown);
+@endphp
 @section('description', ($today->isNotEmpty()
-    ? $today->count().' '.($today->count() === 1 ? 'IPO lists' : 'IPOs list').' today ('.$date.'): '.\Illuminate\Support\Str::limit($names($today), 70).'. '
-    : 'No IPO lists today ('.$date.'). ').'Issue price, GMP, expected listing price and this week\'s listings.')
+    ? $today->count().' '.($today->count() === 1 ? 'IPO lists' : 'IPOs list').' today ('.$date.'): '.implode(', ', $shown).($more > 0 ? ' and '.$more.' more' : '').'. '
+    : 'No IPO lists today ('.$date.'). ').'Listing price vs issue price and GMP, live.')
 
 @push('head')
 <x-jsonld :breadcrumbs="[['Home', route('home')], ['IPO', route('ipos.index')], ['IPO Listing Today', route('ipos.listing-today')]]" />

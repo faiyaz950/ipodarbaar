@@ -34,6 +34,23 @@ class IpoSeo
         };
     }
 
+    /** What the page answers at this stage, shown under the company name in the H1. */
+    public static function headline(Ipo $ipo): string
+    {
+        return match ($ipo->status()) {
+            'upcoming' => 'Date, Price Band & GMP',
+            'open' => 'GMP Today & Subscription Status',
+            'closed' => $ipo->listing_date?->isToday() ? 'Listing Today: GMP & Listing Price' : 'Allotment Status, GMP & Listing Date',
+            default => $ipo->listing_price ? 'Listing Price, Gain & Allotment' : 'Listing Date & Allotment Status',
+        };
+    }
+
+    /** Whether the title is short enough for the " | IPO Darbaar" suffix before Google cuts it off. */
+    public static function fitsWithBrand(string $title): bool
+    {
+        return mb_strlen($title.' | IPO Darbaar') <= 62;
+    }
+
     public static function description(Ipo $ipo, ?Carbon $allotment = null): string
     {
         $name = $ipo->name;
@@ -49,6 +66,11 @@ class IpoSeo
             $sentences[] = "{$name} IPO GMP today is ".($ipo->gmp >= 0 ? '₹' : '-₹').Ipo::num(abs($ipo->gmp))
                 .($ipo->gmpPercent() !== null ? ' ('.number_format($ipo->gmpPercent(), 1).'%)' : '')
                 .($ipo->estListingPrice() ? ', expected listing ₹'.Ipo::num($ipo->estListingPrice()) : '').'.';
+        }
+
+        if ($ipo->subscription_total !== null && $ipo->status() !== 'listed') {
+            $sentences[] = 'Subscribed '.number_format($ipo->subscription_total, 2).'x'
+                .($ipo->subscription_retail !== null ? ' (retail '.number_format($ipo->subscription_retail, 2).'x)' : '').'.';
         }
 
         $facts = [];
@@ -110,6 +132,14 @@ class IpoSeo
                 : ($ipo->status() === 'upcoming'
                     ? "The grey market premium for {$name} IPO is not available yet. It usually appears a few days before the issue opens; this page updates through the day."
                     : "No grey market premium has been reported for {$name} IPO so far. This page updates through the day if one appears.")];
+        }
+
+        if ($subscribed = IpoInsights::subscription($ipo)) {
+            $faqs[] = ["What is the subscription status of {$name} IPO?", $subscribed.' Figures are from NSE and cover bids on both exchanges.'];
+        }
+
+        if ($listed = IpoInsights::listing($ipo)) {
+            $faqs[] = ["What was the listing price of {$name} IPO?", $listed];
         }
 
         if ($ipo->price) {

@@ -97,8 +97,8 @@ class SeoPagesTest extends TestCase
         Ipo::factory()->upcoming()->create(['name' => 'No Premium', 'slug' => 'no-premium-ipo', 'gmp' => null]);
 
         $this->get('/ipo-gmp')->assertOk()
-            ->assertSee('<title>Live IPO GMP Today (24 Sep 2026): Grey Market Premium | IPO Darbaar</title>', false)
-            ->assertSee('<h1>Live IPO GMP Today</h1>', false)
+            ->assertSee('<title>IPO GMP Today (24 Sep 2026): Live &amp; Latest GMP of Current IPOs</title>', false)
+            ->assertSee('<h1>IPO GMP Today: Live &amp; Latest GMP</h1>', false)
             ->assertSeeInOrder(['Highest IPO GMP Today', 'Hot Pick IPO</a>', '(50.0%)', 'Modest Gain IPO</a>', '(5.0%)'], false)
             ->assertDontSee('No Premium IPO</a>:', false)
             // Opened 23 Sep, closes 25 Sep (Fri): allotment T+1 is Mon 28 Sep.

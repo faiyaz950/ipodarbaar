@@ -35,8 +35,17 @@
     }
 @endphp
 
-@section('title', ($type ? $board['label'].' Today ('.$today.'): Live Grey Market Premium' : 'Live IPO GMP Today ('.$today.'): Grey Market Premium'))
-@section('description', 'Live '.$board['label'].' today ('.$today.') for '.$active->count().' '.$board['noun'].': grey market premium, expected listing price and gain %.'.($top ? ' Highest now: '.$top->name.' '.number_format($top->gmpPercent(), 1).'%.' : ''))
+@if ($type)
+    @section('title', $board['label'].' Today ('.$today.'): Live Grey Market Premium')
+@else
+    {{-- People search "ipo gmp today", "current ipo gmp", "latest ipo gmp" and "gmp live": one title answers all four. --}}
+    @section('title_full', 'IPO GMP Today ('.$today.'): Live & Latest GMP of Current IPOs')
+@endif
+@php
+    $gmpDescription = 'Live & latest '.$board['label'].' today ('.$today.') for '.$active->count().' current '.$board['noun'].': grey market premium, expected listing price and gain %.';
+    $topLine = $top ? ' Top: '.$top->name.' '.number_format($top->gmpPercent(), 1).'%.' : '';
+@endphp
+@section('description', mb_strlen($gmpDescription.$topLine) <= 160 ? $gmpDescription.$topLine : $gmpDescription)
 
 @push('head')
 <x-jsonld :breadcrumbs="$type ? [['Home', route('home')], ['IPO GMP Today', route('ipos.gmp')], [$board['label'], $board['route']]] : [['Home', route('home')], ['IPO GMP Today', route('ipos.gmp')]]" />
@@ -70,7 +79,7 @@
                 <span>IPO GMP</span>
             @endif
         </nav>
-        <h1>{{ $type ? $board['label'].' Today' : 'Live IPO GMP Today' }}</h1>
+        <h1>{{ $type ? $board['label'].' Today' : 'IPO GMP Today: Live & Latest GMP' }}</h1>
         <p class="lead">{{ $board['lead'] }}</p>
         <div class="hub-links" style="margin-top:12px">
             <a class="chip {{ $type === null ? 'active' : '' }}" href="{{ route('ipos.gmp') }}">All IPO GMP</a>

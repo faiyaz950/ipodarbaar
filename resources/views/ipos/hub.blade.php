@@ -38,7 +38,7 @@
 @endphp
 
 @section('title', $title)
-@section('description', IpoHubs::fill($config['description'], $fill))
+@section('description', IpoHubs::fill(($fill['count'] ?? null) === 0 && isset($config['description_empty']) ? $config['description_empty'] : $config['description'], $fill))
 @section('robots', $filter ? 'noindex, follow' : 'index, follow')
 @section('canonical', $filter ? $hubUrl : $hubUrl.($page > 1 ? '?page='.$page : ''))
 
@@ -49,7 +49,7 @@
     '@type' => 'CollectionPage',
     'name' => $h1,
     'url' => $hubUrl,
-    'description' => IpoHubs::fill($config['description'], $fill),
+    'description' => IpoHubs::fill(($fill['count'] ?? null) === 0 && isset($config['description_empty']) ? $config['description_empty'] : $config['description'], $fill),
     'dateModified' => now()->toIso8601String(),
     'isPartOf' => ['@type' => 'WebSite', 'name' => 'IPO Darbaar', 'url' => route('home')],
     'mainEntity' => [

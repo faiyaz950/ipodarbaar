@@ -38,7 +38,7 @@
 <x-jsonld :breadcrumbs="[['Home', route('home')], ['Blog', route('blog.index')], [$post->categoryLabel(), $categoryUrl], [$post->title, $url]]" />
 <x-jsonld :data="[
     '@context' => 'https://schema.org',
-    '@type' => 'BlogPosting',
+    '@type' => in_array($post->category, ['daily', 'listing-recap', 'weekly-wrap'], true) ? 'NewsArticle' : 'BlogPosting',
     'headline' => Str::limit($post->title, 110, ''),
     'description' => $post->metaDescription(),
     'url' => $url,

@@ -150,6 +150,10 @@ class SeoController extends Controller
         $cutoff = now()->subHours(48);
         $items = collect($news->latest(100)['items'])
             ->filter(fn (array $item): bool => $item['date'] !== null && $item['date']->gte($cutoff))
+            // Our own blog posts (the daily IPO update, listing recaps…) are news too.
+            ->concat(BlogPost::query()->live()->where('published_at', '>=', $cutoff)->get()
+                ->map(fn (BlogPost $post): array => ['url' => $post->url(), 'date' => $post->published_at, 'headline' => $post->title]))
+            ->sortByDesc(fn (array $item) => $item['date'])
             ->values();
 
         return response()->view('sitemap-news', ['items' => $items])->header('Content-Type', 'application/xml');

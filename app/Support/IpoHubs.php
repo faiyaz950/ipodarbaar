@@ -24,6 +24,7 @@ class IpoHubs
                 'h1' => 'Upcoming IPOs in {month} {year}',
                 'groups' => ['mainboard' => 'Upcoming Mainboard IPOs', 'sme' => 'Upcoming SME IPOs'],
                 'description' => 'Upcoming IPO list for {month} {year}: {count} mainboard and SME IPOs with open and close dates, price band, lot size, issue size and latest GMP. Updated {date}.',
+                'description_empty' => 'Upcoming IPO list for {month} {year}: dates, price band, lot size and GMP of mainboard and SME IPOs, added as soon as they are announced. Updated {date}.',
                 'lead' => 'All upcoming mainboard and SME IPOs in India with their subscription dates, price band, issue size and grey market premium, updated through the day.',
                 'about' => [
                     ['What counts as an upcoming IPO?', 'An upcoming IPO is a public issue whose subscription window has not opened yet. Dates and the price band are usually announced a few days before the issue opens, after the company files its Red Herring Prospectus (RHP) with the Registrar of Companies. Until then the listing shows "Dates awaited".'],
@@ -99,6 +100,7 @@ class IpoHubs
                 'title' => 'Upcoming SME IPO List {month} {year}: Dates, Price & GMP',
                 'h1' => 'Upcoming SME IPOs in {month} {year}',
                 'description' => 'Upcoming SME IPO list for {month} {year}: {count} SME IPOs on NSE Emerge and BSE SME with open and close dates, price band, lot size, issue size and GMP.',
+                'description_empty' => 'Upcoming SME IPO list for {month} {year}: NSE Emerge and BSE SME IPO dates, price band, lot size and GMP, added as soon as they are announced.',
                 'lead' => 'Every upcoming SME IPO on NSE Emerge and BSE SME, sorted by opening date, with the price band, issue size and grey market premium.',
                 'about' => [
                     ['How SME IPOs are different', 'SME IPOs are smaller issues from small and medium enterprises. Their offer documents are reviewed by the stock exchange rather than SEBI, individual investors must apply for at least two lots, and after listing the shares trade in lots with a market maker for three years.'],
